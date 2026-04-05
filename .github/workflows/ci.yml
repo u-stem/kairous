@@ -57,8 +57,8 @@ jobs:
         with:
           version: latest
       - run: bun install --frozen-lockfile
-      - name: Supabase ローカル起動
-        run: supabase start -x realtime,storage,imgproxy,inbucket,pgadmin-schema-diff,migra,studio,edge-runtime,logflare,vector,supavisor
+      - name: Supabase ローカル起動 (Edge Function 含む)
+        run: supabase start -x realtime,storage,imgproxy,inbucket,pgadmin-schema-diff,migra,studio,logflare,vector,supavisor
       - name: 環境変数を設定
         run: |
           # supabase status -o env の値はダブルクォートで囲まれているので除去する
