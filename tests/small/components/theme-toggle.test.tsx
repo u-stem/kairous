@@ -23,9 +23,8 @@ describe("ThemeToggle", () => {
   it("マウント後に3つのテーマオプションを表示する", () => {
     render(<ThemeToggle />);
 
-    // mounted=false の初期状態では button 要素はないが、
-    // useEffect でマウントされると button が表示される。
-    // jsdom は同期的に useEffect を実行するため、render 後に確認できる
+    // useSyncExternalStore はクライアント環境では getSnapshot を返すため、
+    // jsdom では mounted=true で即座にボタンが描画される
     expect(screen.getByRole("button", { name: "システムテーマに切り替え" })).toBeDefined();
     expect(screen.getByRole("button", { name: "ライトテーマに切り替え" })).toBeDefined();
     expect(screen.getByRole("button", { name: "ダークテーマに切り替え" })).toBeDefined();
