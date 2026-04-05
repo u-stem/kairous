@@ -61,12 +61,11 @@ jobs:
         run: supabase start -x realtime,storage,imgproxy,inbucket,pgadmin-schema-diff,migra,studio,edge-runtime,logflare,vector,supavisor
       - name: 環境変数を設定
         run: |
-          SUPABASE_URL=$(supabase status -o env | grep API_URL | cut -d= -f2-)
-          ANON_KEY=$(supabase status -o env | grep ANON_KEY | cut -d= -f2-)
-          SERVICE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d= -f2-)
-          echo "NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}" >> $GITHUB_ENV
+          # supabase status -o env の値はダブルクォートで囲まれているので除去する
+          eval $(supabase status -o env | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY)=')
+          echo "NEXT_PUBLIC_SUPABASE_URL=${API_URL}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}" >> $GITHUB_ENV
-          echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_KEY}" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> $GITHUB_ENV
       - run: bun test:medium
 
   migration:
