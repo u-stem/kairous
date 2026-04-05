@@ -35,9 +35,10 @@ export type MaterialWithMethods = {
 export type MaterialDetail = MaterialWithMethods & {
   recent_sessions: Array<{
     id: string;
-    started_at: string;
+    method: { slug: string; name: string };
     duration_sec: number;
-    status: string;
+    self_rating: number | null;
+    started_at: string;
   }>;
   accuracy_rate: number | null;
 };
