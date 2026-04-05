@@ -2,13 +2,13 @@ import { adminClient } from "../setup";
 
 // テストデータ作成ヘルパー
 export async function createTestSubject(userId: string, name = "テスト分野") {
-  const { data, error } = await adminClient
+  const result = await adminClient
     .from("subjects")
     .insert({ user_id: userId, name, color: "#6366f1" })
     .select()
     .single();
-  if (error) throw new Error(`テスト分野作成失敗: ${error.message}`);
-  return data;
+  if (result.error) throw new Error(`テスト分野作成失敗: ${result.error.message}`);
+  return result.data as { id: string; name: string; color: string; user_id: string };
 }
 
 export async function createTestMaterial(
@@ -16,13 +16,13 @@ export async function createTestMaterial(
   userId: string,
   title = "テスト教材",
 ) {
-  const { data, error } = await adminClient
+  const result = await adminClient
     .from("materials")
     .insert({ subject_id: subjectId, user_id: userId, title })
     .select()
     .single();
-  if (error) throw new Error(`テスト教材作成失敗: ${error.message}`);
-  return data;
+  if (result.error) throw new Error(`テスト教材作成失敗: ${result.error.message}`);
+  return result.data as { id: string; title: string; subject_id: string; user_id: string };
 }
 
 // テストデータ全削除（テスト間の独立性を保証）

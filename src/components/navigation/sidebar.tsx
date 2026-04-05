@@ -8,7 +8,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden h-dvh w-56 shrink-0 border-r bg-white md:block">
+    <aside className="hidden h-dvh w-56 shrink-0 border-r bg-card md:block">
       <div className="p-4">
         <h1 className="text-xl font-bold">Kairous</h1>
       </div>
@@ -27,8 +27,8 @@ export function Sidebar() {
                   href={item.href}
                   className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm ${
                     isActive
-                      ? "bg-indigo-50 text-indigo-600"
-                      : "text-gray-700 hover:bg-gray-50"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted"
                   }`}
                 >
                   <svg

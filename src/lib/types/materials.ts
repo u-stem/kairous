@@ -1,0 +1,44 @@
+import type { Database } from "./database";
+
+type Tables<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Row"];
+
+export type Subject = Tables<"subjects">;
+export type Material = Tables<"materials">;
+export type Card = Tables<"cards">;
+export type LearningMethod = Tables<"learning_methods">;
+export type MaterialMethod = Tables<"material_methods">;
+
+// 一覧表示に必要な関連データを結合した型（subjects・learning_methodsをJOINしたクエリ結果）
+export type MaterialWithMethods = {
+  id: string;
+  title: string;
+  description: string | null;
+  subject_id: string;
+  subject: {
+    id: string;
+    name: string;
+    color: string;
+  };
+  total_cards: number;
+  due_count: number;
+  methods: Array<{
+    id: string;
+    slug: string;
+    name: string;
+    category: string;
+  }>;
+  created_at: string;
+};
+
+// 詳細ページで追加表示するデータ（直近セッション・正答率はクエリコストが高いため別型）
+export type MaterialDetail = MaterialWithMethods & {
+  recent_sessions: Array<{
+    id: string;
+    method: { slug: string; name: string };
+    duration_sec: number;
+    self_rating: number | null;
+    started_at: string;
+  }>;
+  accuracy_rate: number | null;
+};

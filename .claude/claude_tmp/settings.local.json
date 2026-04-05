@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/Users/mikiya/.claude/plugins/cache/superpowers-marketplace/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh --project-dir /Users/mikiya/ws/kairous)",
+      "Bash(npm view:*)",
+      "Bash(bunx:*)",
+      "Bash(mkdir -p /tmp/kairous_backup)",
+      "Bash(cp -r /Users/mikiya/ws/kairous/.superpowers /tmp/kairous_backup/)",
+      "Bash(cp /Users/mikiya/ws/kairous/CLAUDE.md /tmp/kairous_backup/)",
+      "Bash(cp /Users/mikiya/ws/kairous/PROGRESS.md /tmp/kairous_backup/)",
+      "Bash(cp /Users/mikiya/ws/kairous/kairous_design.md /tmp/kairous_backup/)",
+      "Bash(mv .superpowers /tmp/superpowers_tmp)",
+      "Bash(mv CLAUDE.md /tmp/CLAUDE_tmp.md)",
+      "Bash(mv PROGRESS.md /tmp/PROGRESS_tmp.md)",
+      "Bash(mv kairous_design.md /tmp/kairous_design_tmp.md)",
+      "Bash(mv docs:*)"
+    ]
+  }
+}

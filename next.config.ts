@@ -30,7 +30,8 @@ const securityHeaders = [
         ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
         : "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
-      `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL || "https://*.supabase.co"}`,
+      // NEXT_PUBLIC_SUPABASE_URL 未設定時にワイルドカードを許可しない
+`connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://placeholder.supabase.co"}`,
       "img-src 'self' data: blob:",
       "font-src 'self'",
       "frame-ancestors 'none'",
@@ -39,7 +40,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  async headers() {
+  headers() {
     return [
       {
         source: "/(.*)",
