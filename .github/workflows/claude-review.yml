@@ -25,7 +25,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --model claude-opus-4-6
-            --max-turns 10
+            --max-turns 30
           prompt: |
             PR レビューを実施してください。以下のルールに従ってください:
 
