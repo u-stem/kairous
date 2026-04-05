@@ -98,7 +98,7 @@ BottomNav と同じ4項目をサイドバーに展開。メインコンテンツ
 
 ## 4. データモデル変更点
 
-元の設計書(kairous_design.md)からの変更。
+元の設計書(docs/kairous-design.md)からの変更。
 
 ### sessions テーブル
 

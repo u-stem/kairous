@@ -161,7 +161,7 @@ TDD（Red → Green → Refactor）でコードを実装する。
 ユーザー価値と設計意図の番人。実装が学習科学の根拠に沿っているか検証する。
 
 ### チェックリスト
-- [ ] 学習科学的根拠（kairous_design.md）に沿った UX か
+- [ ] 学習科学的根拠（docs/kairous-design.md）に沿った UX か
 - [ ] 流暢性の錯覚を防ぐ設計になっているか（自己評価の強制など）
 - [ ] material_methods の核心構造が壊れていないか
 - [ ] ユーザーの学習体験を損なう妥協がないか
@@ -853,7 +853,7 @@ labels: enhancement
 
 ## 学習科学的根拠
 
-<!-- kairous_design.md のどの知見に基づくか（該当する場合） -->
+<!-- docs/kairous-design.md のどの知見に基づくか（該当する場合） -->
 
 ## 受け入れ条件
 

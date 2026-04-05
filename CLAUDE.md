@@ -52,7 +52,7 @@ bun test           # test
 - **RLS** enabled on all tables. Edge Functions use service_role key to bypass.
 - **sessions.status**: 'in_progress' | 'completed' | 'abandoned'.
 
-### Data Model Changes (from kairous_design.md)
+### Data Model Changes (from docs/kairous-design.md)
 
 - `sessions.material_id`: nullable (for interleaving sessions)
 - `sessions.self_rating`: added (INT 1-4, NULLable — NULL for wakeful_rest/free_study)
@@ -68,7 +68,7 @@ bun test           # test
 
 ### When in Doubt
 
-Follow learning science evidence from `kairous_design.md`. Specifically:
+Follow learning science evidence from `docs/kairous-design.md`. Specifically:
 - Spacing effect > massed practice
 - Active recall > passive review
 - Desirable difficulty > easy fluency

@@ -10,7 +10,7 @@ labels: enhancement
 
 ## 学習科学的根拠
 
-<!-- kairous_design.md のどの知見に基づくか（該当する場合） -->
+<!-- docs/kairous-design.md のどの知見に基づくか（該当する場合） -->
 
 ## 受け入れ条件
 
