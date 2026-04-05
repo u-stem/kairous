@@ -286,48 +286,21 @@ Deno.serve(async (req) => {
     if (material) {
       const logDate = now.toISOString().split("T")[0];
 
-      const { data: existingLog } = await supabase
-        .from("daily_logs")
-        .select("id, total_sec, session_count, cards_reviewed")
-        .eq("user_id", session.user_id)
-        .eq("subject_id", material.subject_id)
-        .eq("method_id", session.method_id)
-        .eq("log_date", logDate)
-        .single();
+      // PostgreSQL の ON CONFLICT で原子的に upsert（race condition 防止）
+      const { error: logError } = await supabase.rpc("upsert_daily_log", {
+        p_user_id: session.user_id,
+        p_subject_id: material.subject_id,
+        p_method_id: session.method_id,
+        p_log_date: logDate,
+        p_duration_sec: session.duration_sec ?? 0,
+        p_cards_reviewed: reviews.length,
+      });
 
-      if (existingLog) {
-        const { error: logError } = await supabase
-          .from("daily_logs")
-          .update({
-            total_sec: existingLog.total_sec + (session.duration_sec ?? 0),
-            session_count: existingLog.session_count + 1,
-            cards_reviewed: existingLog.cards_reviewed + reviews.length,
-          })
-          .eq("id", existingLog.id);
-        if (logError) {
-          return jsonError(
-            `daily_logs UPDATE failed: ${logError.message}`,
-            500,
-          );
-        }
-      } else {
-        const { error: logError } = await supabase
-          .from("daily_logs")
-          .insert({
-            user_id: session.user_id,
-            subject_id: material.subject_id,
-            method_id: session.method_id,
-            log_date: logDate,
-            total_sec: session.duration_sec ?? 0,
-            session_count: 1,
-            cards_reviewed: reviews.length,
-          });
-        if (logError) {
-          return jsonError(
-            `daily_logs INSERT failed: ${logError.message}`,
-            500,
-          );
-        }
+      if (logError) {
+        return jsonError(
+          `daily_logs upsert failed: ${logError.message}`,
+          500,
+        );
       }
     }
   }

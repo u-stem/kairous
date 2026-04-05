@@ -55,10 +55,11 @@ export async function createCard(
 
   if (cardError || !card) return { success: false, error: "カードの作成に失敗しました" };
 
-  const { error: countError } = await supabase
-    .from("materials")
-    .update({ total_cards: material.total_cards + 1 })
-    .eq("id", materialId);
+  // read-then-write ではなく RPC で原子的に増減し、並行リクエスト時の race condition を防ぐ
+  const { error: countError } = await supabase.rpc("increment_total_cards", {
+    p_material_id: materialId,
+    p_delta: 1,
+  });
 
   if (countError) return { success: false, error: "カード数の更新に失敗しました" };
 
@@ -195,9 +196,10 @@ export async function deleteCard(id: string): Promise<ActionResult<undefined>> {
   if (!user) return { success: false, error: "認証が必要です" };
 
   // cardsにuser_idがないため、materials JOINで所有権を確認する
+  // total_cards は RPC で原子的に更新するため SELECT 不要
   const { data: cardRow } = await supabase
     .from("cards")
-    .select("id, material_id, materials!inner(user_id, total_cards)")
+    .select("id, material_id, materials!inner(user_id)")
     .eq("id", id)
     .single();
 
@@ -205,7 +207,6 @@ export async function deleteCard(id: string): Promise<ActionResult<undefined>> {
 
   const mat = cardRow.materials as unknown as {
     user_id: string;
-    total_cards: number;
   };
   if (mat.user_id !== user.id) return { success: false, error: "権限がありません" };
 
@@ -217,11 +218,12 @@ export async function deleteCard(id: string): Promise<ActionResult<undefined>> {
 
   if (deleteError) return { success: false, error: "カードの削除に失敗しました" };
 
-  // total_cardsが負にならないようにguardを設ける
-  const { error: countError } = await supabase
-    .from("materials")
-    .update({ total_cards: Math.max(0, mat.total_cards - 1) })
-    .eq("id", cardRow.material_id);
+  // read-then-write ではなく RPC で原子的に増減し、並行リクエスト時の race condition を防ぐ
+  // GREATEST(0, ...) により負数にはならない
+  const { error: countError } = await supabase.rpc("increment_total_cards", {
+    p_material_id: cardRow.material_id,
+    p_delta: -1,
+  });
 
   if (countError) return { success: false, error: "カード数の更新に失敗しました" };
 

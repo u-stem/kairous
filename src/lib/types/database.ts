@@ -495,7 +495,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_total_cards: {
+        Args: {
+          p_material_id: string
+          p_delta: number
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
