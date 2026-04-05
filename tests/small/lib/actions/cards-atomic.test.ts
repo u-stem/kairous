@@ -47,12 +47,12 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(() => Promise.resolve(mockClient)),
 }));
 
-describe("createCard で total_cards を原子的に増加する", () => {
+describe("createCard atomically increments total_cards", () => {
   beforeEach(() => {
     vi.resetModules();
   });
 
-  it("rpc('increment_total_cards') を p_delta: 1 で呼ぶ", async () => {
+  it("calls rpc('increment_total_cards') with p_delta: 1", async () => {
     mockClient = buildMockClient({
       materials: { data: { id: "mat-1", total_cards: 5 }, error: null },
       cards: { data: { id: "card-new" }, error: null },
@@ -74,18 +74,18 @@ describe("createCard で total_cards を原子的に増加する", () => {
   });
 });
 
-describe("deleteCard で total_cards を原子的に減少する", () => {
+describe("deleteCard atomically decrements total_cards", () => {
   beforeEach(() => {
     vi.resetModules();
   });
 
-  it("rpc('increment_total_cards') を p_delta: -1 で呼ぶ", async () => {
+  it("calls rpc('increment_total_cards') with p_delta: -1", async () => {
     mockClient = buildMockClient({
       cards: {
         data: {
           id: "card-1",
           material_id: "mat-1",
-          materials: { user_id: "user-1", total_cards: 3 },
+          materials: { user_id: "user-1" },
         },
         error: null,
       },
