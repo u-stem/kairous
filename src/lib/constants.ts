@@ -94,3 +94,29 @@ export const SRS_DEFAULTS = {
   stability: 1.0,
   difficulty: 5.0,
 } as const;
+
+// 認知負荷を超えないよう1セッションのカード上限を制限 (学習科学の推奨範囲)
+export const SESSION_MAX_CARDS = 20;
+// 覚醒安静 (wakeful rest) のデフォルト時間。記憶定着に効果的な10分間
+export const REST_DURATION_SEC = 600;
+
+export const RATING_LABELS = {
+  1: "忘れた",
+  2: "曖昧",
+  3: "正解",
+  4: "簡単",
+} as const;
+
+export const SELF_RATING_LABELS = {
+  1: "ほとんど思い出せなかった",
+  2: "曖昧な部分が多かった",
+  3: "おおむね理解できた",
+  4: "完璧に理解した",
+} as const;
+
+export const RATING_COLORS = {
+  1: "bg-red-500",
+  2: "bg-orange-500",
+  3: "bg-green-500",
+  4: "bg-blue-500",
+} as const;
