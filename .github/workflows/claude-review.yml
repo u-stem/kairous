@@ -26,7 +26,7 @@ jobs:
           claude_args: |
             --model claude-opus-4-6
             --max-turns 10
-          direct_prompt: |
+          prompt: |
             PR レビューを実施してください。以下のルールに従ってください:
 
             ## コメントプレフィックス
