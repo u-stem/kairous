@@ -495,7 +495,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_total_cards: {
+        Args: {
+          p_material_id: string
+          p_delta: number
+        }
+        Returns: undefined
+      }
+      upsert_daily_log: {
+        Args: {
+          p_user_id: string
+          p_subject_id: string
+          p_method_id: string
+          p_log_date: string
+          p_duration_sec: number
+          p_cards_reviewed: number
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

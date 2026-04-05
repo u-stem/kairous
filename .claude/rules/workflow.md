@@ -15,7 +15,8 @@
 | 毎コミット | pre-commit hooks (自動) | lint, typecheck, test:small |
 | 毎 push | pre-push hooks (自動) | full-check (lint + typecheck + test:small + test:medium) |
 | PR push 時 | GitHub Actions CI | lint + typecheck + test:small + test:medium (PR 全体の diff で判定、毎回実行) |
-| エピック完了時 | code-reviewer エージェント | PR 全体のレビュー (設計整合性, セキュリティ, テスト網羅性) |
+| レビュー依頼前 | ドキュメント整合性チェック | CLAUDE.md, .claude/rules/, docs/, README.md が実態と一致しているか確認・更新 |
+| レビュー依頼前 | code-reviewer エージェント | PR 全体のレビュー (設計整合性, セキュリティ, テスト網羅性) |
 
 - hooks はローカルの即時フィードバック、CI はリモートの権威ある品質ゲート
 - code-reviewer はエピック完了後の PR レビュー時に 1 回実行する
@@ -66,6 +67,18 @@ Issue 階層: エピック (大テーマ) > PBI (実装単位) > サブタスク
 3. **Sub-issue をクローズ**: `gh issue close #N` で完了 + Project Board を "Done" に
 4. **ADR 更新** (該当する場合): 設計判断があれば GitHub Discussions にコメント追加
 5. **次タスクへ**: 進捗を簡潔に報告してから次のタスクに着手
+
+## PR レビュー依頼前チェックリスト
+
+全サブタスク完了後、レビュー依頼前に必ず実行する。
+
+1. **ドキュメント整合性チェック**: 今回の変更で影響を受ける md ファイルを確認し、実態と乖離していれば同じ PR 内で更新する
+   - `CLAUDE.md`: Tech Stack, Directory Structure, Design Decisions, Commands
+   - `.claude/rules/`: ワークフロー、テスト、セキュリティ等のルール
+   - `docs/`: 設計書、ガイド
+   - `README.md`: プロジェクト概要
+2. **PR description を最終化**: 全コミットを反映した Summary と Test plan に更新する
+3. **code-reviewer エージェントで PR レビュー**: 設計整合性、セキュリティ、テスト網羅性を確認
 
 ## ステータス更新のタイミング
 
