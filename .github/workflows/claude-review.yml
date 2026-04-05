@@ -38,9 +38,10 @@ jobs:
 
             ## 手順
             1. `gh pr diff ${{ github.event.pull_request.number }}` で差分を確認
-            2. 変更されたファイルを Read で読み、コンテキストを理解
-            3. 問題のあるコード行に `mcp__github_inline_comment__create_inline_comment` で inline コメントを投稿 (confirmed: true を必ず指定)
-            4. 最後に `gh pr comment ${{ github.event.pull_request.number }}` で総評を投稿
+            2. 既存の PR コメントを確認し、過去のレビューで指摘済み・resolve 済みの内容を把握する
+            3. 変更されたファイルを Read で読み、コンテキストを理解
+            4. **新規の問題のみ** inline コメントを投稿 (confirmed: true を必ず指定)。過去のレビューで既に指摘した内容は繰り返さない
+            5. 最後に `gh pr comment ${{ github.event.pull_request.number }}` で総評を投稿
 
             ## コメントプレフィックス
             - blocker: マージをブロックする問題 (修正必須)
