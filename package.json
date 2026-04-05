@@ -13,7 +13,8 @@
     "test:medium": "vitest run --project medium",
     "test:large": "echo 'Large テストは chrome-devtools MCP 経由で実行。/run-tests large を使用'",
     "test:watch": "vitest",
-    "check": "bun run lint && bun run typecheck && bun test:small"
+    "check": "bun run lint && bun run typecheck && bun test:small",
+    "prepare": "lefthook install"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.101.1",
@@ -32,6 +33,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
     "jsdom": "^29.0.1",
+    "lefthook": "^2.1.4",
     "supabase": "^2.84.10",
     "tailwindcss": "^4",
     "typescript": "^5",
@@ -42,6 +44,7 @@
     "unrs-resolver"
   ],
   "trustedDependencies": [
+    "lefthook",
     "sharp",
     "supabase",
     "unrs-resolver"

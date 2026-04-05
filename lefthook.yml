@@ -1,0 +1,16 @@
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      run: bun run lint --quiet
+    typecheck:
+      run: bun run typecheck
+    test-small:
+      # pre-commit では Small テストのみ実行（高速）
+      run: bun test:small
+
+pre-push:
+  commands:
+    full-check:
+      # pre-push では Small + Medium テストを実行
+      run: bun run lint && bun run typecheck && bun test:small && bun test:medium
