@@ -10,6 +10,8 @@ export default defineConfig({
     },
   },
   test: {
+    // テストファイルがない状態でも CI / pre-commit を通過させる
+    passWithNoTests: true,
     projects: [
       {
         extends: true,
@@ -18,6 +20,8 @@ export default defineConfig({
           include: ["tests/small/**/*.test.{ts,tsx}"],
           environment: "jsdom",
           setupFiles: ["./tests/small/setup.ts"],
+          // テストファイルがない状態でも CI / pre-commit を通過させる
+          passWithNoTests: true,
         },
       },
       {
