@@ -8,7 +8,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 border-t bg-white md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 border-t bg-card md:hidden">
       <ul className="flex justify-around">
         {navItems.map((item) => {
           // ルートパスは前方一致だと全ページでアクティブになるため完全一致のみ
@@ -23,8 +23,8 @@ export function BottomNav() {
                 href={item.href}
                 className={`flex flex-col items-center gap-1 px-3 py-2 text-xs ${
                   isActive
-                    ? "text-indigo-600"
-                    : "text-gray-500 hover:text-gray-900"
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <svg
