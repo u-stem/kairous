@@ -57,11 +57,6 @@ src/
       cards/
         new/page.tsx                # カード追加
         [cardId]/edit/page.tsx      # カード編集
-    _actions/
-      materials.ts                  # 教材 CRUD Server Actions
-      subjects.ts                   # 科目 CRUD Server Actions
-      cards.ts                      # カード CRUD Server Actions
-      material-methods.ts           # 手法紐付け Server Actions
   components/
     ui/                             # shadcn/ui 生成コンポーネント
       button.tsx
@@ -89,6 +84,11 @@ src/
     theme-toggle.tsx                # テーマ切り替え
     theme-provider.tsx              # next-themes Provider
   lib/
+    actions/
+      materials.ts                  # 教材 CRUD Server Actions
+      subjects.ts                   # 科目 CRUD Server Actions
+      cards.ts                      # カード CRUD Server Actions
+      material-methods.ts           # 手法紐付け Server Actions
     constants.ts                    # 学習手法スラッグ、カテゴリ、色定義
     validations/
       materials.ts                  # zod スキーマ（Server Action と Client で共有）
@@ -112,7 +112,7 @@ src/
 | `createMaterial(formData)` | title, description?, subject_id | zod: title 1-200文字, subject_id UUID | `{ id }` or `{ error }` |
 | `getMaterials(subjectId?)` | subjectId?: string | - | `MaterialWithMethods[]` |
 | `getMaterial(id)` | id: string | - | `MaterialDetail` or null |
-| `updateMaterial(id, formData)` | title, description | zod: title 1-200文字 | `{ success }` or `{ error }` |
+| `updateMaterial(id, formData)` | title, description, subject_id | zod: title 1-200文字, subject_id UUID | `{ success }` or `{ error }` |
 | `deleteMaterial(id)` | id: string | - | `{ success }` or `{ error }` |
 
 ### 手法紐付け
@@ -132,7 +132,80 @@ src/
 | `updateCard(id, formData)` | front, back | zod: 1-5000文字 | `{ success }` or `{ error }` |
 | `deleteCard(id)` | id: string | - | `{ success }` or `{ error }` |
 
-カード作成時に `srs_states` を自動初期化する（stability=1.0, difficulty=5.0, due_date=TODAY, reps=0, lapses=0）。初期値は `learning_methods.default_config` から取得。
+カード作成時に `srs_states` を自動初期化する。初期値は教材に紐付いた SRS 手法の `learning_methods.default_config` から取得する:
+- `stability` = `default_config.initial_stability` (fallback: 1.0)
+- `difficulty` = `default_config.initial_difficulty` (fallback: 5.0)
+- `due_date` = TODAY
+- `reps` = 0, `lapses` = 0
+
+DB カラムのデフォルト値 `0` は Edge Function 経由で作成する場合の fallback であり、Server Action では必ず `default_config` から読み込んで明示的に設定する。
+
+カード削除時は `srs_states` と `card_reviews` が CASCADE で自動削除される（DB FK 制約による）。学習履歴が消失するため、削除確認 Dialog でその旨を表示する。
+
+`materials.total_cards` 列は Server Action でカード追加・削除時にインクリメント/デクリメントで同期する。教材一覧のカード枚数表示はこの列を使う（集計クエリを避ける）。
+
+---
+
+## インターリービングと material_methods の関係
+
+インターリービング (`interleaving`) は `material_methods` に紐付けない。インターリービングは「複数教材を横断して学習する手法」であり、個別教材への紐付けではなくセッション開始時に複数教材を選択して開始する独立フローである（スクリーンフロー仕様のフロー C）。
+
+教材作成ウィザード Step 2 で表示する手法は、個別教材に紐付ける手法のみ:
+- srs, active_recall, elaboration, pomodoro
+
+セッション時のみ選択可能な手法（`material_methods` に紐付けない）:
+- interleaving（複数教材選択フロー）
+- wakeful_rest（セッションサマリーから起動）
+- free_study（任意の教材で即開始）
+
+---
+
+## 科目の補足
+
+`createSubject` は `name` のみ受け取り、`color` と `display_order` は DB デフォルト値を使用する。将来的に科目管理画面で色とソート順を変更可能にするが、教材管理スコープでは対応しない。
+
+---
+
+## 型定義
+
+Server Actions の戻り値型を以下のように定義する（`src/lib/types/` に配置）:
+
+```ts
+type MaterialWithMethods = {
+  id: string;
+  title: string;
+  description: string | null;
+  subject_id: string;
+  subject: { id: string; name: string; color: string };
+  total_cards: number;
+  due_count: number; // srs_states.due_date <= TODAY のカード数
+  methods: { id: string; slug: string; name: string; category: string }[];
+  created_at: string;
+};
+
+type MaterialDetail = MaterialWithMethods & {
+  recent_sessions: {
+    id: string;
+    method: { slug: string; name: string };
+    duration_sec: number;
+    self_rating: number | null;
+    started_at: string;
+  }[];
+  accuracy_rate: number | null; // card_reviews で rating >= 3 の割合。レビューなしは null
+};
+```
+
+`due_count` は `srs_states` テーブルから `due_date <= CURRENT_DATE` のカード数を集計する。この集計は Server Action 内で JOIN して取得し、クライアント側で FSRS 計算は行わない。
+
+`accuracy_rate`（正答率）は `card_reviews` テーブルから `rating >= 3` の件数 / 全件数で算出する。
+
+---
+
+## loading.tsx 配置
+
+シマー付きスケルトンの `loading.tsx` は以下のレベルに配置する:
+- `src/app/(main)/materials/loading.tsx` — 教材一覧
+- `src/app/(main)/materials/[id]/loading.tsx` — 教材詳細
 
 ---
 
