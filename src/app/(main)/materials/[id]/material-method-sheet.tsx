@@ -47,16 +47,20 @@ export function MaterialMethodSheet({ materialId, currentMethodIds }: MaterialMe
     const toRemove = currentMethodIds.filter((id) => !selected.includes(id));
 
     startTransition(async () => {
-      // 追加・削除を並列実行し、いずれかが失敗したらエラーを表示する
-      const results = await Promise.all([
-        ...toAdd.map((id) => addMaterialMethod(materialId, id)),
-        ...toRemove.map((id) => removeMaterialMethod(materialId, id)),
-      ]);
+      // 順次実行で部分失敗によるDB不整合を防ぐ。失敗時はサーバーから最新状態を再取得する
+      const operations = [
+        ...toRemove.map((id) => () => removeMaterialMethod(materialId, id)),
+        ...toAdd.map((id) => () => addMaterialMethod(materialId, id)),
+      ];
 
-      const failure = results.find((r) => !r.success);
-      if (failure) {
-        setError(failure.error ?? "手法の更新に失敗しました");
-        return;
+      for (const op of operations) {
+        const result = await op();
+        if (!result.success) {
+          setError(result.error ?? "手法の更新に失敗しました");
+          const refreshed = await getMethods();
+          setMethods(refreshed);
+          return;
+        }
       }
 
       setIsOpen(false);

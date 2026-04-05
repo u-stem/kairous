@@ -82,7 +82,7 @@ export function CardListItem({ card, materialId }: CardListItemProps) {
             </DialogClose>
             <Button
               variant="destructive"
-              onClick={handleDelete}
+              onClick={() => void handleDelete()}
               disabled={isPending}
             >
               {isPending && <Loader2 className="animate-spin" />}
