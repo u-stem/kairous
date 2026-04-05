@@ -14,7 +14,7 @@
 |-----------|------|------|
 | 毎コミット | pre-commit hooks (自動) | lint, typecheck, test:small |
 | 毎 push | pre-push hooks (自動) | full-check (lint + typecheck + test:small + test:medium) |
-| PR push 時 | GitHub Actions CI | lint + typecheck + test:small + test:medium (hooks バイパス対策) |
+| PR push 時 | GitHub Actions CI | lint + typecheck + test:small + test:medium (PR 全体の diff で判定、毎回実行) |
 | エピック完了時 | code-reviewer エージェント | PR 全体のレビュー (設計整合性, セキュリティ, テスト網羅性) |
 
 - hooks はローカルの即時フィードバック、CI はリモートの権威ある品質ゲート
