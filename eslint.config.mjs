@@ -44,6 +44,8 @@ const eslintConfig = defineConfig([
     // tsconfig.json で exclude されており projectService が解決できない
     "vitest.config.ts",
     "vitest.workspace.ts",
+    // Edge Functions は Deno 環境 (npm: specifier) のため ESLint 対象外
+    "supabase/functions/**",
   ]),
 ]);
 
