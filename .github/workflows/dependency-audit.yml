@@ -1,0 +1,31 @@
+name: Dependency Audit
+
+on:
+  schedule:
+    # Weekly on Monday 09:00 JST (00:00 UTC)
+    - cron: "0 0 * * 1"
+  pull_request:
+    paths:
+      - "package.json"
+      - "bun.lock"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76 # v2.0.2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Audit dependencies
+        run: |
+          # bun に audit コマンドがないため npm audit を使用
+          npm install --package-lock-only --ignore-scripts 2>/dev/null
+          npm audit --audit-level=moderate
