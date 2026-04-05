@@ -14,12 +14,14 @@
 |-----------|------|------|
 | 毎コミット | pre-commit hooks (自動) | lint, typecheck, test:small |
 | 毎 push | pre-push hooks (自動) | full-check (lint + typecheck + test:small + test:medium) |
-| PR push 時 | GitHub Actions CI | lint + typecheck + test:small + test:medium (PR 全体の diff で判定、毎回実行) |
-| レビュー依頼前 | ドキュメント整合性チェック | CLAUDE.md, .claude/rules/, docs/, README.md が実態と一致しているか確認・更新 |
-| レビュー依頼前 | code-reviewer エージェント | PR 全体のレビュー (設計整合性, セキュリティ, テスト網羅性) |
+| PR 作成前 | UI 動作確認 | `bun dev` + ブラウザで変更画面を実操作 |
+| PR 作成前 | ドキュメント整合性チェック | CLAUDE.md, .claude/rules/, docs/, README.md が実態と一致しているか |
+| PR 作成前 | ローカル code-review ループ | 指摘を全て解消するまでレビュー→修正を繰り返す |
+| PR push 時 | GitHub Actions CI | lint + typecheck + test:small + test:medium |
+| PR push 時 | Claude PR Review (自動) | コメント投稿。返信→resolve のフローで対応 |
 
 - hooks はローカルの即時フィードバック、CI はリモートの権威ある品質ゲート
-- code-reviewer はエピック完了後の PR レビュー時に 1 回実行する
+- ローカル code-review は **PR 作成前** に全指摘を解消する。PR 作成後の Claude PR Review は追加チェック
 
 ## エージェントチーム
 
@@ -68,17 +70,51 @@ Issue 階層: エピック (大テーマ) > PBI (実装単位) > サブタスク
 4. **ADR 更新** (該当する場合): 設計判断があれば GitHub Discussions にコメント追加
 5. **次タスクへ**: 進捗を簡潔に報告してから次のタスクに着手
 
-## PR レビュー依頼前チェックリスト
+## PR 作成前チェックリスト
 
-全サブタスク完了後、レビュー依頼前に必ず実行する。
+全サブタスク完了後、**PR 作成前** に必ず実行する。
 
-1. **ドキュメント整合性チェック**: 今回の変更で影響を受ける md ファイルを確認し、実態と乖離していれば同じ PR 内で更新する
+1. **UI 動作確認**: `bun dev` でローカルサーバーを起動し、変更した画面をブラウザで実操作する。表示崩れ、遷移、エラー状態を確認
+2. **ドキュメント整合性チェック**: 今回の変更で影響を受ける md ファイルを確認し、実態と乖離していれば同じブランチ内で更新する
    - `CLAUDE.md`: Tech Stack, Directory Structure, Design Decisions, Commands
    - `.claude/rules/`: ワークフロー、テスト、セキュリティ等のルール
    - `docs/`: 設計書、ガイド
    - `README.md`: プロジェクト概要
-2. **PR description を最終化**: 全コミットを反映した Summary と Test plan に更新する
-3. **code-reviewer エージェントで PR レビュー**: 設計整合性、セキュリティ、テスト網羅性を確認
+3. **ローカル code-review ループ**: code-reviewer エージェントで PR 全体をレビューし、指摘を全て修正するまでループする
+   - blocker: 必ず修正
+   - suggestion: その場で修正 (後述の「Issue 化の基準」に該当しない限り)
+   - nit: その場で修正
+   - question: 回答し、必要なら修正
+   - note: 確認して必要なら対応
+   - **全指摘が解消されてから PR を作成する**
+4. **PR 作成**: `gh pr create` で PR を作成し PBI と紐付け (`closes #N`)
+5. **PR description を最終化**: 全コミットを反映した Summary と Test plan に更新する
+
+## レビュー指摘の対応方針
+
+### その場で修正するもの
+
+- blocker / suggestion / nit は原則その場で修正する
+- 修正量が小さい (数行~数十行) もの
+- 既存コードのパターンに合わせる修正
+- テストの追加・修正
+- ドキュメントの更新
+
+### Issue 化するもの
+
+以下の **全て** に該当する場合のみ Issue 化を許可する:
+- PR のスコープ外の変更が必要 (別のファイル群、別の機能領域)
+- 設計判断が必要 (複数の有効なアプローチがある)
+- 修正量が大きい (新規ファイル作成、アーキテクチャ変更)
+
+Issue 化する場合は理由を明記し、PR コメントでリンクする。
+
+## GitHub PR Review (自動)
+
+Claude PR Review が PR push 時に自動実行される。
+
+- **コメントへの返信**: 各コメントに対応内容を返信してから resolve する
+- **重複コメント防止**: `claude-review.yml` の prompt に「前回レビューで resolve 済みの指摘は繰り返さない」を含める
 
 ## ステータス更新のタイミング
 
