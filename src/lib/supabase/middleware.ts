@@ -25,20 +25,26 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
+  // getUser() はトークン検証を含むため getSession() より安全
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
 
-  // 未認証ユーザーをログインページにリダイレクト（認証ページ自体は除外）
   const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
-  if (!user && !isAuthPage) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
-    return NextResponse.redirect(url);
+
+  // セッション無効時（エラーまたは未認証）は認証ページ以外からリダイレクト
+  if (error || !user) {
+    if (!isAuthPage) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/login";
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
   }
 
   // 認証済みユーザーが認証ページにアクセスした場合はトップにリダイレクト
-  if (user && isAuthPage) {
+  if (isAuthPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "@/lib/types/database";
 
+// Server Component / Server Action 用。Cookie Store 同期で RLS を正しく適用
 export async function createClient() {
   const cookieStore = await cookies();
 
