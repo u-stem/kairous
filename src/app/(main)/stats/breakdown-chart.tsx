@@ -8,8 +8,10 @@ import { formatStudyTime } from "@/lib/utils/stats";
 const COLORS = ["#7c3aed", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe"];
 
 // Cell は recharts v3 で deprecated になったため、shape prop でセクターごとの色を制御する
-function renderSector(props: PieSectorShapeProps, index: number) {
-  return <Sector {...props} fill={COLORS[index % COLORS.length]} />;
+// Recharts v3 の shape は単一の props オブジェクトのみ渡すため、index は別パラメータとして受け取れない
+function renderSector(props: PieSectorShapeProps) {
+  const idx = (props as PieSectorShapeProps & { index?: number }).index ?? 0;
+  return <Sector {...props} fill={COLORS[idx % COLORS.length]} />;
 }
 
 export function BreakdownChart({

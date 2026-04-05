@@ -1,13 +1,19 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
+import { STATS_PERIODS } from "@/lib/constants";
 import type { StatsPeriod } from "@/lib/types/stats";
 
-const PERIODS: { value: StatsPeriod; label: string }[] = [
-  { value: 7, label: "7日" },
-  { value: 30, label: "30日" },
-  { value: 90, label: "90日" },
-];
+const PERIOD_LABELS: Record<StatsPeriod, string> = {
+  7: "7日",
+  30: "30日",
+  90: "90日",
+};
+
+const PERIODS = STATS_PERIODS.map((value) => ({
+  value,
+  label: PERIOD_LABELS[value],
+}));
 
 export function PeriodSelector({ current }: { current: StatsPeriod }) {
   const router = useRouter();

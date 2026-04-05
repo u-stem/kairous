@@ -22,6 +22,14 @@ describe("formatStudyTime", () => {
   it("rounds hours to one decimal", () => {
     expect(formatStudyTime(7500)).toBe("2.1h");
   });
+
+  it("formats exactly 60 min as 1h", () => {
+    expect(formatStudyTime(3600)).toBe("1h");
+  });
+
+  it("formats 3599 sec (rounds to 60m) as 1h", () => {
+    expect(formatStudyTime(3599)).toBe("1h");
+  });
 });
 
 describe("calcChangeRate", () => {

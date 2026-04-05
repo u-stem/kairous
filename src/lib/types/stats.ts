@@ -1,7 +1,8 @@
 // Stats 画面で扱うデータ構造を一箇所に集約し、
 // コンポーネント・Server Action・Edge Function 間の型の不一致を防ぐ
 
-export type StatsPeriod = 7 | 30 | 90;
+// StatsPeriod は constants.ts で定義。re-export で既存の import を壊さない
+export type { StatsPeriod } from "@/lib/constants";
 
 export type StatsSummary = {
   totalSec: number;

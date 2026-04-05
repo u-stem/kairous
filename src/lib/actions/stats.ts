@@ -2,11 +2,14 @@
 
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { STATS_PERIODS } from "@/lib/constants";
 import type { StatsData, StatsPeriod } from "@/lib/types/stats";
 import { aggregateDaily, aggregateByKey } from "@/lib/utils/stats";
 
-// StatsPeriod の取りうる値を明示的に列挙し、不正値を早期に弾く
-const periodSchema = z.union([z.literal(7), z.literal(30), z.literal(90)]);
+// STATS_PERIODS と同期した union を生成し、定数追加時に漏れを防ぐ
+const periodSchema = z.union(
+  STATS_PERIODS.map((v) => z.literal(v)) as [z.ZodLiteral<7>, z.ZodLiteral<30>, z.ZodLiteral<90>],
+);
 
 const EMPTY_STATS: StatsData = {
   summary: {

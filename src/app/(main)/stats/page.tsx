@@ -1,8 +1,9 @@
 import { getStats } from "@/lib/actions/stats";
+import { STATS_PERIODS } from "@/lib/constants";
 import type { StatsPeriod } from "@/lib/types/stats";
 import { StatsDashboard } from "./stats-dashboard";
 
-const VALID_PERIODS = new Set([7, 30, 90]);
+const VALID_PERIODS = new Set<number>(STATS_PERIODS);
 
 export default async function StatsPage(props: {
   searchParams: Promise<{ period?: string }>;

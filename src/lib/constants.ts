@@ -89,6 +89,10 @@ export function getMethodColorClasses(category: string): {
   return COLOR_MAP[category as MethodCategory] ?? FALLBACK_COLOR;
 }
 
+// Stats 画面の期間セレクターで使用する選択肢
+export const STATS_PERIODS = [7, 30, 90] as const;
+export type StatsPeriod = (typeof STATS_PERIODS)[number];
+
 // FSRS初期化時のデフォルト値（Supabase Edge Functionで参照）
 export const SRS_DEFAULTS = {
   stability: 1.0,

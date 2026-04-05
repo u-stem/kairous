@@ -1,4 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from "vitest";
+
+// テスト結果が実行日に依存しないよう日付を固定する
+beforeAll(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-04-06T00:00:00Z"));
+});
+
+afterAll(() => {
+  vi.useRealTimers();
+});
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
