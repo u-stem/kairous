@@ -86,6 +86,7 @@ docs/
 ## 開発ガイド
 
 - [PR レビューガイド](docs/review-guide.md) -- レビューコメントのプレフィックスルールと LGTM 要件
+- [Issue 管理ガイド](docs/issue-guide.md) -- ラベル付与ルールとトリアージ方針
 - CLAUDE.md -- AI 協働開発のルールと制約
 
 ## ライセンス
