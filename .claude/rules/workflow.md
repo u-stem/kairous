@@ -7,7 +7,17 @@
 - **エピック単位で 1 PR**: PBI に対応する feature ブランチで 1 つの PR を作成する
 - サブタスクごとに PR を分けない (互いに依存しており個別マージ不可)
 - PR は着手前チェックリストの時点で作成し、全タスク完了後にレビュー依頼する
-- サブタスクごとのコードレビューは code-reviewer エージェントで実施済みの前提
+
+## 品質保証の階層
+
+| タイミング | 手段 | 内容 |
+|-----------|------|------|
+| 毎コミット | pre-commit hooks (自動) | lint, typecheck, test:small |
+| 毎 push | pre-push hooks (自動) | full-check (lint + typecheck + test:small + test:medium) |
+| エピック完了時 | code-reviewer エージェント | PR 全体のレビュー (設計整合性, セキュリティ, テスト網羅性) |
+
+- サブタスクごとに code-reviewer を��さない。hooks が品質を担保する
+- code-reviewer はエピック完了後の PR レビュー時に 1 回実行する
 
 ## 着手前チェックリスト
 
@@ -31,13 +41,11 @@
 
 各サブタスクの実装完了後に必ず実行する。指示がなくても自律的にこの流れを取ること。
 
-1. **品質チェック**: `bun lint` + `bun typecheck` + `bun test:small` を実行
-2. **コードレビュー**: code-reviewer エージェントでレビューし、blocker/suggestion を修正
-3. **コミット**: Conventional Commits 形式でコミット (pre-commit hooks 通過を確認)
-4. **push**: `git push` でリモートに反映
-5. **Sub-issue をクローズ**: `gh issue close #N` で完了 + Project Board を "Done" に
-6. **ADR 更新** (該当する場合): 設計判断があれば GitHub Discussions にコメント追加
-7. **次タスクへ**: 進捗を簡潔に報告してから次のタスクに着手
+1. **コミット**: Conventional Commits 形式でコミット (pre-commit hooks が lint + typecheck + test を実行)
+2. **push**: `git push` でリモートに反映 (pre-push hooks が full-check を実行)
+3. **Sub-issue をクローズ**: `gh issue close #N` で完了 + Project Board を "Done" に
+4. **ADR 更新** (該当する場合): 設計判断があれば GitHub Discussions にコメント追加
+5. **次タスクへ**: 進捗を簡潔に報告してから次のタスクに着手
 
 ## ステータス更新のタイミング
 
