@@ -83,6 +83,33 @@ Follow learning science evidence from `docs/kairous-design.md`. Specifically:
 - [PR Review Guide](docs/review-guide.md)
 - [Issue Guide](docs/issue-guide.md)
 
+## Development Workflow
+
+新機能やエピック規模の作業を開始する前に、以下の手順を必ず実行する。コードに着手する前に GitHub 上の管理体制を整える。
+
+### 着手前チェックリスト
+
+1. **PBI (Issue) を作成**: Why + 受け入れ条件を記載。ラベル (区分 + 内容) を付与
+2. **サブタスクに分解**: PBI の sub-issues として登録。進捗を可視化する
+3. **マイルストーンを設定**: 該当するマイルストーンがなければ作成し、PBI に紐付ける
+4. **設計判断を記録**: 非自明な設計判断は GitHub Discussions (設計判断 ADR) に投稿
+5. **ブランチを作成**: `feat/`, `fix/` 等の prefix でブランチを切る
+6. **PR を作成し PBI と紐付け**: `closes #N` で PBI をリンク
+7. **Project Board を更新**: ステータスを In Progress に変更
+
+### ステータス更新のタイミング
+
+- マイルストーン / エピック完了時
+- 新しいサブプロジェクトの設計完了時
+- PR マージ後
+- ブロッカー発生時
+
+### 参照
+
+- [Issue Guide](docs/issue-guide.md) -- ラベル、トリアージ、常駐エピック
+- [PR Review Guide](docs/review-guide.md) -- レビュープロセス
+- Project: Kairous Product Backlog (GitHub Projects)
+
 ## Test Strategy (Small / Medium / Large)
 
 | 分類 | 配置 | 外部依存 | 実行 |
