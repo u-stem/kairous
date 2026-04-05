@@ -19,6 +19,7 @@ type ChartItem = {
   label: string;
   minutes: number;
   totalSec: number;
+  sessionCount: number;
 };
 
 function CustomTooltip({
@@ -34,6 +35,7 @@ function CustomTooltip({
     <div className="rounded-lg border bg-white p-2 text-sm shadow-sm">
       <p className="font-medium">{data.label}</p>
       <p className="text-gray-600">{formatStudyTime(data.totalSec)}</p>
+      <p className="text-gray-600">{data.sessionCount} セッション</p>
     </div>
   );
 }
@@ -44,6 +46,7 @@ export function DailyChart({ daily }: { daily: DailyData[] }) {
     label: format(parseISO(d.date), "M/d (E)", { locale: ja }),
     minutes: Math.round(d.totalSec / 60),
     totalSec: d.totalSec,
+    sessionCount: d.sessionCount,
   }));
 
   if (chartData.length === 0) {

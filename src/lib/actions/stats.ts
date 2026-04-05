@@ -1,8 +1,12 @@
 "use server";
 
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { StatsData, StatsPeriod } from "@/lib/types/stats";
 import { aggregateDaily, aggregateByKey } from "@/lib/utils/stats";
+
+// StatsPeriod の取りうる値を明示的に列挙し、不正値を早期に弾く
+const periodSchema = z.union([z.literal(7), z.literal(30), z.literal(90)]);
 
 const EMPTY_STATS: StatsData = {
   summary: {
@@ -19,6 +23,10 @@ const EMPTY_STATS: StatsData = {
 };
 
 export async function getStats(period: StatsPeriod): Promise<StatsData> {
+  // Server Action は外部から任意の値を受け取れるため、型に頼らず実行時にバリデーションする
+  const parsed = periodSchema.safeParse(period);
+  if (!parsed.success) return EMPTY_STATS;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,9 +35,9 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
 
   const today = new Date();
   const currentStart = new Date(today);
-  currentStart.setDate(currentStart.getDate() - period);
+  currentStart.setDate(currentStart.getDate() - parsed.data);
   const prevStart = new Date(currentStart);
-  prevStart.setDate(prevStart.getDate() - period);
+  prevStart.setDate(prevStart.getDate() - parsed.data);
 
   const currentStartStr = currentStart.toISOString().split("T")[0];
   const prevStartStr = prevStart.toISOString().split("T")[0];
@@ -50,17 +58,11 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
   const sum = (arr: typeof logs, key: "total_sec" | "session_count" | "cards_reviewed") =>
     arr.reduce((acc, row) => acc + row[key], 0);
 
-  // 分野・手法の名前を取得
-  const { data: subjects } = await supabase
-    .from("subjects")
-    .select("id, name")
-    .eq("user_id", user.id)
-    .order("name");
-
-  const { data: methods } = await supabase
-    .from("learning_methods")
-    .select("id, name")
-    .order("name");
+  // 分野・手法は互いに依存しないため並列取得してレイテンシを削減する
+  const [{ data: subjects }, { data: methods }] = await Promise.all([
+    supabase.from("subjects").select("id, name").eq("user_id", user.id).order("name"),
+    supabase.from("learning_methods").select("id, name").order("name"),
+  ]);
 
   const subjectNames = new Map(
     (subjects ?? []).map((s: { id: string; name: string }) => [s.id, s.name]),
