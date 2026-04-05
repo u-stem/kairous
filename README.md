@@ -21,10 +21,9 @@ bun install
 # Supabase ローカル起動
 supabase start
 
-# 環境変数を設定 (.env.local を作成し、supabase status の出力値を記入)
-# NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-# NEXT_PUBLIC_SUPABASE_ANON_KEY=<supabase status の ANON_KEY>
-# SUPABASE_SERVICE_ROLE_KEY=<supabase status の SERVICE_ROLE_KEY>
+# 環境変数を設定
+cp .env.local.example .env.local
+# .env.local を編集して supabase status の出力値を記入
 
 # 開発サーバー起動
 bun dev
