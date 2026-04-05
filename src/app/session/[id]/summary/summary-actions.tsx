@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { createSession, createRestSession } from "@/lib/actions/sessions";
+import { REST_DURATION_SEC } from "@/lib/constants";
 
 type Props = {
   sessionId: string;
@@ -64,7 +65,7 @@ export function SummaryActions({
         onClick={handleRest}
         className="w-full rounded-lg border py-3 font-medium transition-colors hover:bg-accent disabled:opacity-50"
       >
-        安静タイマーを開始 (10分)
+        安静タイマーを開始 ({Math.floor(REST_DURATION_SEC / 60)}分)
       </button>
       <button
         type="button"

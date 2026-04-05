@@ -61,7 +61,7 @@ export function RestTimer({ sessionId }: { sessionId: string }) {
           <div className="mb-2 text-3xl text-purple-500">&#10003;</div>
           <h1 className="text-xl font-semibold">安静完了</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            10 分間の安静が完了しました
+            {Math.floor(REST_DURATION_SEC / 60)} 分間の安静が完了しました
           </p>
           <button
             onClick={() => router.push("/")}

@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -386,11 +387,32 @@ export async function createRestSession(
 export async function completeRestSession(
   sessionId: string,
 ): Promise<ActionResult<undefined>> {
+  const parsed = z.uuid().safeParse(sessionId);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid session ID" };
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "認証が必要です" };
+
+  // セッションの所有権 + status 確認 + 安静セッションであることを検証
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id, learning_methods!inner(slug)")
+    .eq("id", parsed.data)
+    .eq("user_id", user.id)
+    .eq("status", "in_progress")
+    .single();
+
+  if (!session) return { success: false, error: "セッションが見つかりません" };
+
+  const method = session.learning_methods as unknown as { slug: string };
+  if (method.slug !== "wakeful_rest") {
+    return { success: false, error: "安静セッションではありません" };
+  }
 
   const { error } = await supabase
     .from("sessions")
@@ -399,9 +421,7 @@ export async function completeRestSession(
       duration_sec: REST_DURATION_SEC,
       ended_at: new Date().toISOString(),
     })
-    .eq("id", sessionId)
-    .eq("user_id", user.id)
-    .eq("status", "in_progress");
+    .eq("id", parsed.data);
 
   if (error) return { success: false, error: "セッションの完了に失敗しました" };
 

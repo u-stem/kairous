@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore, useTransition } from "react";
+import { useEffect, useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { completeSession } from "@/lib/actions/sessions";
 import { SELF_RATING_LABELS } from "@/lib/constants";
@@ -30,6 +30,16 @@ export function SessionReview({ sessionId }: Props) {
   const router = useRouter();
   const reviews = useSessionReviews(sessionId);
   const [isPending, startTransition] = useTransition();
+
+  // sessionStorage にレビューがない場合はセッション画面にリダイレクト
+  useEffect(() => {
+    if (reviews === null) {
+      const stored = sessionStorage.getItem(`session-reviews-${sessionId}`);
+      if (!stored) {
+        router.replace(`/session/${sessionId}`);
+      }
+    }
+  }, [reviews, sessionId, router]);
 
   if (!reviews) {
     return (
