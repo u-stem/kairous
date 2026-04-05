@@ -93,7 +93,9 @@ export async function getMaterials(
     query = query.eq("subject_id", options.subjectId);
   }
   if (options?.search) {
-    query = query.ilike("title", `%${options.search}%`);
+    // LIKE メタ文字（%, _, \）をエスケープし、意図しないパターンマッチを防ぐ
+    const escaped = options.search.replace(/[%_\\]/g, "\\$&");
+    query = query.ilike("title", `%${escaped}%`);
   }
 
   const { data } = await query;
