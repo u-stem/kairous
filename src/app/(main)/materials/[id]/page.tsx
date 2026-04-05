@@ -7,6 +7,7 @@ import { ja } from "date-fns/locale";
 import { getMaterial } from "@/lib/actions/materials";
 import { getCards } from "@/lib/actions/cards";
 import { MethodChip } from "@/components/method-chip";
+import { StartSessionButton } from "@/components/start-session-button";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -28,6 +29,8 @@ export default async function MaterialDetailPage({ params }: Props) {
   ]);
 
   if (!material) notFound();
+
+  const srsMethod = material.methods.find((m) => m.slug === "srs");
 
   const accuracyDisplay =
     material.accuracy_rate !== null
@@ -123,6 +126,18 @@ export default async function MaterialDetailPage({ params }: Props) {
               </CardContent>
             </Card>
           </div>
+
+          {/* SRS手法が有効かつ期限切れカードがある場合にセッション開始ボタンを表示 */}
+          {srsMethod && material.due_count > 0 && (
+            <div className="mt-4">
+              <StartSessionButton
+                materialId={material.id}
+                methodId={srsMethod.id}
+                label={`学習を始める (${material.due_count}枚)`}
+                className="w-full rounded-lg bg-blue-500 py-3 font-medium text-white hover:bg-blue-600 disabled:opacity-50"
+              />
+            </div>
+          )}
 
           {/* 直近セッション一覧 */}
           {material.recent_sessions.length > 0 && (

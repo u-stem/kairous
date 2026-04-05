@@ -411,6 +411,7 @@ export type Database = {
           last_reviewed_at: string | null
           reps: number
           stability: number
+          state: string
           user_id: string
         }
         Insert: {
@@ -422,6 +423,7 @@ export type Database = {
           last_reviewed_at?: string | null
           reps?: number
           stability?: number
+          state?: string
           user_id: string
         }
         Update: {
@@ -433,6 +435,7 @@ export type Database = {
           last_reviewed_at?: string | null
           reps?: number
           stability?: number
+          state?: string
           user_id?: string
         }
         Relationships: [
