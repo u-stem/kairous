@@ -1,18 +1,17 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Plus } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { ChevronLeft, Plus } from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
 import { ja } from "date-fns/locale";
 
 import { getMaterial } from "@/lib/actions/materials";
 import { getCards } from "@/lib/actions/cards";
 import { MethodChip } from "@/components/method-chip";
-import { EmptyState } from "@/components/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { CardListItem } from "./card-list-item";
+import { CardList } from "./card-list";
 import { MaterialMethodSheet } from "./material-method-sheet";
 
 type Props = {
@@ -37,6 +36,15 @@ export default async function MaterialDetailPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-6">
+      {/* 教材一覧へ戻るナビ: ユーザーが迷子にならないように階層を明示する */}
+      <Link
+        href="/materials"
+        className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "-ml-2 mb-2")}
+      >
+        <ChevronLeft />
+        教材一覧
+      </Link>
+
       {/* ヘッダー: タイトル・科目・編集ボタン */}
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -74,8 +82,13 @@ export default async function MaterialDetailPage({ params }: Props) {
           <TabsTrigger value="stats">統計</TabsTrigger>
         </TabsList>
 
-        {/* 概要タブ: 3つのスタット + 直近セッション */}
+        {/* 概要タブ: 説明文 + 3つのスタット + 直近セッション + 作成日 */}
         <TabsContent value="overview">
+          {/* 説明文: 存在する場合のみ表示 */}
+          {material.description && (
+            <p className="mb-4 text-sm text-muted-foreground">{material.description}</p>
+          )}
+
           <div className="grid grid-cols-3 gap-3">
             <Card size="sm">
               <CardHeader>
@@ -149,6 +162,11 @@ export default async function MaterialDetailPage({ params }: Props) {
               まだ学習記録がありません
             </p>
           )}
+
+          {/* 作成日: メタ情報として概要タブの最下部に表示 */}
+          <p className="mt-6 text-xs text-muted-foreground">
+            作成日: {format(new Date(material.created_at), "yyyy年M月d日", { locale: ja })}
+          </p>
         </TabsContent>
 
         {/* カードタブ: カード一覧 + 追加ボタン */}
@@ -166,19 +184,7 @@ export default async function MaterialDetailPage({ params }: Props) {
             </Link>
           </div>
 
-          {cards.length > 0 ? (
-            <div className="flex flex-col gap-2">
-              {cards.map((card) => (
-                <CardListItem key={card.id} card={card} materialId={id} />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="カードがありません"
-              description="最初のカードを追加しましょう"
-              action={{ label: "カードを追加", href: `/materials/${id}/cards/new` }}
-            />
-          )}
+          <CardList cards={cards} materialId={id} />
         </TabsContent>
 
         {/* 統計タブ: 将来的に詳細なグラフを追加予定 */}

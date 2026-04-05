@@ -3,6 +3,7 @@
 import { useTransition, useState } from "react";
 import Link from "next/link";
 import { Pencil, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,7 +29,12 @@ export function CardListItem({ card, materialId }: CardListItemProps) {
 
   function handleDelete() {
     startTransition(async () => {
-      await deleteCard(card.id);
+      const result = await deleteCard(card.id);
+      if (!result.success) {
+        // 削除失敗時はダイアログを閉じずにエラーをユーザーへ通知する
+        toast.error(result.error ?? "カードの削除に失敗しました");
+        return;
+      }
       setIsDialogOpen(false);
     });
   }
