@@ -97,8 +97,30 @@ Follow learning science evidence from `docs/kairous-design.md`. Specifically:
 6. **PR を作成し PBI と紐付け**: `closes #N` で PBI をリンク
 7. **Project Board を更新**: ステータスを In Progress に変更
 
+### タスク開始チェックリスト
+
+各サブタスク着手前に必ず実行する。
+
+1. **計画を読む**: 実装計画ドキュメントの該当タスクを確認する
+2. **Sub-issue を In Progress に**: `gh issue edit #N` + Project Board のステータスを "In Progress" に更新
+3. **現在のブランチ・状態を確認**: `git status` で未コミットの変更がないことを確認
+
+### タスク完了チェックリスト
+
+各サブタスクの実装完了後に必ず実行する。指示がなくても自律的にこの流れを取ること。
+
+1. **品質チェック**: `bun lint` + `bun typecheck` + `bun test:small` を実行
+2. **コードレビュー**: code-reviewer エージェントでレビューし、blocker/suggestion を修正
+3. **コミット**: Conventional Commits 形式でコミット (pre-commit hooks 通過を確認)
+4. **push**: `git push` でリモートに反映
+5. **Sub-issue をクローズ**: `gh issue close #N` で完了 + Project Board を "Done" に
+6. **ADR 更新** (該当する場合): 設計判断があれば GitHub Discussions にコメント追加
+7. **次タスクへ**: 進捗を簡潔に報告してから次のタスクに着手
+
 ### ステータス更新のタイミング
 
+- サブタスク着手時: In Progress
+- サブタスク完了時: Done (Issue クローズ)
 - マイルストーン / エピック完了時
 - 新しいサブプロジェクトの設計完了時
 - PR マージ後
