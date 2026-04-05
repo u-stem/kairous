@@ -237,6 +237,11 @@ export async function completeSession(
   });
 
   if (fnResult.error) {
+    // Edge Function 失敗時はセッションを in_progress に戻す
+    await supabase
+      .from("sessions")
+      .update({ status: "in_progress", ended_at: null, self_rating: null, duration_sec: 0 })
+      .eq("id", parsed.data.sessionId);
     return { success: false, error: "カードレビューの処理に失敗しました" };
   }
 

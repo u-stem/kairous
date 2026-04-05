@@ -142,8 +142,14 @@ Deno.serve(async (req) => {
   }
 
   // 3. 認可チェック: JWT の user_id とセッション所有者が一致すること
-  // service_role key (Server Action 経由) の場合は JWT 検証をスキップ
   const callerId = await extractUserId(req, supabase);
+  // service_role key (Server Action) 経由か、JWT で認証済みのユーザーのみ許可
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const isServiceRole = authHeader === `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`;
+
+  if (!callerId && !isServiceRole) {
+    return jsonError("Authentication required", 401);
+  }
   if (callerId && callerId !== session.user_id) {
     return jsonError("Not authorized to complete this session", 403);
   }
@@ -206,6 +212,7 @@ Deno.serve(async (req) => {
       const lastReview = existing.last_reviewed_at
         ? new Date(existing.last_reviewed_at)
         : undefined;
+      const reviewTime = new Date(review.answered_at);
       card = {
         due: new Date(existing.due_date),
         stability: existing.stability,
@@ -214,7 +221,7 @@ Deno.serve(async (req) => {
           ? Math.max(
               0,
               Math.floor(
-                (now.getTime() - lastReview.getTime()) / 86400000,
+                (reviewTime.getTime() - lastReview.getTime()) / 86400000,
               ),
             )
           : 0,
@@ -226,11 +233,11 @@ Deno.serve(async (req) => {
         last_review: lastReview,
       };
     } else {
-      card = createEmptyCard(now);
+      card = createEmptyCard(new Date(review.answered_at));
     }
 
     // rating 1-4 は Grade (Again=1, Hard=2, Good=3, Easy=4) と一致
-    const scheduling = f.repeat(card, now);
+    const scheduling = f.repeat(card, new Date(review.answered_at));
     const result = scheduling[review.rating as Grade];
     const newCard = result.card;
 
@@ -243,7 +250,7 @@ Deno.serve(async (req) => {
       lapses: newCard.lapses,
       due_date: newCard.due.toISOString().split("T")[0],
       state: FSRS_STATE_TEXT[newCard.state] ?? "New",
-      last_reviewed_at: now.toISOString(),
+      last_reviewed_at: review.answered_at,
     };
 
     if (existing) {

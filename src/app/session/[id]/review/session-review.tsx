@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { completeSession } from "@/lib/actions/sessions";
 import { SELF_RATING_LABELS } from "@/lib/constants";
@@ -12,34 +12,25 @@ type Props = {
 
 const SELF_RATINGS = [1, 2, 3, 4] as const;
 
-// sessionStorage は React 外部のストアなので useSyncExternalStore で同期する
-function useSessionReviews(sessionId: string): CardReview[] | null {
-  const key = `session-reviews-${sessionId}`;
-  return useSyncExternalStore(
-    // sessionStorage には変更イベントがないため subscribe は noop
-    () => () => {},
-    () => {
-      const stored = sessionStorage.getItem(key);
-      return stored ? (JSON.parse(stored) as CardReview[]) : null;
-    },
-    () => null,
-  );
-}
-
 export function SessionReview({ sessionId }: Props) {
   const router = useRouter();
-  const reviews = useSessionReviews(sessionId);
+  // sessionStorage の値はマウント時に一度だけ読む（ライフサイクル中に変化しない）
+  const [{ reviews, loaded }] = useState(() => {
+    if (typeof window === "undefined") return { reviews: null, loaded: false };
+    const stored = sessionStorage.getItem(`session-reviews-${sessionId}`);
+    return {
+      reviews: stored ? (JSON.parse(stored) as CardReview[]) : null,
+      loaded: true,
+    };
+  });
   const [isPending, startTransition] = useTransition();
 
   // sessionStorage にレビューがない場合はセッション画面にリダイレクト
   useEffect(() => {
-    if (reviews === null) {
-      const stored = sessionStorage.getItem(`session-reviews-${sessionId}`);
-      if (!stored) {
-        router.replace(`/session/${sessionId}`);
-      }
+    if (loaded && !reviews) {
+      router.replace(`/session/${sessionId}`);
     }
-  }, [reviews, sessionId, router]);
+  }, [loaded, reviews, sessionId, router]);
 
   if (!reviews) {
     return (
@@ -52,8 +43,9 @@ export function SessionReview({ sessionId }: Props) {
   const correctCount = reviews.filter((r) => r.rating >= 3).length;
 
   function handleRate(selfRating: 1 | 2 | 3 | 4) {
+    if (!reviews) return;
     startTransition(async () => {
-      const result = await completeSession(sessionId, reviews!, selfRating);
+      const result = await completeSession(sessionId, reviews, selfRating);
       if (result.success) {
         sessionStorage.removeItem(`session-reviews-${sessionId}`);
         router.push(`/session/${sessionId}/summary`);

@@ -28,6 +28,7 @@ export function SessionPlayer({ sessionId, cards }: Props) {
     router.push(`/session/${sessionId}/review`);
   }, [isComplete, sessionId, reviews, router]);
 
+  // cards が空の場合も currentCard が null になるためここで終了
   if (!currentCard) return null;
 
   return (

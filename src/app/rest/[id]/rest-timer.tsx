@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useRestTimer } from "./use-rest-timer";
 import { completeRestSession } from "@/lib/actions/sessions";
@@ -11,11 +11,18 @@ export function RestTimer({ sessionId }: { sessionId: string }) {
   const router = useRouter();
   const { remainingSeconds, isComplete, progress } = useRestTimer(REST_DURATION_SEC);
   const completedRef = useRef(false);
+  const [completionError, setCompletionError] = useState(false);
 
   useEffect(() => {
     if (isComplete && !completedRef.current) {
       completedRef.current = true;
-      void completeRestSession(sessionId);
+      completeRestSession(sessionId)
+        .then((result) => {
+          if (!result.success) setCompletionError(true);
+        })
+        .catch(() => {
+          setCompletionError(true);
+        });
     }
   }, [isComplete, sessionId]);
 
@@ -63,6 +70,11 @@ export function RestTimer({ sessionId }: { sessionId: string }) {
           <p className="mt-2 text-sm text-muted-foreground">
             {Math.floor(REST_DURATION_SEC / 60)} 分間の安静が完了しました
           </p>
+          {completionError && (
+            <p className="mt-2 text-sm text-red-500">
+              セッションの保存に失敗しました。ホームに戻ってください。
+            </p>
+          )}
           <button
             onClick={() => router.push("/")}
             className="mt-6 rounded-lg bg-muted px-6 py-3 font-medium hover:bg-muted/80"
