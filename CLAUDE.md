@@ -78,6 +78,30 @@ Follow learning science evidence from `kairous_design.md`. Specifically:
 
 - [Screen Flow Design](docs/superpowers/specs/2026-04-05-screen-flow-design.md)
 
+## Test Strategy (Small / Medium / Large)
+
+| 分類 | 配置 | 外部依存 | 実行 |
+|------|------|----------|------|
+| Small | tests/small/ | なし（全モック） | `bun test:small` (pre-commit) |
+| Medium | tests/medium/ | Supabase ローカル | `bun test:medium` (CI) |
+| Large | tests/large/ | ブラウザ + Supabase | `bun test:large` (CI post-deploy) |
+
+### ルール
+- 新規コードには必ずテストを書く
+- テストの分類を間違えない（DB アクセスがあれば Medium、なければ Small）
+- Small テストで Supabase クライアントを直接呼ばない（必ずモック）
+- Medium テストはテストごとにデータをクリーンアップする
+- フレーク（不安定なテスト）を見つけたら即座に修正する
+
+## Code Quality Rules
+
+- コメントは��本語。Why を書く（What は書かない）
+- TODO 禁止。今すぐ解消するか GitHub Issue を作成する
+- エラー・警告の握りつぶし禁止
+- 同じロジックの重複: 2箇所で検討、3箇所で必須共通化
+- 定数は `src/lib/constants.ts` に集約
+- 型は `src/lib/types/database.ts`（自動生成）が single source of truth
+
 ## Security
 
 ### Environment Variables
