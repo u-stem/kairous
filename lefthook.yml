@@ -2,15 +2,20 @@ pre-commit:
   parallel: true
   commands:
     lint:
+      # コード変更時のみ実行
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs}"
       run: bun run lint --quiet
     typecheck:
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs}"
       run: bun run typecheck
     test-small:
       # pre-commit では Small テストのみ実行（高速）
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs}"
       run: bun test:small
 
 pre-push:
   commands:
     full-check:
-      # pre-push では Small + Medium テストを実行
+      # コード変更がある push でのみ実行
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs,sql,json}"
       run: bun run lint && bun run typecheck && bun test:small && bun test:medium
