@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kairous
 
-## Getting Started
+学習科学に基づく複数手法を組み合わせた学習管理 Web アプリ。
 
-First, run the development server:
+Spacing effect, active recall, desirable difficulty などのエビデンスに基づき、SRS / アクティブリコール / 精緻化 / ポモドーロ / インターリービングを1つのアプリに統合する。
+
+## 技術スタック
+
+- **フロントエンド:** Next.js 16 (App Router) / TypeScript / Tailwind CSS 4
+- **UI:** shadcn/ui (base-nova) / lucide-react
+- **バックエンド:** Supabase (Auth / PostgreSQL / Edge Functions)
+- **デプロイ:** Vercel
+- **パッケージマネージャ:** bun
+
+## セットアップ
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+# 依存関係のインストール
+bun install
+
+# Supabase ローカル起動
+supabase start
+
+# 環境変数を設定 (.env.local を作成し、supabase status の出力値を記入)
+# NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=<supabase status の ANON_KEY>
+# SUPABASE_SERVICE_ROLE_KEY=<supabase status の SERVICE_ROLE_KEY>
+
+# 開発サーバー起動
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## コマンド
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+bun dev            # 開発サーバー
+bun build          # 本番ビルド
+bun lint           # ESLint
+bun typecheck      # TypeScript 型チェック
+bun test:small     # Small テスト (モックのみ、高速)
+bun test:medium    # Medium テスト (Supabase ローカル)
+bun check          # lint + typecheck + test:small
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ディレクトリ構成
 
-## Learn More
+```
+src/
+  app/              # App Router ページ
+    auth/           # /auth/login, /auth/signup
+    (main)/         # BottomNav/Sidebar レイアウト
+      page.tsx      # Today (/)
+      materials/    # /materials, /materials/[id], /materials/new
+      stats/        # /stats
+      profile/      # /profile
+    session/        # /session/[id]
+    rest/           # /rest/[id] (安静タイマー)
+  components/
+    ui/             # shadcn/ui プリミティブ
+    navigation/     # BottomNav, Sidebar
+    *.tsx           # ドメインコンポーネント
+  lib/
+    actions/        # Server Actions
+    supabase/       # Supabase クライアント
+    types/          # 型定義 (database.ts は自動生成)
+    validations/    # zod スキーマ
+    constants.ts    # 共有定数
+supabase/
+  migrations/       # SQL マイグレーション
+  functions/        # Edge Functions
+  seed.sql          # シードデータ
+docs/
+  review-guide.md   # PR レビュー規約
+  superpowers/
+    specs/          # 設計仕様書
+    plans/          # 実装計画
+```
 
-To learn more about Next.js, take a look at the following resources:
+## テスト戦略
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| 分類 | 配置 | 外部依存 | 実行タイミング |
+|------|------|----------|---------------|
+| Small | tests/small/ | なし (全モック) | pre-commit |
+| Medium | tests/medium/ | Supabase ローカル | CI |
+| Large | tests/large/ | ブラウザ + Supabase | CI post-deploy |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 開発ガイド
 
-## Deploy on Vercel
+- [PR レビューガイド](docs/review-guide.md) -- レビューコメントのプレフィックスルールと LGTM 要件
+- CLAUDE.md -- AI 協働開発のルールと制約
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## ライセンス
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Private

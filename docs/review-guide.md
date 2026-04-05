@@ -49,5 +49,5 @@ LGTM (マージ承認) を出す際は、以下を明記する。
 ### セットアップ要件
 
 1. [Claude GitHub App](https://github.com/apps/claude) をリポジトリにインストール
-2. リポジトリの Secrets に `ANTHROPIC_API_KEY` を設定
+2. リポジトリの Secrets に認証情報を設定 (`CLAUDE_CODE_OAUTH_TOKEN` または `ANTHROPIC_API_KEY`)
 3. workflow ファイルが `.github/workflows/` に配置されていること

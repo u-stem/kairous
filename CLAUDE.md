@@ -78,6 +78,10 @@ Follow learning science evidence from `kairous_design.md`. Specifically:
 
 - [Screen Flow Design](docs/superpowers/specs/2026-04-05-screen-flow-design.md)
 
+## Guides
+
+- [PR Review Guide](docs/review-guide.md)
+
 ## Test Strategy (Small / Medium / Large)
 
 | 分類 | 配置 | 外部依存 | 実行 |
