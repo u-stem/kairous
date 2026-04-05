@@ -44,8 +44,8 @@ describe("CardEditor", () => {
         submitLabel="更新"
       />
     );
-    expect((screen.getByLabelText("表面") as HTMLInputElement).value).toBe("既存の表面");
-    expect((screen.getByLabelText("裏面") as HTMLTextAreaElement).value).toBe("既存の裏面");
+    expect(screen.getByLabelText<HTMLInputElement>("表面").value).toBe("既存の表面");
+    expect(screen.getByLabelText<HTMLTextAreaElement>("裏面").value).toBe("既存の裏面");
     expect(screen.getByRole("button", { name: "更新" })).toBeDefined();
   });
 });

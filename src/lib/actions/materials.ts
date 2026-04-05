@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   createMaterialSchema,
   updateMaterialSchema,
+  extractFieldErrors,
 } from "@/lib/validations/materials";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { MaterialWithMethods, MaterialDetail } from "@/lib/types/materials";
@@ -17,14 +18,14 @@ export async function createMaterial(
     description: formData.get("description") || undefined,
     subject_id: formData.get("subject_id"),
     // JSON文字列をパース。クライアントからは配列をJSON化して送る
-    method_ids: JSON.parse((formData.get("method_ids") as string) ?? "[]"),
+    method_ids: JSON.parse((formData.get("method_ids") as string) ?? "[]") as unknown,
   });
 
   if (!parsed.success) {
     return {
       success: false,
       error: "入力内容を確認してください",
-      fieldErrors: parsed.error.flatten().fieldErrors,
+      fieldErrors: extractFieldErrors(parsed.error),
     };
   }
 
@@ -258,7 +259,7 @@ export async function updateMaterial(
     return {
       success: false,
       error: "入力内容を確認してください",
-      fieldErrors: parsed.error.flatten().fieldErrors,
+      fieldErrors: extractFieldErrors(parsed.error),
     };
   }
 

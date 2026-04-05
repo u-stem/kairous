@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { cardSchema } from "@/lib/validations/materials";
+import { cardSchema, extractFieldErrors } from "@/lib/validations/materials";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { Card } from "@/lib/types/materials";
 import { SRS_DEFAULTS, CARD_BASED_SLUGS } from "@/lib/constants";
@@ -20,7 +20,7 @@ export async function createCard(
     return {
       success: false,
       error: "入力内容を確認してください",
-      fieldErrors: parsed.error.flatten().fieldErrors,
+      fieldErrors: extractFieldErrors(parsed.error),
     };
   }
 
@@ -147,7 +147,7 @@ export async function updateCard(
     return {
       success: false,
       error: "入力内容を確認してください",
-      fieldErrors: parsed.error.flatten().fieldErrors,
+      fieldErrors: extractFieldErrors(parsed.error),
     };
   }
 

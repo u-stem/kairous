@@ -64,7 +64,7 @@ export function MaterialMethodSheet({ materialId, currentMethodIds }: MaterialMe
   }
 
   return (
-    <Sheet open={isOpen} onOpenChange={handleOpenChange}>
+    <Sheet open={isOpen} onOpenChange={(open) => void handleOpenChange(open)}>
       <SheetTrigger render={
         <Button variant="outline" size="sm">
           <Plus />

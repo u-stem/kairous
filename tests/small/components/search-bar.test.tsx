@@ -13,7 +13,7 @@ describe("SearchBar", () => {
     expect(screen.getByRole("textbox")).toBeDefined();
   });
 
-  it("300ms のデバウンス後に onSearch を呼ぶ", () => {
+  it("300ms のデバウンス後に onSearch を呼ぶ", async () => {
     vi.useFakeTimers();
     const onSearch = vi.fn();
 
@@ -24,17 +24,17 @@ describe("SearchBar", () => {
     });
 
     // 300ms 未満では呼ばれていない
-    act(() => vi.advanceTimersByTime(299));
+    await act(() => vi.advanceTimersByTime(299));
     expect(onSearch).not.toHaveBeenCalled();
 
-    act(() => vi.advanceTimersByTime(1));
+    await act(() => vi.advanceTimersByTime(1));
     expect(onSearch).toHaveBeenCalledWith("react");
     expect(onSearch).toHaveBeenCalledTimes(1);
 
     vi.useRealTimers();
   });
 
-  it("連続入力では最後の入力後300ms で onSearch を1回だけ呼ぶ", () => {
+  it("連続入力では最後の入力後300ms で onSearch を1回だけ呼ぶ", async () => {
     vi.useFakeTimers();
     const onSearch = vi.fn();
 
@@ -43,12 +43,12 @@ describe("SearchBar", () => {
     act(() => {
       fireEvent.change(screen.getByRole("textbox"), { target: { value: "a" } });
     });
-    act(() => vi.advanceTimersByTime(100));
+    await act(() => vi.advanceTimersByTime(100));
 
     act(() => {
       fireEvent.change(screen.getByRole("textbox"), { target: { value: "ab" } });
     });
-    act(() => vi.advanceTimersByTime(100));
+    await act(() => vi.advanceTimersByTime(100));
 
     act(() => {
       fireEvent.change(screen.getByRole("textbox"), { target: { value: "abc" } });
@@ -57,7 +57,7 @@ describe("SearchBar", () => {
     // まだ呼ばれていない
     expect(onSearch).not.toHaveBeenCalled();
 
-    act(() => vi.advanceTimersByTime(300));
+    await act(() => vi.advanceTimersByTime(300));
 
     // 最後の値で1回だけ呼ばれる
     expect(onSearch).toHaveBeenCalledTimes(1);

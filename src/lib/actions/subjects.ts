@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { createSubjectSchema } from "@/lib/validations/materials";
+import {
+  createSubjectSchema,
+  extractFieldErrors,
+} from "@/lib/validations/materials";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { Subject } from "@/lib/types/materials";
 
@@ -17,7 +20,7 @@ export async function createSubject(
     return {
       success: false,
       error: "入力内容を確認してください",
-      fieldErrors: parsed.error.flatten().fieldErrors,
+      fieldErrors: extractFieldErrors(parsed.error),
     };
   }
 

@@ -56,7 +56,7 @@ export function SubjectSelector({
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
-      handleCreate();
+      void handleCreate();
     }
   }
 
@@ -104,7 +104,7 @@ export function SubjectSelector({
           </div>
           <DialogFooter>
             <Button
-              onClick={handleCreate}
+              onClick={() => void handleCreate()}
               disabled={!newName.trim() || creating}
             >
               {creating ? "作成中..." : "作成"}

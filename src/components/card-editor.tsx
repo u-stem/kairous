@@ -30,7 +30,7 @@ export function CardEditor({
   const [errors, setErrors] = useState<FieldErrors>({});
   const frontRef = useRef<HTMLInputElement>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
 
     const result = cardSchema.safeParse({ front, back });
@@ -39,7 +39,7 @@ export function CardEditor({
       for (const issue of result.error.issues) {
         const field = issue.path[0] as keyof FieldErrors;
         if (!fieldErrors[field]) fieldErrors[field] = [];
-        fieldErrors[field]!.push(issue.message);
+        fieldErrors[field].push(issue.message);
       }
       setErrors(fieldErrors);
       return;
