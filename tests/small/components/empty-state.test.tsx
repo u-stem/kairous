@@ -18,8 +18,8 @@ describe("EmptyState", () => {
     render(
       <EmptyState title="教材がありません" description="まだ教材が登録されていません" />
     );
-    expect(screen.getByText("教材がありません")).toBeDefined();
-    expect(screen.getByText("まだ教材が登録されていません")).toBeDefined();
+    expect(screen.getByText("教材がありません")).toBeInTheDocument();
+    expect(screen.getByText("まだ教材が登録されていません")).toBeInTheDocument();
   });
 
   it("action が指定されたときリンクボタンを表示する", () => {
@@ -31,7 +31,7 @@ describe("EmptyState", () => {
       />
     );
     const link = screen.getByRole("link", { name: "教材を追加" });
-    expect(link).toBeDefined();
+    expect(link).toBeInTheDocument();
     expect(link.getAttribute("href")).toBe("/materials/new");
   });
 

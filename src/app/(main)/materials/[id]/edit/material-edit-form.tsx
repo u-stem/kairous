@@ -53,7 +53,7 @@ export function MaterialEditForm({
         id: result.data.id,
         name: result.data.name,
         color: "#6b7280",
-        display_order: subjects.length,
+        display_order: Math.max(0, ...subjects.map((s) => s.display_order)) + 1,
         user_id: "",
         created_at: new Date().toISOString(),
       };

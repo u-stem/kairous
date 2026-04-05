@@ -127,11 +127,11 @@ export function MaterialWizard({ subjects: initialSubjects, methods }: Props) {
       ...prev,
       {
         ...result.data,
-        color: null,
-        display_order: prev.length,
+        color: "#6b7280",
+        display_order: Math.max(0, ...prev.map((s) => s.display_order)) + 1,
         user_id: "",
         created_at: new Date().toISOString(),
-      } as unknown as Subject,
+      } as Subject,
     ]);
     return result.data;
   }

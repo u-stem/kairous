@@ -86,7 +86,7 @@ export async function createCard(
       const config = lm.default_config ?? {};
       const today = new Date().toISOString().split("T")[0];
 
-      await supabase.from("srs_states").insert({
+      const { error: srsError } = await supabase.from("srs_states").insert({
         card_id: card.id,
         user_id: user.id,
         stability:
@@ -101,6 +101,11 @@ export async function createCard(
         reps: 0,
         lapses: 0,
       });
+
+      // SRS state の挿入失敗はカード自体の作成を妨げないが、復習スケジュールが欠落するため警告を返す
+      if (srsError) {
+        console.error(`srs_states insert failed for card ${card.id}:`, srsError.message);
+      }
     }
   }
 

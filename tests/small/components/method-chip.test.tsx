@@ -19,7 +19,7 @@ const comprehensionMethod = {
 describe("MethodChip", () => {
   it("メソッド名を表示する", () => {
     render(<MethodChip method={memoryMethod} />);
-    expect(screen.getByText("SRS")).toBeDefined();
+    expect(screen.getByText("SRS")).toBeInTheDocument();
   });
 
   it("memory カテゴリに indigo カラークラスを適用する", () => {
@@ -39,7 +39,7 @@ describe("MethodChip", () => {
   it("removable + onRemove が指定されたとき × ボタンを表示する", () => {
     const onRemove = () => {};
     render(<MethodChip method={memoryMethod} removable onRemove={onRemove} />);
-    expect(screen.getByRole("button", { name: "SRSを解除" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "SRSを解除" })).toBeInTheDocument();
   });
 
   it("removable が false のとき × ボタンを表示しない", () => {

@@ -17,15 +17,15 @@ describe("MethodSelector", () => {
     render(<MethodSelector methods={methods} selected={[]} onChange={() => {}} />);
 
     // カテゴリラベルが表示される
-    expect(screen.getByText("記憶")).toBeDefined();
-    expect(screen.getByText("理解")).toBeDefined();
-    expect(screen.getByText("集中")).toBeDefined();
+    expect(screen.getByText("記憶")).toBeInTheDocument();
+    expect(screen.getByText("理解")).toBeInTheDocument();
+    expect(screen.getByText("集中")).toBeInTheDocument();
 
     // MATERIAL_METHOD_SLUGS に含まれるメソッドが表示される
-    expect(screen.getByText("SRS")).toBeDefined();
-    expect(screen.getByText("アクティブリコール")).toBeDefined();
-    expect(screen.getByText("精緻化")).toBeDefined();
-    expect(screen.getByText("ポモドーロ")).toBeDefined();
+    expect(screen.getByText("SRS")).toBeInTheDocument();
+    expect(screen.getByText("アクティブリコール")).toBeInTheDocument();
+    expect(screen.getByText("精緻化")).toBeInTheDocument();
+    expect(screen.getByText("ポモドーロ")).toBeInTheDocument();
 
     // MATERIAL_METHOD_SLUGS 外のメソッドは表示されない
     expect(screen.queryByText("ウェイクフルレスト")).toBeNull();

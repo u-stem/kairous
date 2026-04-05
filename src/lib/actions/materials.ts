@@ -17,8 +17,14 @@ export async function createMaterial(
     title: formData.get("title"),
     description: formData.get("description") || undefined,
     subject_id: formData.get("subject_id"),
-    // JSON文字列をパース。クライアントからは配列をJSON化して送る
-    method_ids: JSON.parse((formData.get("method_ids") as string) ?? "[]") as unknown,
+    // JSON文字列をパース。クライアントからは配列をJSON化して送る。改ざん対策で try-catch する
+    method_ids: (() => {
+      try {
+        return JSON.parse((formData.get("method_ids") as string) ?? "[]") as unknown;
+      } catch {
+        return [];
+      }
+    })(),
   });
 
   if (!parsed.success) {
@@ -60,7 +66,10 @@ export async function createMaterial(
 
   if (mmError) {
     // material_methods の挿入失敗時は孤立を防ぐため教材ごと削除する
-    await supabase.from("materials").delete().eq("id", material.id);
+    const { error: rollbackError } = await supabase.from("materials").delete().eq("id", material.id);
+    if (rollbackError) {
+      console.error(`Orphan material cleanup failed for ${material.id}:`, rollbackError.message);
+    }
     return { success: false, error: "学習手法の紐付けに失敗しました" };
   }
 
@@ -103,21 +112,25 @@ export async function getMaterials(
 
   // due_count を srs_states から集計。cards テーブルを経由して material_id に紐付ける
   const materialIds = data.map((m) => m.id);
-  const today = new Date().toISOString().split("T")[0];
-
-  const { data: dueCounts } = await supabase
-    .from("srs_states")
-    .select("card_id, cards!inner(material_id)")
-    .eq("user_id", user.id)
-    .lte("due_date", today)
-    .in("cards.material_id", materialIds);
-
   const dueMap = new Map<string, number>();
-  if (dueCounts) {
-    for (const row of dueCounts) {
-      const materialId = (row.cards as unknown as { material_id: string })
-        .material_id;
-      dueMap.set(materialId, (dueMap.get(materialId) ?? 0) + 1);
+
+  // 空配列での .in() は PostgreSQL シンタックスエラーになるためガードする
+  if (materialIds.length > 0) {
+    const today = new Date().toISOString().split("T")[0];
+
+    const { data: dueCounts } = await supabase
+      .from("srs_states")
+      .select("card_id, cards!inner(material_id)")
+      .eq("user_id", user.id)
+      .lte("due_date", today)
+      .in("cards.material_id", materialIds);
+
+    if (dueCounts) {
+      for (const row of dueCounts) {
+        const materialId = (row.cards as unknown as { material_id: string })
+          .material_id;
+        dueMap.set(materialId, (dueMap.get(materialId) ?? 0) + 1);
+      }
     }
   }
 

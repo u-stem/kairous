@@ -5,12 +5,12 @@ import { SearchBar } from "@/components/search-bar";
 describe("SearchBar", () => {
   it("プレースホルダーを表示する", () => {
     render(<SearchBar onSearch={() => {}} placeholder="教材を検索..." />);
-    expect(screen.getByPlaceholderText("教材を検索...")).toBeDefined();
+    expect(screen.getByPlaceholderText("教材を検索...")).toBeInTheDocument();
   });
 
   it("デフォルト表示で入力欄が存在する", () => {
     render(<SearchBar onSearch={() => {}} />);
-    expect(screen.getByRole("textbox")).toBeDefined();
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
   });
 
   it("300ms のデバウンス後に onSearch を呼ぶ", async () => {

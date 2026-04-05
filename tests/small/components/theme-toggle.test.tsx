@@ -25,9 +25,9 @@ describe("ThemeToggle", () => {
 
     // useSyncExternalStore はクライアント環境では getSnapshot を返すため、
     // jsdom では mounted=true で即座にボタンが描画される
-    expect(screen.getByRole("button", { name: "システムテーマに切り替え" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "ライトテーマに切り替え" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "ダークテーマに切り替え" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "システムテーマに切り替え" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "ライトテーマに切り替え" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "ダークテーマに切り替え" })).toBeInTheDocument();
   });
 
   it("ライトボタンをクリックすると setTheme('light') を呼ぶ", async () => {

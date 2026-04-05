@@ -1,17 +1,16 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { SearchBar } from "@/components/search-bar";
 
 export function MaterialsSearch() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
-  // URLクエリパラメータを更新することで、Server Componentが再フェッチされる
+  // searchParams を deps に含めると変更のたびに SearchBar が再レンダーされデバウンスがリセットされる
   const handleSearch = useCallback(
     (query: string) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(window.location.search);
       if (query) {
         params.set("q", query);
       } else {
@@ -19,7 +18,7 @@ export function MaterialsSearch() {
       }
       router.replace(`/materials?${params.toString()}`);
     },
-    [router, searchParams],
+    [router],
   );
 
   return <SearchBar onSearch={handleSearch} placeholder="教材を検索..." />;

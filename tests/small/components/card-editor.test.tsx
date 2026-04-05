@@ -6,8 +6,8 @@ import { CardEditor } from "@/components/card-editor";
 describe("CardEditor", () => {
   it("表面と裏面の入力欄を表示する", () => {
     render(<CardEditor onSubmit={() => {}} />);
-    expect(screen.getByLabelText("表面")).toBeDefined();
-    expect(screen.getByLabelText("裏面")).toBeDefined();
+    expect(screen.getByLabelText("表面")).toBeInTheDocument();
+    expect(screen.getByLabelText("裏面")).toBeInTheDocument();
   });
 
   it("空のまま送信するとバリデーションエラーを表示する", async () => {
@@ -17,8 +17,8 @@ describe("CardEditor", () => {
     await user.click(screen.getByRole("button", { name: "追加" }));
 
     await waitFor(() => {
-      expect(screen.getByText("表面のテキストを入力してください")).toBeDefined();
-      expect(screen.getByText("裏面のテキストを入力してください")).toBeDefined();
+      expect(screen.getByText("表面のテキストを入力してください")).toBeInTheDocument();
+      expect(screen.getByText("裏面のテキストを入力してください")).toBeInTheDocument();
     });
   });
 
@@ -46,6 +46,6 @@ describe("CardEditor", () => {
     );
     expect(screen.getByLabelText<HTMLInputElement>("表面").value).toBe("既存の表面");
     expect(screen.getByLabelText<HTMLTextAreaElement>("裏面").value).toBe("既存の裏面");
-    expect(screen.getByRole("button", { name: "更新" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "更新" })).toBeInTheDocument();
   });
 });
