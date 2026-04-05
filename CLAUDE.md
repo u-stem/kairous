@@ -77,3 +77,48 @@ Follow learning science evidence from `kairous_design.md`. Specifically:
 ## Specs
 
 - [Screen Flow Design](docs/superpowers/specs/2026-04-05-screen-flow-design.md)
+
+## Security
+
+### Environment Variables
+- `.env.local` は gitignore 済み。コミット禁止
+- `SUPABASE_SERVICE_ROLE_KEY` はサーバーサイド専用。クライアントに露出させない
+- `src/lib/env.ts` で起動時バリデーション。未設定なら即座に失敗
+
+### Supabase RLS
+- 全テーブルに RLS が有効。新テーブル追加時は必ず RLS ポリシーを定義する
+- Edge Functions は `service_role` key を使い RLS をバイパスする
+- RLS ポリシーのテストは migration job (CI) で検証
+
+### Supply Chain
+- `bun install --frozen-lockfile` を CI で強制。lockfile と一致しないインストールは失敗する
+- GitHub Actions は SHA ハッシュで固定（タグ差し替え攻撃の防止）
+- `trustedDependencies` で postinstall 実行を明示的にホワイトリスト化
+- 依存パッケージの監査は週次 + PR 時に自動実行
+
+### Headers
+- CSP, X-Frame-Options, X-Content-Type-Options 等を next.config.ts で設定
+- `frame-ancestors 'none'` でクリックジャッキング防止
+- `connect-src` は Supabase URL のみ許可
+
+### Input Validation
+- ユーザー入力は Server Action / Edge Function の入口でバリデーション
+- SQL は Supabase クライアント経由（パラメータバインド）。生SQL禁止
+- JSONB の meta フィールドはスキーマレスだが、書き込み時に型チェックする
+
+## Library Policy
+
+### Use Libraries Over Custom Code
+- バリデーション: zod（Server Action / Edge Function の入力スキーマ定義）
+- 日付操作: date-fns（軽量、tree-shakeable）
+- UI: 必要に応じて Radix UI primitives（BottomSheet, Dialog 等のアクセシブルなプリミティブ）
+- FSRS: ts-fsrs（FSRS-5アルゴリズムの参照実装。自作しない）
+- アイコン: lucide-react（一貫したアイコンセット）
+- 自作するのは、既存ライブラリがないか、ドメイン固有のロジックのみ
+
+### Code Reuse & Constants
+- 同じ概念の値は定数として `src/lib/constants.ts` に集約する
+- 学習手法のスラッグは `src/lib/constants.ts` で union type + 定数オブジェクトとして定義
+- 同じようなロジックが2箇所に出現したら共通化を検討する（3箇所なら必須）
+- Supabase クライアント生成は `src/lib/supabase/` の関数のみを使用。各ファイルで直接 `createClient` しない
+- 型定義は `src/lib/types/database.ts`（自動生成）をsingle source of truthとする。手動の型定義で上書きしない
