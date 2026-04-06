@@ -77,6 +77,7 @@ git worktree prune
 ```
 
 - 各 worktree で `bun install` が必要 (node_modules は共有されない)
+- `.env.local` はシンボリックリンクで共有する (`ln -sf /path/to/.env.local worktree/.env.local`)
 - worktree ごとに独立した Claude Code セッションを実行可能
 - 完了後は速やかに削除する (長期放置しない)
 
