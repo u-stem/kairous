@@ -28,7 +28,7 @@ src/
 supabase/
   migrations/       # SQL migrations
   functions/        # Edge Functions (FSRS, daily_logs upsert)
-  seed.sql          # learning_methods seed data
+  seeds/            # Seed data (01_master.sql, 02_dev.sql)
 ```
 
 ## Commands
@@ -78,6 +78,7 @@ Follow learning science evidence from `docs/kairous-design.md`. Specifically:
 ## Specs
 
 - [Screen Flow Design](docs/superpowers/specs/2026-04-05-screen-flow-design.md)
+- [Stats Design](docs/superpowers/specs/2026-04-06-stats-design.md)
 
 ## Guides
 
