@@ -103,7 +103,7 @@ export async function createCard(
 
       if (srsError) {
         // カードは作成済みだが SRS 状態が欠落し復習キューに出現しなくなるため、エラー扱いにする
-        console.error(`srs_states insert failed for card ${card.id}:`, srsError.message);
+        console.error(`srs_states insert failed for card ${card.id}:`, srsError);
         return { success: false, error: "カードは作成されましたが、SRS初期状態の設定に失敗しました" };
       }
     }

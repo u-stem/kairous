@@ -27,12 +27,12 @@ export const createRestSessionSchema = z.object({
   parentSessionId: z.uuid("無効なセッションIDです"),
 });
 
-export type CardReviewInput = z.infer<typeof cardReviewSchema>;
-export type CreateSessionInput = z.infer<typeof createSessionSchema>;
-export type CompleteSessionInput = z.infer<typeof completeSessionSchema>;
 export const completeRestSessionSchema = z.object({
   sessionId: z.uuid("無効なセッションIDです"),
 });
 
+export type CardReviewInput = z.infer<typeof cardReviewSchema>;
+export type CreateSessionInput = z.infer<typeof createSessionSchema>;
+export type CompleteSessionInput = z.infer<typeof completeSessionSchema>;
 export type CreateRestSessionInput = z.infer<typeof createRestSessionSchema>;
 export type CompleteRestSessionInput = z.infer<typeof completeRestSessionSchema>;

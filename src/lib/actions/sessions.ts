@@ -200,7 +200,7 @@ export async function completeSession(
       // 補償処理も失敗した場合、セッションが completed のまま残る可能性がある
       console.error(
         `completeSession compensation failed for session ${parsed.data.sessionId}:`,
-        compensationError.message,
+        compensationError,
       );
     }
     return { success: false, error: "カードレビューの処理に失敗しました" };
@@ -230,7 +230,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
 
   if (!session) return null;
 
-  // sessions!inner JOIN で所有権を検証し、TOCTOU リスクを排除する
+  // 上の session クエリで所有権を検証済みだが、TOCTOU の多重防御として card_reviews 側でも検証する
   const { data: reviews } = await supabase
     .from("card_reviews")
     .select("card_id, rating, response_ms, cards(front, back), sessions!inner(user_id)")
