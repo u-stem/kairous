@@ -5,14 +5,12 @@ function getHeader(key: string): string | undefined {
   return securityHeaders.find((h) => h.key === key)?.value;
 }
 
-describe("security headers (S10)", () => {
-  it("X-Frame-Options is DENY to match frame-ancestors none", () => {
+describe("security headers (static)", () => {
+  it("X-Frame-Options is DENY", () => {
     expect(getHeader("X-Frame-Options")).toBe("DENY");
   });
 
-  it("CSP includes frame-ancestors none", () => {
-    expect(getHeader("Content-Security-Policy")).toContain(
-      "frame-ancestors 'none'",
-    );
+  it("does not include CSP because it is set dynamically by middleware", () => {
+    expect(getHeader("Content-Security-Policy")).toBeUndefined();
   });
 });
