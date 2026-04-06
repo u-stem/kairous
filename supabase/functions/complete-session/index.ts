@@ -88,21 +88,17 @@ function validateRequest(body: unknown): {
     }
   }
 
+  // 同一 card_id の重複レビューは FSRS 計算の整合性を壊すため拒否する
+  const cardIds = new Set<string>();
+  for (let i = 0; i < reviews.length; i++) {
+    const r = reviews[i] as Record<string, unknown>;
+    if (cardIds.has(r.card_id as string)) {
+      return { ok: false, message: `reviews[${i}].card_id is duplicated` };
+    }
+    cardIds.add(r.card_id as string);
+  }
+
   return { ok: true, session_id, reviews: reviews as ReviewInput[] };
-}
-
-// Server Action (service_role key) とクライアント直接呼び出し (JWT) の両方に対応するため、
-// Authorization ヘッダーから user_id を抽出する
-async function extractUserId(
-  req: Request,
-  supabase: ReturnType<typeof createClient>,
-): Promise<string | null> {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) return null;
-
-  const token = authHeader.slice(7);
-  const { data } = await supabase.auth.getUser(token);
-  return data.user?.id ?? null;
 }
 
 Deno.serve(async (req) => {
@@ -135,37 +131,27 @@ Deno.serve(async (req) => {
     return jsonError("Session not found", 404);
   }
 
-  // 他ユーザーのセッションを完了させる攻撃を防ぐため、呼び出し元を検証する
-  const callerId = await extractUserId(req, supabase);
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const isServiceRole = authHeader === `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`;
-
-  if (!callerId && !isServiceRole) {
-    return jsonError("Authentication required", 401);
+  // JWT を Supabase Auth で検証し、user_id を取得する
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return jsonError("Authorization header is required", 401);
   }
-  if (callerId && callerId !== session.user_id) {
+  const { data: authData } = await supabase.auth.getUser(authHeader.slice(7));
+  const callerId = authData.user?.id;
+  if (!callerId) {
+    return jsonError("Invalid or expired token", 401);
+  }
+  if (callerId !== session.user_id) {
     return jsonError("Not authorized to complete this session", 403);
   }
 
   const reviewRows = reviews.map((r) => ({
-    session_id,
     card_id: r.card_id,
     rating: r.rating,
     response_ms:
       new Date(r.answered_at).getTime() - new Date(r.started_at).getTime(),
     reviewed_at: r.answered_at,
   }));
-
-  const { error: reviewError } = await supabase
-    .from("card_reviews")
-    .insert(reviewRows);
-
-  if (reviewError) {
-    return jsonError(
-      `card_reviews INSERT failed: ${reviewError.message}`,
-      500,
-    );
-  }
 
   // FSRS の差分計算に前回の状態が必要なため、既存の srs_states を取得する
   const cardIds = reviews.map((r) => r.card_id);
@@ -246,13 +232,17 @@ Deno.serve(async (req) => {
     };
   });
 
-  const { error: srsError } = await supabase.rpc("batch_upsert_srs_states", {
-    p_states: newStates,
+  // card_reviews INSERT と srs_states UPSERT を単一トランザクションで実行
+  const { error: completeError } = await supabase.rpc("complete_session_reviews", {
+    p_session_id: session_id,
+    p_user_id: callerId,
+    p_reviews: reviewRows,
+    p_srs_states: newStates,
   });
 
-  if (srsError) {
+  if (completeError) {
     return jsonError(
-      `srs_states batch upsert failed: ${srsError.message}`,
+      `complete_session_reviews failed: ${completeError.message}`,
       500,
     );
   }

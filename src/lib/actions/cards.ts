@@ -56,6 +56,7 @@ export async function createCard(
   const { error: countError } = await supabase.rpc("increment_total_cards", {
     p_material_id: materialId,
     p_delta: 1,
+    p_user_id: user.id,
   });
 
   if (countError) return { success: false, error: "カード数の更新に失敗しました" };
@@ -245,6 +246,7 @@ export async function deleteCard(id: string): Promise<ActionResult<undefined>> {
   const { error: countError } = await supabase.rpc("increment_total_cards", {
     p_material_id: cardRow.material_id,
     p_delta: -1,
+    p_user_id: user.id,
   });
 
   if (countError) return { success: false, error: "カード数の更新に失敗しました" };
