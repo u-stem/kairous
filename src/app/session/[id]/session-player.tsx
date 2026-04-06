@@ -6,6 +6,10 @@ import { useSessionPlayer } from "./use-session-player";
 import { RATING_LABELS, RATING_COLORS } from "@/lib/constants";
 import type { SessionCard, InterleavingCard } from "@/lib/types/sessions";
 
+function isInterleavingCard(card: SessionCard | InterleavingCard): card is InterleavingCard {
+  return "material_title" in card;
+}
+
 type Props = {
   sessionId: string;
   cards: SessionCard[] | InterleavingCard[];
@@ -41,9 +45,9 @@ export function SessionPlayer({ sessionId, cards }: Props) {
 
       <main className="flex flex-1 flex-col items-center justify-center px-4">
         <div className="w-full max-w-lg space-y-4">
-          {"material_title" in currentCard && (
+          {isInterleavingCard(currentCard) && (
             <p className="mb-2 text-xs font-medium text-muted-foreground">
-              {(currentCard as InterleavingCard).material_title}
+              {currentCard.material_title}
             </p>
           )}
           <div className="rounded-lg border p-6" aria-live="polite" aria-atomic="true">

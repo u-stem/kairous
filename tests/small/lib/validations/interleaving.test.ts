@@ -48,4 +48,11 @@ describe("createInterleavingSessionSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("rejects duplicate material IDs", () => {
+    const result = createInterleavingSessionSchema.safeParse({
+      materialIds: [VALID_UUID_1, VALID_UUID_1],
+    });
+    expect(result.success).toBe(false);
+  });
 });
