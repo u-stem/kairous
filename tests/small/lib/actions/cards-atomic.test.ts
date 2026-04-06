@@ -20,7 +20,10 @@ function createChainMock(resolvedValue: { data: unknown; error: unknown }) {
 
 // from() 呼び出しごとに異なるレスポンスを返すモッククライアントを組み立てる
 function buildMockClient(fromResponses: Record<string, { data: unknown; error: unknown }>) {
-  const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
+  const rpcMock = vi.fn().mockImplementation((fnName: string) => {
+    if (fnName === "create_card_with_order") return Promise.resolve({ data: "card-new", error: null });
+    return Promise.resolve({ data: null, error: null });
+  });
   const authMock = {
     getUser: vi.fn().mockResolvedValue({
       data: { user: { id: "user-1" } },
