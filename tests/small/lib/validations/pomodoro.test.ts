@@ -31,4 +31,8 @@ describe("completePomodoroSchema", () => {
   it("rejects selfRating 5", () => {
     expect(completePomodoroSchema.safeParse({ ...valid, selfRating: 5 }).success).toBe(false);
   });
+
+  it("rejects negative totalBreakSec", () => {
+    expect(completePomodoroSchema.safeParse({ ...valid, totalBreakSec: -1 }).success).toBe(false);
+  });
 });

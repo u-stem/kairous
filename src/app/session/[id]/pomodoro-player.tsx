@@ -60,7 +60,7 @@ export function PomodoroPlayer({ sessionId }: { sessionId: string }) {
           <p className="text-sm text-muted-foreground">お疲れさまでした。休憩を取りましょう。</p>
           <button type="button" onClick={timer.startBreak}
             className="rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground">
-            5分休憩を開始
+            {`${POMODORO_BREAK_SEC / 60}分休憩を開始`}
           </button>
         </div>
       )}

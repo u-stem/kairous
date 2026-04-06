@@ -509,7 +509,11 @@ export async function completePomodoroSession(
     return { success: false, error: "このセッションは既に完了しています" };
   }
 
-  const durationSec = parsed.data.totalFocusSec + parsed.data.totalBreakSec;
+  // クライアント値は表示用 meta にのみ使用し、duration_sec は改ざん耐性のためサーバー側で計算する
+  const now = new Date();
+  const durationSec = Math.floor(
+    (now.getTime() - new Date(session.started_at).getTime()) / 1000,
+  );
 
   const { error: updateError } = await supabase
     .from("sessions")
@@ -517,7 +521,7 @@ export async function completePomodoroSession(
       status: "completed",
       duration_sec: durationSec,
       self_rating: parsed.data.selfRating,
-      ended_at: new Date().toISOString(),
+      ended_at: now.toISOString(),
       meta: {
         pomodoros_completed: parsed.data.pomodorosCompleted,
         total_focus_sec: parsed.data.totalFocusSec,
@@ -539,7 +543,7 @@ export async function completePomodoroSession(
     if (material) {
       const logDate = new Date(Date.now() + JST_OFFSET_MS).toISOString().split("T")[0];
 
-      await supabase.rpc("upsert_daily_log", {
+      const { error: logError } = await supabase.rpc("upsert_daily_log", {
         p_user_id: user.id,
         p_subject_id: material.subject_id,
         p_method_id: session.method_id,
@@ -547,6 +551,13 @@ export async function completePomodoroSession(
         p_duration_sec: durationSec,
         p_cards_reviewed: 0,
       });
+      if (logError) {
+        // daily_log 失敗はセッション完了をブロックしないが、データ欠損を追跡するためログに記録する
+        console.error(
+          `completePomodoroSession daily_log upsert failed for session ${parsed.data.sessionId}:`,
+          logError,
+        );
+      }
     }
   }
 

@@ -73,6 +73,20 @@ describe("usePomodoroTimer", () => {
     expect(result.current.progress).toBeCloseTo(0.5);
   });
 
+  it("totalBreakSec accumulates across cycles", () => {
+    const { result } = renderHook(() => usePomodoroTimer(3, 2));
+    // Cycle 1
+    act(() => { vi.advanceTimersByTime(3000); });
+    act(() => { result.current.startBreak(); });
+    act(() => { vi.advanceTimersByTime(2000); });
+    act(() => { result.current.startNextCycle(); });
+    // Cycle 2
+    act(() => { vi.advanceTimersByTime(3000); });
+    act(() => { result.current.startBreak(); });
+    act(() => { vi.advanceTimersByTime(2000); });
+    expect(result.current.totalBreakSec).toBe(4);
+  });
+
   it("totalFocusSec accumulates across cycles", () => {
     const { result } = renderHook(() => usePomodoroTimer(3, 2));
     // Cycle 1
