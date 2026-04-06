@@ -39,21 +39,39 @@
 ### 変更箇所
 
 **middleware.ts:**
-- リクエストごとに `crypto.randomUUID()` で nonce を生成
-- CSP ヘッダーに `'nonce-{value}'` を設定
-- `x-nonce` リクエストヘッダーに nonce を格納し Server Component から参照可能にする
+1. `crypto.getRandomValues(new Uint8Array(16))` で 128bit の乱数を生成し、base64 エンコードして nonce とする
+2. nonce を含む CSP ヘッダーを構築
+3. `NextResponse.next()` の `request.headers` に `x-nonce` ヘッダーを追加 (Server Component から `headers()` で読み取り可能にする)
+4. `updateSession` の戻り値 (レスポンス) に `Content-Security-Policy` ヘッダーを設定
+
+具体的な実装順序:
+```
+const nonce = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString("base64");
+const cspHeader = buildCspHeader(nonce);
+
+// リクエストヘッダーに nonce を追加 (Server Component 用)
+request.headers.set("x-nonce", nonce);
+
+// Supabase セッション更新 (既存)
+const response = await updateSession(request);
+
+// レスポンスヘッダーに CSP を設定 (ブラウザ用)
+response.headers.set("Content-Security-Policy", cspHeader);
+
+return response;
+```
 
 **next.config.ts:**
-- `headers()` の CSP 設定を削除 (middleware に移行)
+- `headers()` から CSP 設定のみ削除。X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy は静的で良いためそのまま維持
 
 **layout.tsx:**
-- `headers()` から nonce を読み取り、`<Script>` タグに nonce 属性を付与
+- `headers()` から `x-nonce` を読み取り、`<Script>` タグに nonce 属性を付与
 
 ### CSP ポリシー
 
 ```
 default-src 'self';
-script-src 'self' 'nonce-{value}' 'strict-dynamic';
+script-src 'nonce-{value}' 'strict-dynamic';
 style-src 'self' 'unsafe-inline';
 connect-src 'self' {SUPABASE_URL};
 img-src 'self' data: blob:;
@@ -61,7 +79,7 @@ font-src 'self';
 frame-ancestors 'none';
 ```
 
-- `'strict-dynamic'`: nonce 付きスクリプトが読み込んだスクリプトも自動許可
+- `'strict-dynamic'` は `'self'` を無効化するため、`script-src` に `'self'` は不要。nonce 付きスクリプトが読み込んだスクリプト (Next.js の `_next/static/` チャンク含む) は自動的に許可される
 - `style-src`: Tailwind のインラインスタイルのため `'unsafe-inline'` を維持
 - 開発環境のみ `script-src` に `'unsafe-eval'` を追加 (HMR 用)
 
@@ -72,8 +90,8 @@ frame-ancestors 'none';
 
 ### テスト方針
 
-- Small: CSP ヘッダー文字列のパースと nonce 有無の検証
-- Medium: なし (ヘッダー確認は E2E 的だが、middleware の単体テストで十分)
+- Small: CSP ヘッダー構築関数のテスト (nonce 埋め込み、開発/本番の分岐)
+- ブラウザ確認: `bun dev` および `bun build && bun start` 後に Chrome DevTools の Console で CSP 違反がゼロであることを確認
 
 ---
 
@@ -94,11 +112,22 @@ frame-ancestors 'none';
 3. 全カードをシャッフルして `SESSION_MAX_CARDS` で制限
 4. 各カードに `material_title` を付与して返す (UI で教材名を表示するため)
 
+注意: 既存の `getSessionCards` は `material_id = NULL` のセッションで空配列を返すため、interleaving セッションでは `getInterleavingCards` を使用する。`getSessionCards` の既存ガードは変更不要。
+
 ### Edge Function の変更
 
 `complete-session/index.ts` に `interleaving` ケースを追加:
-- FSRS 計算: SRS と同じロジックを実行
-- daily_logs: `session_materials` + `card_reviews` から教材ごとのカード枚数を集計し、枚数比で duration_sec を按分して教材ごとに `upsert_daily_log` を呼ぶ
+
+- FSRS 計算: SRS と同じロジックを実行 (`complete_session_reviews` RPC に srs_states を渡す)
+- daily_logs: interleaving 専用の処理フロー
+  1. `session_materials` から教材 ID 一覧を取得
+  2. 各教材の `subject_id` を `materials` テーブルから JOIN で取得
+  3. `card_reviews` の `card_id` → `cards.material_id` のマッピングで教材ごとのカード枚数を集計
+  4. 枚数比で `duration_sec` を按分
+  5. 教材ごとに `upsert_daily_log` を呼ぶ (`cards_reviewed` は実枚数、`duration_sec` は按分値)
+  6. `session_count` の重複を避けるため、最初の教材のみ `session_count += 1` とし、残りは `session_count` を加算しない (1 セッション = 1 カウント)
+
+注意: 既存の `if (session.material_id)` ブロック (単一教材の daily_logs) はスキップされるため、interleaving 用の daily_logs 処理はその外側 (interleaving 分岐内) に配置する。
 
 ### データフロー
 
@@ -110,13 +139,14 @@ createInterleavingSession
 getInterleavingCards
   → session_materials → materials → cards → srs_states
   → シャッフル + SESSION_MAX_CARDS 制限
+  → 各カードに material_title を付与
 
-complete-session Edge Function
-  → card_reviews INSERT + srs_states UPSERT (SRS と同じ)
-  → session_materials + cards → material_id マッピング
-  → 教材ごとのカード枚数を集計
+complete-session Edge Function (interleaving ケース)
+  → card_reviews INSERT + srs_states UPSERT (SRS と同じ FSRS 計算)
+  → session_materials → materials(subject_id) で教材 + 科目を取得
+  → card_reviews → cards(material_id) で教材ごとのカード枚数を集計
   → 枚数比で duration_sec 按分
-  → upsert_daily_log x N教材
+  → upsert_daily_log x N教材 (session_count は最初の1教材のみ +1)
 ```
 
 ### バリデーション
@@ -126,8 +156,13 @@ complete-session Edge Function
 
 ### 定数変更
 
-- `MATERIAL_METHOD_SLUGS` に `"interleaving"` を追加
+- `MATERIAL_METHOD_SLUGS` は変更しない。interleaving は複数教材を横断するセッション手法であり、単一教材に紐付ける material_methods の手法とは異なる概念。`CARD_BASED_SLUGS` には既に含まれている
 - `METHOD_DESCRIPTIONS` に interleaving の説明を追加
+
+### エッジケース
+
+- `getInterleavingCards` が 0 件を返す場合: `session/[id]/page.tsx` で `notFound()` を呼ぶ (SRS/Elaboration と同じパターン)
+- `validate.ts` の `reviews.length === 0` 拒否: interleaving でカードが 0 件の場合はそもそもセッションプレイヤーが表示されないため、Edge Function に到達しない
 
 ### テスト方針
 
@@ -141,18 +176,21 @@ complete-session Edge Function
 ### Today ページ
 
 - due cards がある教材が 2 つ以上の場合に「まとめて学習」ボタンを表示
-- ボタン押下で `createInterleavingSession` を呼び、全 due 教材を渡す
+- ボタン押下で `createInterleavingSession` を呼び、全 due 教材の ID を渡す
 - セッション作成後にセッションページへ遷移
 
 ### セッションプレイヤー
 
 - `session/[id]/page.tsx` の router に `interleaving` ケースを追加
-- `getInterleavingCards` でカードを取得し、既存の `SessionPlayer` (CardSessionPlayer) を再利用
+- `getInterleavingCards` でカードを取得。0 件なら `notFound()`
+- 既存の `SessionPlayer` (CardSessionPlayer) を再利用
 - カード表示に教材名ラベルを追加 (カード上部に小さく表示)
 
 ### サマリー画面
 
-- `getSession` で `session_materials` も取得し、対象教材一覧を表示
+- `getSession` を拡張: `material_id = NULL` の場合は `session_materials` から教材一覧を取得
+- `SessionDetail` 型に `interleaving_materials: Array<{ id: string; title: string }> | null` を追加
+- サマリー画面で対象教材一覧を表示
 - カードレビュー統計は SRS と同じ表示
 
 ### 新規ファイル
@@ -170,3 +208,4 @@ complete-session Edge Function
 ADR #90 (daily_logs 按分方針) のステータスを更新:
 - 決定: 教材ごとのカード枚数比で duration_sec を按分し、教材ごとに daily_logs に記録する
 - cards_reviewed は各教材の実レビュー枚数をそのまま記録
+- session_count: 1 Interleaving セッション = 1 カウント (最初の教材のレコードのみ加算)
