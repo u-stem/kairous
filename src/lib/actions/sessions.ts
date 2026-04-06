@@ -15,7 +15,8 @@ import {
 } from "@/lib/validations/elaboration";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { CardReview, DueMaterial, SessionCard, SessionDetail } from "@/lib/types/sessions";
-import { SESSION_MAX_CARDS, REST_DURATION_SEC } from "@/lib/constants";
+import { SESSION_MAX_CARDS, REST_DURATION_SEC, JST_OFFSET_MS } from "@/lib/constants";
+import { completePomodoroSchema } from "@/lib/validations/pomodoro";
 
 export type SessionInfo = {
   id: string;
@@ -464,6 +465,88 @@ export async function completeElaborationSession(
       );
     }
     return { success: false, error: "カードレビューの処理に失敗しました" };
+  }
+
+  revalidatePath("/");
+  return { success: true, data: undefined };
+}
+
+export async function completePomodoroSession(
+  sessionId: string,
+  selfRating: number,
+  pomodorosCompleted: number,
+  totalFocusSec: number,
+  totalBreakSec: number,
+): Promise<ActionResult<undefined>> {
+  const parsed = completePomodoroSchema.safeParse({
+    sessionId,
+    selfRating,
+    pomodorosCompleted,
+    totalFocusSec,
+    totalBreakSec,
+  });
+  if (!parsed.success) {
+    return { success: false, error: "入力内容を確認してください" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "認証が必要です" };
+
+  // RLS に加えてアプリ層でも所有者と status を確認し、二重完了を防ぐ
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id, started_at, status, material_id, method_id")
+    .eq("id", parsed.data.sessionId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!session) return { success: false, error: "セッションが見つかりません" };
+  if (session.status !== "in_progress") {
+    return { success: false, error: "このセッションは既に完了しています" };
+  }
+
+  const durationSec = parsed.data.totalFocusSec + parsed.data.totalBreakSec;
+
+  const { error: updateError } = await supabase
+    .from("sessions")
+    .update({
+      status: "completed",
+      duration_sec: durationSec,
+      self_rating: parsed.data.selfRating,
+      ended_at: new Date().toISOString(),
+      meta: {
+        pomodoros_completed: parsed.data.pomodorosCompleted,
+        total_focus_sec: parsed.data.totalFocusSec,
+        total_break_sec: parsed.data.totalBreakSec,
+      },
+    })
+    .eq("id", parsed.data.sessionId);
+
+  if (updateError) return { success: false, error: "セッションの更新に失敗しました" };
+
+  // Pomodoro は card_reviews がないため Edge Function を呼ばず、直接 daily_logs を記録する
+  if (session.material_id) {
+    const { data: material } = await supabase
+      .from("materials")
+      .select("subject_id")
+      .eq("id", session.material_id)
+      .single();
+
+    if (material) {
+      const logDate = new Date(Date.now() + JST_OFFSET_MS).toISOString().split("T")[0];
+
+      await supabase.rpc("upsert_daily_log", {
+        p_user_id: user.id,
+        p_subject_id: material.subject_id,
+        p_method_id: session.method_id,
+        p_log_date: logDate,
+        p_duration_sec: durationSec,
+        p_cards_reviewed: 0,
+      });
+    }
   }
 
   revalidatePath("/");

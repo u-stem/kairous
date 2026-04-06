@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getSessionInfo, getSessionCards } from "@/lib/actions/sessions";
 import { SessionPlayer } from "./session-player";
 import { ElaborationPlayer } from "./elaboration-player";
+import { PomodoroPlayer } from "./pomodoro-player";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -17,7 +18,7 @@ export default async function SessionPage({ params }: Props) {
 
   switch (info.methodSlug) {
     case "pomodoro":
-      return <p>Pomodoro session (coming soon)</p>;
+      return <PomodoroPlayer sessionId={id} />;
 
     case "elaboration": {
       const cards = await getSessionCards(id);
