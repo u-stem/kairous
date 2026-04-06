@@ -76,6 +76,7 @@ export function RestTimer({ sessionId }: { sessionId: string }) {
             </p>
           )}
           <button
+            type="button"
             onClick={() => router.push("/")}
             className="mt-6 rounded-lg bg-muted px-6 py-3 font-medium hover:bg-muted/80"
           >

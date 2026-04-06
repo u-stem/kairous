@@ -19,19 +19,28 @@ export function StartSessionButton({
 }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleClick() {
     setLoading(true);
+    setError(null);
     const result = await createSession(materialId, methodId);
     if (result.success) {
       router.push(`/session/${result.data.id}`);
+    } else {
+      setError(result.error);
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
-    <button onClick={() => void handleClick()} disabled={loading} className={className}>
-      {loading ? "..." : label}
-    </button>
+    <div>
+      <button type="button" onClick={() => void handleClick()} disabled={loading} className={className}>
+        {loading ? "..." : label}
+      </button>
+      {error && (
+        <p className="mt-1 text-xs text-red-500">{error}</p>
+      )}
+    </div>
   );
 }

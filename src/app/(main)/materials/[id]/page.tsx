@@ -17,10 +17,12 @@ import { MaterialMethodSheet } from "./material-method-sheet";
 
 type Props = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 };
 
-export default async function MaterialDetailPage({ params }: Props) {
+export default async function MaterialDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { tab } = await searchParams;
 
   // 教材データとカード一覧を並列フェッチしてレイテンシを最小化する
   const [material, cards] = await Promise.all([
@@ -76,7 +78,7 @@ export default async function MaterialDetailPage({ params }: Props) {
       </div>
 
       {/* タブ: 概要 / カード / 統計 */}
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue={tab === "cards" || tab === "stats" ? tab : "overview"}>
         <TabsList className="mb-4 w-full">
           <TabsTrigger value="overview">概要</TabsTrigger>
           <TabsTrigger value="cards">
@@ -202,11 +204,18 @@ export default async function MaterialDetailPage({ params }: Props) {
           <CardList cards={cards} materialId={id} />
         </TabsContent>
 
-        {/* 統計タブ: 将来的に詳細なグラフを追加予定 */}
         <TabsContent value="stats">
-          <p className="py-16 text-center text-sm text-muted-foreground">
-            統計機能は準備中です
-          </p>
+          <div className="flex flex-col items-center py-16">
+            <p className="text-sm text-muted-foreground">
+              この教材の統計データはまだありません
+            </p>
+            <Link
+              href="/stats"
+              className="mt-2 text-sm text-primary hover:underline"
+            >
+              全体統計を見る
+            </Link>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

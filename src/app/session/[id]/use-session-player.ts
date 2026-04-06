@@ -24,6 +24,8 @@ export function useSessionPlayer(cards: SessionCard[]): SessionPlayerState {
   const [reviews, setReviews] = useState<CardReview[]>([]);
   // FSRS が応答時間を学習効率の指標として使うため、カード表示時刻を記録する
   const cardStartedAt = useRef(new Date().toISOString());
+  // 連打時に stale な closure を参照しないよう ref で最新値を保持する
+  const currentIndexRef = useRef(0);
 
   const currentCard = cards[currentIndex];
   const isComplete = currentIndex >= cards.length;
@@ -34,19 +36,23 @@ export function useSessionPlayer(cards: SessionCard[]): SessionPlayerState {
 
   const rate = useCallback(
     (rating: 1 | 2 | 3 | 4) => {
+      const idx = currentIndexRef.current;
+      if (idx >= cards.length) return;
+
       const review: CardReview = {
-        card_id: cards[currentIndex].id,
+        card_id: cards[idx].id,
         rating,
         started_at: cardStartedAt.current,
         answered_at: new Date().toISOString(),
       };
 
+      currentIndexRef.current = idx + 1;
       setReviews((prev) => [...prev, review]);
-      setCurrentIndex((prev) => prev + 1);
+      setCurrentIndex(idx + 1);
       setIsFlipped(false);
       cardStartedAt.current = new Date().toISOString();
     },
-    [cards, currentIndex],
+    [cards],
   );
 
   return {
