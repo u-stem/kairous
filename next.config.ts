@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const securityHeaders = [
+export const securityHeaders = [
   {
     key: "X-DNS-Prefetch-Control",
     value: "on",

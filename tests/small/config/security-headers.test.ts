@@ -1,15 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import { securityHeaders } from "../../../next.config";
 
-const configSource = readFileSync(
-  resolve(__dirname, "../../../next.config.ts"),
-  "utf-8",
-);
+function getHeader(key: string): string | undefined {
+  return securityHeaders.find((h) => h.key === key)?.value;
+}
 
 describe("security headers (S10)", () => {
   it("X-Frame-Options is DENY to match frame-ancestors none", () => {
-    expect(configSource).toContain('"DENY"');
-    expect(configSource).not.toContain('"SAMEORIGIN"');
+    expect(getHeader("X-Frame-Options")).toBe("DENY");
+  });
+
+  it("CSP includes frame-ancestors none", () => {
+    expect(getHeader("Content-Security-Policy")).toContain(
+      "frame-ancestors 'none'",
+    );
   });
 });
