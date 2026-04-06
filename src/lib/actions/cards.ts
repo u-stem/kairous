@@ -33,7 +33,7 @@ export async function createCard(
   // RLSに加えてuser_idで絞り込み、他ユーザーの教材への追加を防ぐ
   const { data: material, error: materialError } = await supabase
     .from("materials")
-    .select("id, total_cards")
+    .select("id")
     .eq("id", materialId)
     .eq("user_id", user.id)
     .single();
@@ -41,19 +41,16 @@ export async function createCard(
   if (materialError || !material)
     return { success: false, error: "教材が見つかりません" };
 
-  const { data: card, error: cardError } = await supabase
-    .from("cards")
-    .insert({
-      material_id: materialId,
-      front: parsed.data.front,
-      back: parsed.data.back,
-      // 挿入時点のtotal_cardsを末尾インデックスとして使用する
-      display_order: material.total_cards,
-    })
-    .select("id")
-    .single();
+  // display_order の決定と INSERT を単一トランザクションで実行し、並行リクエスト時の重複を防ぐ
+  const { data: cardId, error: cardError } = await supabase.rpc("create_card_with_order", {
+    p_material_id: materialId,
+    p_front: parsed.data.front,
+    p_back: parsed.data.back,
+  });
 
-  if (cardError || !card) return { success: false, error: "カードの作成に失敗しました" };
+  if (cardError || !cardId) return { success: false, error: "カードの作成に失敗しました" };
+
+  const card = { id: cardId };
 
   // read-then-write ではなく RPC で原子的に増減し、並行リクエスト時の race condition を防ぐ
   const { error: countError } = await supabase.rpc("increment_total_cards", {

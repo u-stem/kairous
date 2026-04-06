@@ -502,6 +502,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      create_card_with_order: {
+        Args: {
+          p_material_id: string
+          p_front: string
+          p_back: string
+        }
+        Returns: string
+      }
       upsert_daily_log: {
         Args: {
           p_user_id: string
