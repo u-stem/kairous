@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getCards } from "@/lib/actions/cards";
+import { getCard } from "@/lib/actions/cards";
 import { CardEditForm } from "./card-edit-form";
 
 export default async function EditCardPage({
@@ -8,8 +8,7 @@ export default async function EditCardPage({
   params: Promise<{ id: string; cardId: string }>;
 }) {
   const { id, cardId } = await params;
-  const cards = await getCards(id);
-  const card = cards.find((c) => c.id === cardId);
+  const card = await getCard(cardId);
 
   if (!card) {
     notFound();

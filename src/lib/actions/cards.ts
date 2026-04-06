@@ -111,6 +111,31 @@ export async function createCard(
   return { success: true, data: { id: card.id } };
 }
 
+export async function getCard(cardId: string): Promise<Card | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  // cards に user_id がないため、materials JOIN で所有権を確認する
+  // !inner により他ユーザーのカードは RLS + JOIN で除外される
+  const { data } = await supabase
+    .from("cards")
+    .select("*, materials!inner(user_id)")
+    .eq("id", cardId)
+    .single();
+
+  if (!data) return null;
+
+  // RLS に加えてアプリレベルでも所有権を確認 (RLS 緩和時の防御)
+  const owner = (data.materials as { user_id: string }).user_id;
+  if (owner !== user.id) return null;
+
+  const { materials: _materials, ...card } = data;
+  return card as Card;
+}
+
 export async function getCards(materialId: string): Promise<Card[]> {
   const supabase = await createClient();
   const {
