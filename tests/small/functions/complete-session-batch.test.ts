@@ -10,7 +10,7 @@ const edgeFunctionSource = readFileSync(edgeFunctionPath, "utf-8");
 
 const migrationPath = resolve(
   __dirname,
-  "../../../supabase/migrations/00007_batch_upsert_srs_states.sql",
+  "../../../supabase/migrations/00008_batch_upsert_srs_states.sql",
 );
 const migrationSource = readFileSync(migrationPath, "utf-8");
 
