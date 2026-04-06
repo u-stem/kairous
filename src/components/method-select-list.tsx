@@ -4,13 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSession } from "@/lib/actions/sessions";
 import { METHOD_DESCRIPTIONS } from "@/lib/constants";
-// MaterialDetail.methods の形状に合わせた最小型（フルテーブル型より依存を減らすため）
-type MethodItem = {
-  id: string;
-  slug: string;
-  name: string;
-  category: string;
-};
+import type { MethodItem } from "@/lib/types/materials";
 
 type Props = {
   materialId: string;
@@ -39,7 +33,7 @@ export function MethodSelectList({ materialId, methods, dueCounts }: Props) {
     <div className="space-y-2">
       {methods.map((method) => {
         const dueCount = dueCounts?.[method.id];
-        // ウィザードと同じ説明文を再利用し、ない場合は手法名で代替する
+        // METHOD_DESCRIPTIONS に未登録の手法は name をフォールバック表示する
         const description = METHOD_DESCRIPTIONS[method.slug] ?? method.name;
 
         return (
@@ -54,18 +48,19 @@ export function MethodSelectList({ materialId, methods, dueCounts }: Props) {
               <p className="text-sm font-medium">{method.name}</p>
               <p className="text-xs text-muted-foreground">{description}</p>
             </div>
-            {dueCount !== undefined && dueCount > 0 && (
-              <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground">
-                {dueCount}枚
-              </span>
-            )}
-            {loading === method.id && (
+            {loading === method.id ? (
               <span className="text-xs text-muted-foreground">...</span>
+            ) : (
+              dueCount !== undefined && dueCount > 0 && (
+                <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground">
+                  {dueCount}枚
+                </span>
+              )
             )}
           </button>
         );
       })}
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-xs text-destructive" aria-live="polite">{error}</p>}
     </div>
   );
 }

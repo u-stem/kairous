@@ -135,7 +135,7 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
           {material.methods.length > 0 && (
             <div className="mt-4">
               <h2 className="mb-2 text-sm font-medium text-muted-foreground">
-                学習手法を選択
+                {material.methods.length === 1 ? "学習を開始" : "学習手法を選択"}
               </h2>
               {material.methods.length === 1 ? (
                 <StartSessionButton
