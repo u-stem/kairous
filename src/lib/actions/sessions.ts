@@ -133,7 +133,7 @@ export async function createSession(
   return { success: true, data: { id: session.id } };
 }
 
-export async function getSessionCards(sessionId: string): Promise<SessionCard[]> {
+export async function getSessionCards(sessionId: string, methodSlug?: string): Promise<SessionCard[]> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -160,7 +160,12 @@ export async function getSessionCards(sessionId: string): Promise<SessionCard[]>
 
   if (!allCards || allCards.length === 0) return [];
 
-  // 復習予定がまだ先のカードはセッション対象外にする
+  // Elaboration は SRS スケジュールに依存しないため、全カードを対象にする
+  if (methodSlug && methodSlug !== "srs") {
+    return allCards.slice(0, SESSION_MAX_CARDS);
+  }
+
+  // SRS: 復習予定がまだ先のカードはセッション対象外にする
   const cardIds = allCards.map((c) => c.id);
   const { data: notDueStates } = await supabase
     .from("srs_states")

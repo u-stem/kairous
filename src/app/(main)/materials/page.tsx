@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getMaterials } from "@/lib/actions/materials";
 import { MaterialCard } from "@/components/material-card";
 import { EmptyState } from "@/components/empty-state";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 import { MaterialsSearch } from "./materials-search";
 
