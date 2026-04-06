@@ -9,13 +9,12 @@ import {
 describe("MATERIAL_METHOD_SLUGS", () => {
   it("ウィザードで選択可能な学習手法スラッグを含む", () => {
     expect(MATERIAL_METHOD_SLUGS).toContain("srs");
-    expect(MATERIAL_METHOD_SLUGS).toContain("active_recall");
     expect(MATERIAL_METHOD_SLUGS).toContain("elaboration");
     expect(MATERIAL_METHOD_SLUGS).toContain("pomodoro");
   });
 
-  it("4つの手法のみ含む", () => {
-    expect(MATERIAL_METHOD_SLUGS).toHaveLength(4);
+  it("3つの手法のみ含む", () => {
+    expect(MATERIAL_METHOD_SLUGS).toHaveLength(3);
   });
 });
 
@@ -24,16 +23,12 @@ describe("CARD_BASED_SLUGS", () => {
     expect(CARD_BASED_SLUGS).toContain("srs");
   });
 
-  it("active_recall を含む", () => {
-    expect(CARD_BASED_SLUGS).toContain("active_recall");
-  });
-
   it("interleaving を含む", () => {
     expect(CARD_BASED_SLUGS).toContain("interleaving");
   });
 
-  it("3 つの手法のみ含む", () => {
-    expect(CARD_BASED_SLUGS).toHaveLength(3);
+  it("2 つの手法のみ含む", () => {
+    expect(CARD_BASED_SLUGS).toHaveLength(2);
   });
 });
 
@@ -47,9 +42,9 @@ describe("METHOD_CATEGORIES", () => {
     }
   });
 
-  it("memoryカテゴリにsrsとactive_recallが含まれる", () => {
+  it("memoryカテゴリにsrsが含まれる", () => {
     expect(METHOD_CATEGORIES.memory.slugs).toContain("srs");
-    expect(METHOD_CATEGORIES.memory.slugs).toContain("active_recall");
+    expect(METHOD_CATEGORIES.memory.slugs).toHaveLength(1);
   });
 
   it("memoryカテゴリのlabelが「記憶」である", () => {

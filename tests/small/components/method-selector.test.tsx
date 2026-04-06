@@ -5,7 +5,6 @@ import { MethodSelector } from "@/components/method-selector";
 
 const methods = [
   { id: "1", slug: "srs", name: "SRS", category: "memory" },
-  { id: "2", slug: "active_recall", name: "アクティブリコール", category: "memory" },
   { id: "3", slug: "elaboration", name: "精緻化", category: "comprehension" },
   { id: "4", slug: "pomodoro", name: "ポモドーロ", category: "focus" },
   // MATERIAL_METHOD_SLUGS 外のメソッドはフィルタされる
@@ -23,7 +22,6 @@ describe("MethodSelector", () => {
 
     // MATERIAL_METHOD_SLUGS に含まれるメソッドが表示される
     expect(screen.getByText("SRS")).toBeInTheDocument();
-    expect(screen.getByText("アクティブリコール")).toBeInTheDocument();
     expect(screen.getByText("精緻化")).toBeInTheDocument();
     expect(screen.getByText("ポモドーロ")).toBeInTheDocument();
 
