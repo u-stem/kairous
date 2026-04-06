@@ -36,7 +36,8 @@ beforeAll(async () => {
         body: JSON.stringify({}),
       },
     );
-    functionsAvailable = res.status !== 0;
+    // fetch が成功した時点でサーバーは起動中。接続不可なら catch に入る
+    functionsAvailable = res.status > 0;
   } catch {
     functionsAvailable = false;
   }
