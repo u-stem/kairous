@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { navItems, iconPaths } from "./nav-items";
+import { navItems } from "./nav-items";
+import { NavIcon } from "./nav-icon";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -27,19 +28,7 @@ export function BottomNav() {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <svg
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d={iconPaths[item.icon]}
-                  />
-                </svg>
+                <NavIcon icon={item.icon} className="h-6 w-6" />
                 <span>{item.label}</span>
               </Link>
             </li>

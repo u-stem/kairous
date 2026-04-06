@@ -32,10 +32,10 @@ function CustomTooltip({
   if (!active || !payload?.[0]) return null;
   const data = payload[0].payload;
   return (
-    <div className="rounded-lg border bg-white p-2 text-sm shadow-sm">
+    <div className="rounded-lg border bg-popover p-2 text-sm text-popover-foreground shadow-sm">
       <p className="font-medium">{data.label}</p>
-      <p className="text-gray-600">{formatStudyTime(data.totalSec)}</p>
-      <p className="text-gray-600">{data.sessionCount} セッション</p>
+      <p className="text-muted-foreground">{formatStudyTime(data.totalSec)}</p>
+      <p className="text-muted-foreground">{data.sessionCount} セッション</p>
     </div>
   );
 }
@@ -51,7 +51,7 @@ export function DailyChart({ daily }: { daily: DailyData[] }) {
 
   if (chartData.length === 0) {
     return (
-      <div className="flex h-40 items-center justify-center text-sm text-gray-400">
+      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
         データがありません
       </div>
     );
@@ -74,7 +74,7 @@ export function DailyChart({ daily }: { daily: DailyData[] }) {
           tickFormatter={(v: number) => `${v}m`}
         />
         <Tooltip content={<CustomTooltip />} />
-        <Bar dataKey="minutes" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="minutes" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
