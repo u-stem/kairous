@@ -21,13 +21,13 @@ export default async function SessionPage({ params }: Props) {
       return <PomodoroPlayer sessionId={id} />;
 
     case "elaboration": {
-      const cards = await getSessionCards(id);
+      const cards = await getSessionCards(id, "elaboration");
       if (cards.length === 0) notFound();
       return <ElaborationPlayer sessionId={id} cards={cards} />;
     }
 
     case "srs": {
-      const cards = await getSessionCards(id);
+      const cards = await getSessionCards(id, "srs");
       if (cards.length === 0) notFound();
       return <SessionPlayer sessionId={id} cards={cards} />;
     }

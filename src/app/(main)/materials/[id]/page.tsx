@@ -8,7 +8,7 @@ import { getMaterial } from "@/lib/actions/materials";
 import { getCards } from "@/lib/actions/cards";
 import { MethodChip } from "@/components/method-chip";
 import { StartSessionButton } from "@/components/start-session-button";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
