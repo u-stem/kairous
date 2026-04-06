@@ -23,7 +23,8 @@
 
 ## Headers
 
-- CSP, X-Frame-Options, X-Content-Type-Options 等を next.config.ts で設定
+- 静的ヘッダー (X-Frame-Options, X-Content-Type-Options 等) は `next.config.ts` で設定
+- CSP は `src/middleware.ts` で nonce ベースで動的生成 (`src/lib/csp.ts`)
 - `frame-ancestors 'none'` でクリックジャッキング防止
 - `connect-src` は Supabase URL のみ許可
 
