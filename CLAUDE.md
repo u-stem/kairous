@@ -6,6 +6,7 @@
 
 - Next.js 16 (App Router) / TypeScript 6 / Tailwind CSS 4
 - Supabase (Auth / PostgreSQL / Edge Functions / Realtime)
+- Recharts (charting)
 - Vercel deploy
 - Package manager: bun
 
