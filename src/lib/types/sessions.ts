@@ -14,6 +14,11 @@ export type SessionCard = {
   display_order: number;
 };
 
+// Interleaving セッションではカードの出典を識別するため、教材名を付与する
+export type InterleavingCard = SessionCard & {
+  material_title: string;
+};
+
 // Today ページで due カード数と共に教材を表示するため、集計済みの due_count を持つ
 export type DueMaterial = {
   id: string;
@@ -46,4 +51,6 @@ export type SessionDetail = {
   }>;
   remaining_due_count: number;
   meta: Record<string, unknown> | null;
+  // Interleaving セッションで使用した教材一覧。material_id=NULL のセッションのみ非 null
+  interleaving_materials: Array<{ id: string; title: string }> | null;
 };

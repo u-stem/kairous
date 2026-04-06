@@ -291,6 +291,22 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
     subjects: { name: string };
   } | null;
 
+  // Interleaving セッションは material_id=NULL のため、session_materials から教材一覧を取得
+  let interleavingMaterials: Array<{ id: string; title: string }> | null = null;
+  if (!mat) {
+    const { data: smRows } = await supabase
+      .from("session_materials")
+      .select("material_id, materials(title)")
+      .eq("session_id", sessionId);
+
+    if (smRows && smRows.length > 0) {
+      interleavingMaterials = smRows.map((sm) => ({
+        id: sm.material_id,
+        title: (sm.materials as unknown as { title: string })?.title ?? "",
+      }));
+    }
+  }
+
   if (mat) {
     const today = new Date().toISOString().split("T")[0];
 
@@ -348,6 +364,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
     })),
     remaining_due_count: remainingDueCount,
     meta: session.meta as Record<string, unknown> | null,
+    interleaving_materials: interleavingMaterials,
   };
 }
 
