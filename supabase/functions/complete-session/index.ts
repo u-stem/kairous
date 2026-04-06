@@ -276,6 +276,7 @@ Deno.serve(async (req) => {
 
     if (material) {
       // JST 基準で日付を算出。UTC の toISOString() では JST 23:00 が翌日扱いになる
+      // src/lib/constants.ts の JST_OFFSET_MS と同値。Deno 環境のため import 不可
       const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
       const logDate = new Date(now.getTime() + JST_OFFSET_MS)
         .toISOString()
