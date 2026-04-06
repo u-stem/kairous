@@ -101,20 +101,6 @@ function validateRequest(body: unknown): {
   return { ok: true, session_id, reviews: reviews as ReviewInput[] };
 }
 
-// Server Action (service_role key) とクライアント直接呼び出し (JWT) の両方に対応するため、
-// Authorization ヘッダーから user_id を抽出する
-async function extractUserId(
-  req: Request,
-  supabase: ReturnType<typeof createClient>,
-): Promise<string | null> {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) return null;
-
-  const token = authHeader.slice(7);
-  const { data } = await supabase.auth.getUser(token);
-  return data.user?.id ?? null;
-}
-
 Deno.serve(async (req) => {
   let body: unknown;
   try {
@@ -145,15 +131,14 @@ Deno.serve(async (req) => {
     return jsonError("Session not found", 404);
   }
 
-  // 他ユーザーのセッションを完了させる攻撃を防ぐため、呼び出し元を検証する
-  const callerId = await extractUserId(req, supabase);
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const isServiceRole = authHeader === `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`;
+  // Server Action は JWT で認証済みの user_id を x-user-id ヘッダーで送信する。
+  // Edge Function は service_role key で DB 操作するが、認可は呼び出し元の Server Action が担保する
+  const callerId = req.headers.get("x-user-id");
 
-  if (!callerId && !isServiceRole) {
-    return jsonError("Authentication required", 401);
+  if (!callerId) {
+    return jsonError("x-user-id header is required", 401);
   }
-  if (callerId && callerId !== session.user_id) {
+  if (callerId !== session.user_id) {
     return jsonError("Not authorized to complete this session", 403);
   }
 

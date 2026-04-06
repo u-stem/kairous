@@ -187,6 +187,9 @@ export async function completeSession(
       session_id: parsed.data.sessionId,
       reviews: parsed.data.reviews,
     },
+    headers: {
+      "x-user-id": user.id,
+    },
   });
 
   if (fnResult.error) {
