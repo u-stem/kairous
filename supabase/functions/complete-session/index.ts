@@ -143,24 +143,12 @@ Deno.serve(async (req) => {
   }
 
   const reviewRows = reviews.map((r) => ({
-    session_id,
     card_id: r.card_id,
     rating: r.rating,
     response_ms:
       new Date(r.answered_at).getTime() - new Date(r.started_at).getTime(),
     reviewed_at: r.answered_at,
   }));
-
-  const { error: reviewError } = await supabase
-    .from("card_reviews")
-    .insert(reviewRows);
-
-  if (reviewError) {
-    return jsonError(
-      `card_reviews INSERT failed: ${reviewError.message}`,
-      500,
-    );
-  }
 
   // FSRS の差分計算に前回の状態が必要なため、既存の srs_states を取得する
   const cardIds = reviews.map((r) => r.card_id);
@@ -241,13 +229,17 @@ Deno.serve(async (req) => {
     };
   });
 
-  const { error: srsError } = await supabase.rpc("batch_upsert_srs_states", {
-    p_states: newStates,
+  // card_reviews INSERT と srs_states UPSERT を単一トランザクションで実行
+  const { error: completeError } = await supabase.rpc("complete_session_reviews", {
+    p_session_id: session_id,
+    p_user_id: callerId,
+    p_reviews: reviewRows,
+    p_srs_states: newStates,
   });
 
-  if (srsError) {
+  if (completeError) {
     return jsonError(
-      `srs_states batch upsert failed: ${srsError.message}`,
+      `complete_session_reviews failed: ${completeError.message}`,
       500,
     );
   }

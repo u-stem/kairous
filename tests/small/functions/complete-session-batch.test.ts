@@ -15,12 +15,11 @@ const migrationPath = resolve(
 const migrationSource = readFileSync(migrationPath, "utf-8");
 
 describe("srs_states batch upsert (performance improvement)", () => {
-  it("Edge Function calls batch_upsert_srs_states RPC instead of looping UPDATE/INSERT", () => {
-    // バッチ RPC 呼び出しが存在する
-    expect(edgeFunctionSource).toContain('.rpc("batch_upsert_srs_states"');
+  it("Edge Function calls complete_session_reviews RPC for atomic batch write", () => {
+    // card_reviews + srs_states を原子的に処理する RPC を呼び出す
+    expect(edgeFunctionSource).toContain('.rpc("complete_session_reviews"');
 
     // ループ内の個別 UPDATE/INSERT パターンが存在しない
-    // for ループ内で srs_states を個別更新していないことを確認
     expect(edgeFunctionSource).not.toMatch(
       /from\("srs_states"\)\s*\n\s*\.update\(/,
     );
@@ -29,8 +28,8 @@ describe("srs_states batch upsert (performance improvement)", () => {
     );
   });
 
-  it("Edge Function passes p_states parameter as JSONB array to batch RPC", () => {
-    expect(edgeFunctionSource).toContain("p_states");
+  it("Edge Function passes p_srs_states parameter as JSONB array to atomic RPC", () => {
+    expect(edgeFunctionSource).toContain("p_srs_states");
   });
 
   it("RPC migration uses ON CONFLICT (card_id, user_id) for atomic batch upsert", () => {
