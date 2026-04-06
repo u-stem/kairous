@@ -139,4 +139,22 @@ describe("getDueMaterials", () => {
     ];
     expect(rpcCallArgs[1].p_today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
+
+  it("returns empty array when rpc returns error", async () => {
+    mockClient = buildMockClientWithRpc({
+      data: null,
+      error: { message: "connection refused" },
+    });
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { getDueMaterials } = await import("@/lib/actions/sessions");
+    const result = await getDueMaterials();
+
+    expect(result).toEqual([]);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "getDueMaterials RPC failed:",
+      "connection refused",
+    );
+    consoleSpy.mockRestore();
+  });
 });

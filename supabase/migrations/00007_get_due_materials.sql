@@ -1,6 +1,6 @@
 -- materials・cards・srs_states を結合して due_count を集計する RPC。
 -- N+1 クエリ（materials→cards→srs_states の3往復）を1クエリに集約するために RPC 化した。
-CREATE OR REPLACE FUNCTION get_due_materials(
+CREATE FUNCTION get_due_materials(
   p_user_id UUID,
   p_today DATE
 )

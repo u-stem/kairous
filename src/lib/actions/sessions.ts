@@ -22,10 +22,15 @@ export async function getDueMaterials(): Promise<DueMaterial[]> {
 
   // N+1 回避: materials→cards→srs_states の3クエリを RPC で1クエリに集約
   const today = new Date().toISOString().split("T")[0];
-  const { data: rows } = await supabase.rpc("get_due_materials", {
+  const { data: rows, error } = await supabase.rpc("get_due_materials", {
     p_user_id: user.id,
     p_today: today,
   });
+
+  if (error) {
+    console.error("getDueMaterials RPC failed:", error.message);
+    return [];
+  }
 
   if (!rows || rows.length === 0) return [];
 
