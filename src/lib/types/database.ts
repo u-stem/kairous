@@ -495,6 +495,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_due_materials: {
+        Args: {
+          p_user_id: string
+          p_today: string
+        }
+        Returns: Array<{
+          material_id: string
+          title: string
+          subject_id: string
+          subject_name: string
+          subject_color: string
+          method_id: string
+          method_slug: string
+          method_name: string
+          due_count: number
+        }>
+      }
       increment_total_cards: {
         Args: {
           p_material_id: string
