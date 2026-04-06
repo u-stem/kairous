@@ -2,6 +2,7 @@ import { getDueMaterials } from "@/lib/actions/sessions";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { TodayMaterialList } from "./today-material-list";
+import { InterleavingButton } from "@/components/interleaving-button";
 
 export default async function TodayPage() {
   const materials = await getDueMaterials();
@@ -31,6 +32,12 @@ export default async function TodayPage() {
               <div className="text-xs text-muted-foreground">教材</div>
             </div>
           </div>
+
+          {materials.length >= 2 && (
+            <div className="mb-4">
+              <InterleavingButton materialIds={materials.map((m) => m.id)} />
+            </div>
+          )}
 
           <p className="mb-3 text-sm text-muted-foreground">復習が必要な教材</p>
           <TodayMaterialList materials={materials} />
