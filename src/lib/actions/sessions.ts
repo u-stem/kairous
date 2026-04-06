@@ -66,7 +66,7 @@ export async function createSession(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "認証が必要です" };
 
-  // 教材の所有権確認
+  // RLS に加えてアプリ層でも所有者を確認し、RLS 緩和時の誤操作を防ぐ
   const { data: material } = await supabase
     .from("materials")
     .select("id")
@@ -99,7 +99,7 @@ export async function getSessionCards(sessionId: string): Promise<SessionCard[]>
   } = await supabase.auth.getUser();
   if (!user) return [];
 
-  // セッションの所有権確認 + material_id 取得
+  // RLS に加えてアプリ層でも所有者を確認し、RLS 緩和時の誤操作を防ぐ
   const { data: session } = await supabase
     .from("sessions")
     .select("material_id")
@@ -119,7 +119,7 @@ export async function getSessionCards(sessionId: string): Promise<SessionCard[]>
 
   if (!allCards || allCards.length === 0) return [];
 
-  // due_date が明日以降のカードを除外
+  // 復習予定がまだ先のカードはセッション対象外にする
   const cardIds = allCards.map((c) => c.id);
   const { data: notDueStates } = await supabase
     .from("srs_states")
@@ -151,7 +151,7 @@ export async function completeSession(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "認証が必要です" };
 
-  // セッションの所有権 + status 確認
+  // RLS に加えてアプリ層でも所有者と status を確認し、二重完了を防ぐ
   const { data: session } = await supabase
     .from("sessions")
     .select("id, started_at, status")
@@ -181,7 +181,7 @@ export async function completeSession(
 
   if (updateError) return { success: false, error: "セッションの更新に失敗しました" };
 
-  // Edge Function で card_reviews INSERT + FSRS 計算 + daily_logs upsert
+  // FSRS 計算と統計更新を原子的に実行するため、Edge Function に処理を委譲する
   const fnResult = await supabase.functions.invoke("complete-session", {
     body: {
       session_id: parsed.data.sessionId,
@@ -227,7 +227,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
     .select("card_id, rating, response_ms, cards(front, back)")
     .eq("session_id", sessionId);
 
-  // 残りの due カード数を算出
+  // サマリー画面で「続けて学習」の判断材料を表示するため、残りの due 数を算出する
   let remainingDueCount = 0;
   const mat = session.materials as unknown as {
     id: string;
@@ -307,7 +307,7 @@ export async function createRestSession(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "認証が必要です" };
 
-  // 親セッションの所有権確認
+  // RLS に加えてアプリ層でも所有者を確認し、他ユーザーのセッションへの紐付けを防ぐ
   const { data: parentSession } = await supabase
     .from("sessions")
     .select("id")
@@ -317,7 +317,6 @@ export async function createRestSession(
 
   if (!parentSession) return { success: false, error: "セッションが見つかりません" };
 
-  // wakeful_rest の method_id を取得
   const { data: restMethod } = await supabase
     .from("learning_methods")
     .select("id")
@@ -356,7 +355,7 @@ export async function completeRestSession(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "認証が必要です" };
 
-  // セッションの所有権 + status 確認 + 安静セッションであることを検証
+  // 所有者・進行中・安静セッションの3条件を同時に検証し、不正な完了を防ぐ
   const { data: session } = await supabase
     .from("sessions")
     .select("id, learning_methods!inner(slug)")

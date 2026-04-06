@@ -33,7 +33,7 @@ export async function updateSession(request: NextRequest) {
 
   const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
 
-  // セッション無効時（エラーまたは未認証）は認証ページ以外からリダイレクト
+  // 未認証ユーザーの保護ページアクセスを防ぐため、ログインページへ誘導する
   if (error || !user) {
     if (!isAuthPage) {
       const url = request.nextUrl.clone();
@@ -43,7 +43,7 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // 認証済みユーザーが認証ページにアクセスした場合はトップにリダイレクト
+  // 認証済みユーザーがログインページに戻るのを防ぎ、UX の混乱を避ける
   if (isAuthPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/";

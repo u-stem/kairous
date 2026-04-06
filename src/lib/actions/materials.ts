@@ -41,7 +41,7 @@ export async function createMaterial(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "認証が必要です" };
 
-  // 教材を先に作成し、IDを取得してから material_methods を挿入する
+  // material_methods が material_id FK を必要とするため、教材を先に作成する
   const { data: material, error: materialError } = await supabase
     .from("materials")
     .insert({
@@ -110,7 +110,7 @@ export async function getMaterials(
   const { data } = await query;
   if (!data) return [];
 
-  // due_count を srs_states から集計。cards テーブルを経由して material_id に紐付ける
+  // 一覧画面で復習が必要なカード数を表示し、学習優先度を判断できるようにする
   const materialIds = data.map((m) => m.id);
   const dueMap = new Map<string, number>();
 
@@ -177,7 +177,7 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
 
   if (!material) return null;
 
-  // due_count: 当日以前に期限を迎えたカードを集計する
+  // 詳細ページで復習が必要なカード数を表示し、セッション開始の判断材料にする
   const today = new Date().toISOString().split("T")[0];
   const cardIds =
     (await supabase.from("cards").select("id").eq("material_id", id)).data?.map(
@@ -195,7 +195,7 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
     dueCount = count ?? 0;
   }
 
-  // 直近5件のセッションを取得し、詳細ページで学習履歴として表示する
+  // 学習パターンの振り返りに使うため、直近セッション履歴を取得する
   const { data: sessions } = await supabase
     .from("sessions")
     .select(`
@@ -207,7 +207,7 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
     .order("started_at", { ascending: false })
     .limit(5);
 
-  // accuracy_rate: rating >= 3 を正解として全レビューに対する割合を算出する
+  // FSRS の Good(3)/Easy(4) を正解とし、教材全体の理解度を数値化する
   let accuracyRate: number | null = null;
   if (cardIds.length > 0) {
     const { count: totalReviews } = await supabase
@@ -296,7 +296,7 @@ export async function updateMaterial(
 
   if (error) return { success: false, error: "教材の更新に失敗しました" };
 
-  // 詳細ページと一覧ページのキャッシュを両方無効化する
+  // 更新後のデータを即座に反映するため、関連する全ページのキャッシュを無効化する
   revalidatePath(`/materials/${id}`);
   revalidatePath("/materials");
   return { success: true, data: undefined };

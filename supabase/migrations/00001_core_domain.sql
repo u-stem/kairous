@@ -1,13 +1,12 @@
 -- supabase/migrations/00001_core_domain.sql
 
--- プロフィール (auth.users の拡張)
+-- auth.users を 1:1 で拡張し、アプリ固有のプロフィールを管理する
 CREATE TABLE profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   display_name TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 分野
 CREATE TABLE subjects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -17,7 +16,7 @@ CREATE TABLE subjects (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 手法マスタ
+-- システム定義の学習手法マスタ。ユーザー定義手法は将来 is_system=false で追加
 CREATE TABLE learning_methods (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug TEXT NOT NULL UNIQUE,
@@ -28,7 +27,6 @@ CREATE TABLE learning_methods (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 教材
 CREATE TABLE materials (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   subject_id UUID NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
@@ -40,7 +38,7 @@ CREATE TABLE materials (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 教材 x 手法の中間テーブル（設計の核心）
+-- 1教材に複数手法を紐付ける中間テーブル。データモデルの核心
 CREATE TABLE material_methods (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   material_id UUID NOT NULL REFERENCES materials(id) ON DELETE CASCADE,
@@ -51,7 +49,7 @@ CREATE TABLE material_methods (
   UNIQUE(material_id, method_id)
 );
 
--- カード（SRS等で使用）
+-- SRS・Active Recall で使用する復習カード。user_id を持たず material 経由で所有者を辿る
 CREATE TABLE cards (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   material_id UUID NOT NULL REFERENCES materials(id) ON DELETE CASCADE,
@@ -62,7 +60,6 @@ CREATE TABLE cards (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- インデックス
 CREATE INDEX idx_subjects_user_id ON subjects(user_id);
 CREATE INDEX idx_materials_subject_id ON materials(subject_id);
 CREATE INDEX idx_materials_user_id ON materials(user_id);
