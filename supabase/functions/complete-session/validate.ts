@@ -7,6 +7,8 @@ export function isUUID(value: unknown): value is string {
   );
 }
 
+// Date コンストラクタに丸投げするため "2026" 等の短縮形も通過する。
+// Edge Function は内部 API 用途で呼び出し元が ISO 文字列を送る前提のため許容する。
 export function isISODatetime(value: unknown): value is string {
   if (typeof value !== "string") return false;
   const d = new Date(value);

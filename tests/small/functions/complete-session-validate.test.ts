@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, assert } from "vitest";
 import {
   isUUID,
   isISODatetime,
@@ -27,15 +27,27 @@ describe("isUUID", () => {
     expect(isUUID("A0000000-0000-4000-A000-000000000001")).toBe(true);
   });
 
-  it("rejects non-string values", () => {
+  it("rejects number", () => {
     expect(isUUID(123)).toBe(false);
+  });
+
+  it("rejects null", () => {
     expect(isUUID(null)).toBe(false);
+  });
+
+  it("rejects undefined", () => {
     expect(isUUID(undefined)).toBe(false);
   });
 
-  it("rejects malformed UUID strings", () => {
+  it("rejects non-UUID string", () => {
     expect(isUUID("not-a-uuid")).toBe(false);
+  });
+
+  it("rejects truncated UUID", () => {
     expect(isUUID("a0000000-0000-4000-a000")).toBe(false);
+  });
+
+  it("rejects empty string", () => {
     expect(isUUID("")).toBe(false);
   });
 });
@@ -49,8 +61,11 @@ describe("isISODatetime", () => {
     expect(isISODatetime("2026-04-05")).toBe(true);
   });
 
-  it("rejects non-string values", () => {
+  it("rejects number", () => {
     expect(isISODatetime(123)).toBe(false);
+  });
+
+  it("rejects null", () => {
     expect(isISODatetime(null)).toBe(false);
   });
 
@@ -66,11 +81,9 @@ describe("validateRequest", () => {
       reviews: [validReview()],
     });
 
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.session_id).toBe(VALID_UUID);
-      expect(result.reviews).toHaveLength(1);
-    }
+    assert(result.ok);
+    expect(result.session_id).toBe(VALID_UUID);
+    expect(result.reviews).toHaveLength(1);
   });
 
   it("rejects null body", () => {
@@ -180,9 +193,7 @@ describe("validateRequest", () => {
         validReview({ card_id: VALID_UUID_2 }),
       ],
     });
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.reviews).toHaveLength(2);
-    }
+    assert(result.ok);
+    expect(result.reviews).toHaveLength(2);
   });
 });
