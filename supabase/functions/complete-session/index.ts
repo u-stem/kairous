@@ -131,12 +131,15 @@ Deno.serve(async (req) => {
     return jsonError("Session not found", 404);
   }
 
-  // Server Action は JWT で認証済みの user_id を x-user-id ヘッダーで送信する。
-  // Edge Function は service_role key で DB 操作するが、認可は呼び出し元の Server Action が担保する
-  const callerId = req.headers.get("x-user-id");
-
+  // JWT を Supabase Auth で検証し、user_id を取得する
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return jsonError("Authorization header is required", 401);
+  }
+  const { data: authData } = await supabase.auth.getUser(authHeader.slice(7));
+  const callerId = authData.user?.id;
   if (!callerId) {
-    return jsonError("x-user-id header is required", 401);
+    return jsonError("Invalid or expired token", 401);
   }
   if (callerId !== session.user_id) {
     return jsonError("Not authorized to complete this session", 403);

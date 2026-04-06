@@ -181,14 +181,12 @@ export async function completeSession(
 
   if (updateError) return { success: false, error: "セッションの更新に失敗しました" };
 
-  // FSRS 計算と統計更新を原子的に実行するため、Edge Function に処理を委譲する
+  // FSRS 計算と統計更新を原子的に実行するため、Edge Function に処理を委譲する。
+  // supabase.functions.invoke はユーザーの JWT を Authorization ヘッダーに自動付与する
   const fnResult = await supabase.functions.invoke("complete-session", {
     body: {
       session_id: parsed.data.sessionId,
       reviews: parsed.data.reviews,
-    },
-    headers: {
-      "x-user-id": user.id,
     },
   });
 

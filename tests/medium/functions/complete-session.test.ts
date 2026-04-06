@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { adminClient, createTestUser, deleteTestUser } from "../setup";
+import { adminClient, createTestUser, createUserClient, deleteTestUser } from "../setup";
 import {
   createTestSubject,
   createTestMaterial,
@@ -14,11 +14,16 @@ import {
 // supabase functions serve が起動中でなければテストをスキップ
 let functionsAvailable = false;
 
+const TEST_EMAIL = `test-fn-${Date.now()}@kairous.local`;
+const TEST_PASSWORD = "test-password-12345";
+
 let userId: string;
 let srsMethodId: string;
+// Edge Function は JWT 認証が必要。ユーザーとしてサインインしたクライアントで呼ぶ
+let userClient: Awaited<ReturnType<typeof createUserClient>>;
 
 beforeAll(async () => {
-  userId = await createTestUser();
+  userId = await createTestUser(TEST_EMAIL, TEST_PASSWORD);
   srsMethodId = await getSrsMethodId();
 
   // functions serve の起動確認
@@ -34,6 +39,10 @@ beforeAll(async () => {
     functionsAvailable = res.status !== 0;
   } catch {
     functionsAvailable = false;
+  }
+
+  if (functionsAvailable) {
+    userClient = await createUserClient(TEST_EMAIL, TEST_PASSWORD);
   }
 });
 
@@ -65,7 +74,8 @@ describe("complete-session Edge Function (DB integration)", () => {
         .update({ status: "completed", duration_sec: 120 })
         .eq("id", session.id);
 
-      const result = await adminClient.functions.invoke<{
+      // userClient は JWT 認証済みなので Authorization ヘッダーが自動付与される
+      const result = await userClient.functions.invoke<{
         success: boolean;
       }>("complete-session", {
         body: {
@@ -78,9 +88,6 @@ describe("complete-session Edge Function (DB integration)", () => {
               answered_at: "2026-04-05T10:00:05.000Z",
             },
           ],
-        },
-        headers: {
-          "x-user-id": userId,
         },
       });
 
@@ -158,7 +165,7 @@ describe("complete-session Edge Function (DB integration)", () => {
         .update({ status: "completed", duration_sec: 60 })
         .eq("id", session.id);
 
-      const result = await adminClient.functions.invoke<{
+      const result = await userClient.functions.invoke<{
         success: boolean;
       }>("complete-session", {
         body: {
@@ -171,9 +178,6 @@ describe("complete-session Edge Function (DB integration)", () => {
               answered_at: "2026-04-05T10:00:08.000Z",
             },
           ],
-        },
-        headers: {
-          "x-user-id": userId,
         },
       });
 

@@ -41,10 +41,13 @@ if (!serviceRoleKey) {
 export const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
 // テスト用ユーザーの作成・取得・削除ヘルパー
-export async function createTestUser(): Promise<string> {
+export async function createTestUser(
+  email = `test-${Date.now()}@kairous.local`,
+  password = "test-password-12345",
+): Promise<string> {
   const { data, error } = await adminClient.auth.admin.createUser({
-    email: `test-${Date.now()}@kairous.local`,
-    password: "test-password-12345",
+    email,
+    password,
     email_confirm: true,
     user_metadata: { display_name: "Test User" },
   });
@@ -55,4 +58,17 @@ export async function createTestUser(): Promise<string> {
 export async function deleteTestUser(userId: string): Promise<void> {
   const { error } = await adminClient.auth.admin.deleteUser(userId);
   if (error) throw new Error(`テストユーザー削除失敗: ${error.message}`);
+}
+
+// Edge Function の JWT 認証テスト用。ユーザーとしてサインインしたクライアントを返す
+export async function createUserClient(
+  email: string,
+  password: string,
+) {
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!anonKey) throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY が未設定");
+  const client = createClient(supabaseUrl!, anonKey);
+  const { error } = await client.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(`サインイン失敗: ${error.message}`);
+  return client;
 }
