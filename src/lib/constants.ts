@@ -89,6 +89,10 @@ export function getMethodColorClasses(category: string): {
   return COLOR_MAP[category as MethodCategory] ?? FALLBACK_COLOR;
 }
 
+// 日本のユーザーのみ対象のため JST 固定。国際化時に要対応
+export const APP_TIMEZONE = "Asia/Tokyo" as const;
+export const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
 // Stats 画面の期間セレクターで使用する選択肢
 export const STATS_PERIODS = [7, 30, 90] as const;
 export type StatsPeriod = (typeof STATS_PERIODS)[number];

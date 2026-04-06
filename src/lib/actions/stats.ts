@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { STATS_PERIODS } from "@/lib/constants";
 import type { StatsData, StatsPeriod } from "@/lib/types/stats";
 import { aggregateDaily, aggregateByKey } from "@/lib/utils/stats";
+import { toJstDateString } from "@/lib/utils/date";
 
 // STATS_PERIODS と同期した union を生成し、定数追加時に漏れを防ぐ
 const periodSchema = z.union(
@@ -42,8 +43,9 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
   const prevStart = new Date(currentStart);
   prevStart.setDate(prevStart.getDate() - parsed.data);
 
-  const currentStartStr = currentStart.toISOString().split("T")[0];
-  const prevStartStr = prevStart.toISOString().split("T")[0];
+  // toISOString() は UTC 基準のため、JST 23:00 の学習が翌日扱いになる問題を防ぐ
+  const currentStartStr = toJstDateString(currentStart);
+  const prevStartStr = toJstDateString(prevStart);
 
   // 現在 + 前期間を1クエリで取得し、コード側で分割する
   const { data: logs } = await supabase
