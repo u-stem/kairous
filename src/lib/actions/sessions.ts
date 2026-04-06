@@ -37,8 +37,7 @@ export async function getDueMaterials(): Promise<DueMaterial[]> {
       name: row.subject_name,
       color: row.subject_color,
     },
-    // method_slug を srs_method_id として使用（UI から method 特定に使うため slug で十分）
-    srs_method_id: row.method_slug,
+    srs_method_id: row.method_id,
     due_count: Number(row.due_count),
   }));
 }

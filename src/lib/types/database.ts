@@ -506,6 +506,7 @@ export type Database = {
           subject_id: string
           subject_name: string
           subject_color: string
+          method_id: string
           method_slug: string
           method_name: string
           due_count: number

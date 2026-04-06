@@ -10,6 +10,7 @@ RETURNS TABLE(
   subject_id UUID,
   subject_name TEXT,
   subject_color TEXT,
+  method_id UUID,
   method_slug TEXT,
   method_name TEXT,
   due_count BIGINT
@@ -23,6 +24,7 @@ AS $$
     s.id AS subject_id,
     s.name AS subject_name,
     s.color AS subject_color,
+    lm.id AS method_id,
     lm.slug AS method_slug,
     lm.name AS method_name,
     COUNT(c.id) FILTER (
@@ -38,7 +40,7 @@ AS $$
   LEFT JOIN srs_states ss ON ss.card_id = c.id AND ss.user_id = p_user_id
   WHERE m.user_id = p_user_id
     AND lm.slug = 'srs'
-  GROUP BY m.id, m.title, s.id, s.name, s.color, lm.slug, lm.name
+  GROUP BY m.id, m.title, s.id, s.name, s.color, lm.id, lm.slug, lm.name
   -- due カードが 1 枚以上ある教材のみ返す
   HAVING COUNT(c.id) FILTER (WHERE ss.card_id IS NULL OR ss.due_date <= p_today) > 0;
 $$;

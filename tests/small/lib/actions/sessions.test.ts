@@ -88,6 +88,7 @@ describe("getDueMaterials", () => {
         subject_id: "sub-1",
         subject_name: "英語",
         subject_color: "#6366f1",
+        method_id: "method-srs-uuid",
         method_slug: "srs",
         method_name: "SRS",
         due_count: 5,
@@ -98,6 +99,7 @@ describe("getDueMaterials", () => {
         subject_id: "sub-2",
         subject_name: "数学",
         subject_color: "#10b981",
+        method_id: "method-srs-uuid",
         method_slug: "srs",
         method_name: "SRS",
         due_count: 3,
@@ -113,14 +115,14 @@ describe("getDueMaterials", () => {
       id: "mat-1",
       title: "英単語",
       subject: { id: "sub-1", name: "英語", color: "#6366f1" },
-      srs_method_id: "srs",
+      srs_method_id: "method-srs-uuid",
       due_count: 5,
     });
     expect(result[1]).toEqual({
       id: "mat-2",
       title: "数学問題集",
       subject: { id: "sub-2", name: "数学", color: "#10b981" },
-      srs_method_id: "srs",
+      srs_method_id: "method-srs-uuid",
       due_count: 3,
     });
   });
