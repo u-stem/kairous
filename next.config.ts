@@ -1,13 +1,13 @@
 import type { NextConfig } from "next";
 
-const securityHeaders = [
+export const securityHeaders = [
   {
     key: "X-DNS-Prefetch-Control",
     value: "on",
   },
   {
     key: "X-Frame-Options",
-    value: "SAMEORIGIN",
+    value: "DENY",
   },
   {
     key: "X-Content-Type-Options",
@@ -25,7 +25,9 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      // 開発環境: Turbopack HMR に unsafe-eval が必要。本番では除外
+      // Next.js App Router がハイドレーション用 inline script を生成するため unsafe-inline が必要。
+      // nonce ベース CSP 移行は middleware + 全 Script タグへの nonce 付与が必要で v0.6.0 以降に検討。
+      // 開発環境: Turbopack HMR に unsafe-eval が追加で必要
       process.env.NODE_ENV === "development"
         ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
         : "script-src 'self' 'unsafe-inline'",
