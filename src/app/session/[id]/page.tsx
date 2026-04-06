@@ -16,21 +16,18 @@ export default async function SessionPage({ params }: Props) {
 
   switch (info.methodSlug) {
     case "pomodoro":
-      // PBI 3 で PomodoroPlayer を実装後に動的 import に置換する
       return <p>Pomodoro session (coming soon)</p>;
 
-    case "elaboration": {
-      // PBI 2 で ElaborationPlayer を実装後に動的 import に置換する
-      const cards = await getSessionCards(id);
-      if (cards.length === 0) notFound();
+    case "elaboration":
       return <p>Elaboration session (coming soon)</p>;
-    }
 
-    default: {
-      // SRS (default) — 既存の CardSessionPlayer
+    case "srs": {
       const cards = await getSessionCards(id);
       if (cards.length === 0) notFound();
       return <SessionPlayer sessionId={id} cards={cards} />;
     }
+
+    default:
+      notFound();
   }
 }

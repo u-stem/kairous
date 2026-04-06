@@ -60,12 +60,10 @@ DECLARE
   v_physics UUID := 'a0000000-0000-0000-0000-000000000003';
   v_srs UUID;
   v_pomodoro UUID;
-  v_active_recall UUID;
   v_d DATE;
 BEGIN
   SELECT id INTO v_srs FROM learning_methods WHERE slug = 'srs';
   SELECT id INTO v_pomodoro FROM learning_methods WHERE slug = 'pomodoro';
-  SELECT id INTO v_active_recall FROM learning_methods WHERE slug = 'active_recall';
 
   FOR i IN 1..14 LOOP
     v_d := CURRENT_DATE - i;
@@ -82,10 +80,11 @@ BEGIN
       ON CONFLICT (user_id, subject_id, method_id, log_date) DO NOTHING;
     END IF;
 
-    -- Physics + Active Recall (every 3 days, 15-30min, 10-25 cards)
+    -- Physics + SRS (every 3 days, 15-30min, 10-25 cards)
+    -- active_recall は migration 00012 で srs に統合されたため srs を使用する
     IF i % 3 = 0 THEN
       INSERT INTO daily_logs (user_id, subject_id, method_id, log_date, total_sec, session_count, cards_reviewed)
-      VALUES (v_user_id, v_physics, v_active_recall, v_d, 900 + (random() * 900)::int, 1, 10 + (random() * 15)::int)
+      VALUES (v_user_id, v_physics, v_srs, v_d, 900 + (random() * 900)::int, 1, 10 + (random() * 15)::int)
       ON CONFLICT (user_id, subject_id, method_id, log_date) DO NOTHING;
     END IF;
   END LOOP;

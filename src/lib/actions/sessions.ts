@@ -38,9 +38,13 @@ export async function getSessionInfo(sessionId: string): Promise<SessionInfo | n
 
   const method = session.learning_methods as unknown as { slug: string } | null;
 
+  // method が null になるのは learning_methods が削除された孤立データのみ
+  // notFound() でハンドルするため、呼び出し元に null を返す
+  if (!method?.slug) return null;
+
   return {
     id: session.id,
-    methodSlug: method?.slug ?? "srs",
+    methodSlug: method.slug,
     materialId: session.material_id,
   };
 }

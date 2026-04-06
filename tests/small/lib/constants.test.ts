@@ -54,6 +54,7 @@ describe("METHOD_CATEGORIES", () => {
   it("comprehensionカテゴリにinterleavingとelaborationが含まれる", () => {
     expect(METHOD_CATEGORIES.comprehension.slugs).toContain("interleaving");
     expect(METHOD_CATEGORIES.comprehension.slugs).toContain("elaboration");
+    expect(METHOD_CATEGORIES.comprehension.slugs).toHaveLength(2);
   });
 
   it("focusカテゴリにpomodoroが含まれる", () => {
