@@ -50,6 +50,7 @@ export const METHOD_DESCRIPTIONS: Record<string, string> = {
   srs: "間隔を空けて復習し、長期記憶に定着させる",
   elaboration: "「なぜ?」を問い、自分の言葉で説明する",
   pomodoro: "25分集中 + 5分休憩のサイクルで学習する",
+  interleaving: "複数教材のカードを混ぜて復習し、識別力を高める",
 };
 
 // UI コンポーネント間でカテゴリの視覚的一貫性を保つためのカラーマッピング

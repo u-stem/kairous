@@ -13,8 +13,9 @@ import {
   completeElaborationSchema,
   type ElaborationInput,
 } from "@/lib/validations/elaboration";
+import { createInterleavingSessionSchema } from "@/lib/validations/interleaving";
 import type { ActionResult } from "@/lib/validations/materials";
-import type { CardReview, DueMaterial, SessionCard, SessionDetail } from "@/lib/types/sessions";
+import type { CardReview, DueMaterial, SessionCard, InterleavingCard, SessionDetail } from "@/lib/types/sessions";
 import { SESSION_MAX_CARDS, REST_DURATION_SEC, JST_OFFSET_MS } from "@/lib/constants";
 import { completePomodoroSchema } from "@/lib/validations/pomodoro";
 
@@ -291,6 +292,22 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
     subjects: { name: string };
   } | null;
 
+  // Interleaving セッションは material_id=NULL のため、session_materials から教材一覧を取得
+  let interleavingMaterials: Array<{ id: string; title: string }> | null = null;
+  if (!mat) {
+    const { data: smRows } = await supabase
+      .from("session_materials")
+      .select("material_id, materials(title)")
+      .eq("session_id", sessionId);
+
+    if (smRows && smRows.length > 0) {
+      interleavingMaterials = smRows.map((sm) => ({
+        id: sm.material_id,
+        title: (sm.materials as unknown as { title: string })?.title ?? "",
+      }));
+    }
+  }
+
   if (mat) {
     const today = new Date().toISOString().split("T")[0];
 
@@ -348,6 +365,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
     })),
     remaining_due_count: remainingDueCount,
     meta: session.meta as Record<string, unknown> | null,
+    interleaving_materials: interleavingMaterials,
   };
 }
 
@@ -613,4 +631,144 @@ export async function completeRestSession(
 
   revalidatePath("/");
   return { success: true, data: undefined };
+}
+
+export async function createInterleavingSession(
+  materialIds: string[],
+): Promise<ActionResult<{ id: string }>> {
+  const parsed = createInterleavingSessionSchema.safeParse({ materialIds });
+  if (!parsed.success) {
+    return { success: false, error: "インターリービングには2つ以上の教材が必要です" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "認証が必要です" };
+
+  // interleaving の method_id を取得
+  const { data: method } = await supabase
+    .from("learning_methods")
+    .select("id")
+    .eq("slug", "interleaving")
+    .single();
+
+  if (!method) return { success: false, error: "インターリービング手法が見つかりません" };
+
+  // RLS に加えてアプリ層でも全教材の所有権を確認する
+  const { data: ownedMaterials } = await supabase
+    .from("materials")
+    .select("id")
+    .eq("user_id", user.id)
+    .in("id", parsed.data.materialIds);
+
+  if (!ownedMaterials || ownedMaterials.length !== parsed.data.materialIds.length) {
+    return { success: false, error: "教材が見つかりません" };
+  }
+
+  // material_id = NULL で interleaving セッションを作成
+  const { data: session, error: sessionError } = await supabase
+    .from("sessions")
+    .insert({
+      user_id: user.id,
+      method_id: method.id,
+      status: "in_progress",
+    })
+    .select("id")
+    .single();
+
+  if (sessionError || !session) {
+    return { success: false, error: "セッションの作成に失敗しました" };
+  }
+
+  // session_materials に対象教材を一括登録
+  const sessionMaterialRows = parsed.data.materialIds.map((mid) => ({
+    session_id: session.id,
+    material_id: mid,
+  }));
+
+  const { error: smError } = await supabase
+    .from("session_materials")
+    .insert(sessionMaterialRows);
+
+  if (smError) {
+    // session_materials 挿入に失敗した場合、セッションを放棄状態にする
+    await supabase
+      .from("sessions")
+      .update({ status: "abandoned" })
+      .eq("id", session.id);
+    return { success: false, error: "セッションの作成に失敗しました" };
+  }
+
+  return { success: true, data: { id: session.id } };
+}
+
+export async function getInterleavingCards(sessionId: string): Promise<InterleavingCard[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  // RLS に加えてアプリ層でも所有者を確認し、RLS 緩和時の誤操作を防ぐ
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id")
+    .eq("id", sessionId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!session) return [];
+
+  // session_materials からセッションに紐づく教材一覧を取得
+  const { data: sessionMaterials } = await supabase
+    .from("session_materials")
+    .select("material_id, materials(title)")
+    .eq("session_id", sessionId);
+
+  if (!sessionMaterials || sessionMaterials.length === 0) return [];
+
+  const today = new Date().toISOString().split("T")[0];
+  const allCards: InterleavingCard[] = [];
+
+  for (const sm of sessionMaterials) {
+    const materialTitle = (sm.materials as unknown as { title: string })?.title ?? "";
+
+    const { data: cards } = await supabase
+      .from("cards")
+      .select("id, front, back, display_order")
+      .eq("material_id", sm.material_id)
+      .order("display_order");
+
+    if (!cards || cards.length === 0) continue;
+
+    // SRS の due_date フィルタを適用
+    const cardIds = cards.map((c) => c.id);
+    const { data: notDueStates } = await supabase
+      .from("srs_states")
+      .select("card_id")
+      .eq("user_id", user.id)
+      .gt("due_date", today)
+      .in("card_id", cardIds);
+
+    const notDueCardIds = new Set((notDueStates ?? []).map((s) => s.card_id));
+
+    const dueCards = cards
+      .filter((c) => !notDueCardIds.has(c.id))
+      .map((c) => ({
+        ...c,
+        material_title: materialTitle,
+      }));
+
+    allCards.push(...dueCards);
+  }
+
+  // 交互配置効果を生むため、教材を跨いでシャッフルする (Fisher-Yates)
+  for (let i = allCards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allCards[i], allCards[j]] = [allCards[j], allCards[i]];
+  }
+
+  return allCards.slice(0, SESSION_MAX_CARDS);
 }

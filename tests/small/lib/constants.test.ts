@@ -3,6 +3,7 @@ import {
   MATERIAL_METHOD_SLUGS,
   CARD_BASED_SLUGS,
   METHOD_CATEGORIES,
+  METHOD_DESCRIPTIONS,
   getMethodColorClasses,
 } from "@/lib/constants";
 
@@ -67,6 +68,13 @@ describe("METHOD_CATEGORIES", () => {
 
   it("generalカテゴリにfree_studyが含まれる", () => {
     expect(METHOD_CATEGORIES.general.slugs).toContain("free_study");
+  });
+});
+
+describe("METHOD_DESCRIPTIONS", () => {
+  it("interleaving の説明を含む", () => {
+    expect(METHOD_DESCRIPTIONS).toHaveProperty("interleaving");
+    expect(typeof METHOD_DESCRIPTIONS.interleaving).toBe("string");
   });
 });
 

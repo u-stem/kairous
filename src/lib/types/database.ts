@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       card_reviews: {
@@ -495,54 +470,55 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_due_materials: {
+      batch_upsert_srs_states: { Args: { p_states: Json }; Returns: undefined }
+      complete_session_reviews: {
         Args: {
+          p_reviews: Json
+          p_session_id: string
+          p_srs_states: Json
           p_user_id: string
-          p_today: string
-        }
-        Returns: Array<{
-          material_id: string
-          title: string
-          subject_id: string
-          subject_name: string
-          subject_color: string
-          method_id: string
-          method_slug: string
-          method_name: string
-          due_count: number
-        }>
-      }
-      increment_total_cards: {
-        Args: {
-          p_material_id: string
-          p_delta: number
         }
         Returns: undefined
       }
       create_card_with_order: {
-        Args: {
-          p_material_id: string
-          p_front: string
-          p_back: string
-        }
+        Args: { p_back: string; p_front: string; p_material_id: string }
         Returns: string
       }
+      get_due_materials: {
+        Args: { p_today: string; p_user_id: string }
+        Returns: {
+          due_count: number
+          material_id: string
+          method_id: string
+          method_name: string
+          method_slug: string
+          subject_color: string
+          subject_id: string
+          subject_name: string
+          title: string
+        }[]
+      }
+      increment_total_cards:
+        | {
+            Args: { p_delta: number; p_material_id: string }
+            Returns: undefined
+          }
+        | {
+            Args: { p_delta: number; p_material_id: string; p_user_id?: string }
+            Returns: undefined
+          }
       remove_material_method: {
-        Args: {
-          p_material_id: string
-          p_method_id: string
-          p_user_id: string
-        }
+        Args: { p_material_id: string; p_method_id: string; p_user_id: string }
         Returns: undefined
       }
       upsert_daily_log: {
         Args: {
-          p_user_id: string
-          p_subject_id: string
-          p_method_id: string
-          p_log_date: string
-          p_duration_sec: number
           p_cards_reviewed: number
+          p_duration_sec: number
+          p_log_date: string
+          p_method_id: string
+          p_subject_id: string
+          p_user_id: string
         }
         Returns: undefined
       }
@@ -674,9 +650,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
