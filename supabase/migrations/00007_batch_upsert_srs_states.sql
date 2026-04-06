@@ -1,17 +1,18 @@
 -- Edge Function からのみ呼ばれる前提 (service_role key で RLS バイパス)
--- クライアントから直接呼ばれても RLS で弾かれる (SECURITY INVOKER)
-CREATE OR REPLACE FUNCTION batch_upsert_srs_states(
+-- クライアントから直接呼ばれても RLS で弾かれる
+CREATE FUNCTION batch_upsert_srs_states(
   p_states JSONB
 )
 RETURNS void
 LANGUAGE sql
+SECURITY INVOKER
 AS $$
   INSERT INTO srs_states (card_id, user_id, stability, difficulty, due_date, state, reps, lapses, last_reviewed_at)
   SELECT
     (elem->>'card_id')::UUID,
     (elem->>'user_id')::UUID,
-    (elem->>'stability')::FLOAT,
-    (elem->>'difficulty')::FLOAT,
+    (elem->>'stability')::REAL,
+    (elem->>'difficulty')::REAL,
     (elem->>'due_date')::DATE,
     (elem->>'state')::TEXT,
     (elem->>'reps')::INT,
