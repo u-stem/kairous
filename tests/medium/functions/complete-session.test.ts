@@ -36,7 +36,7 @@ beforeAll(async () => {
         body: JSON.stringify({}),
       },
     );
-    functionsAvailable = res.status !== 0;
+    functionsAvailable = res.ok;
   } catch {
     functionsAvailable = false;
   }
