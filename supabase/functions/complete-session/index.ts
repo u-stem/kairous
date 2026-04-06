@@ -275,7 +275,11 @@ Deno.serve(async (req) => {
       .single();
 
     if (material) {
-      const logDate = now.toISOString().split("T")[0];
+      // JST 基準で日付を算出。UTC の toISOString() では JST 23:00 が翌日扱いになる
+      const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+      const logDate = new Date(now.getTime() + JST_OFFSET_MS)
+        .toISOString()
+        .split("T")[0];
 
       // PostgreSQL の ON CONFLICT で原子的に upsert（race condition 防止）
       const { error: logError } = await supabase.rpc("upsert_daily_log", {
