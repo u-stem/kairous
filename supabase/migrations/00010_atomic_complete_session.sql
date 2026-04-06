@@ -82,13 +82,15 @@ $$;
 
 -- upsert_daily_log に subject 所有者チェックを追加
 -- p_user_id が実際の subject 所有者であることを保証する
+-- p_session_count: interleaving で教材ごとに呼ぶ際、最初の教材のみ 1、残りは 0 を渡して多重カウントを防ぐ
 CREATE OR REPLACE FUNCTION upsert_daily_log(
   p_user_id UUID,
   p_subject_id UUID,
   p_method_id UUID,
   p_log_date DATE,
   p_duration_sec INT,
-  p_cards_reviewed INT
+  p_cards_reviewed INT,
+  p_session_count INT DEFAULT 1
 )
 RETURNS void
 LANGUAGE plpgsql
@@ -102,11 +104,11 @@ BEGIN
   END IF;
 
   INSERT INTO daily_logs (user_id, subject_id, method_id, log_date, total_sec, session_count, cards_reviewed)
-  VALUES (p_user_id, p_subject_id, p_method_id, p_log_date, p_duration_sec, 1, p_cards_reviewed)
+  VALUES (p_user_id, p_subject_id, p_method_id, p_log_date, p_duration_sec, p_session_count, p_cards_reviewed)
   ON CONFLICT (user_id, subject_id, method_id, log_date)
   DO UPDATE SET
     total_sec = daily_logs.total_sec + EXCLUDED.total_sec,
-    session_count = daily_logs.session_count + 1,
+    session_count = daily_logs.session_count + EXCLUDED.session_count,
     cards_reviewed = daily_logs.cards_reviewed + EXCLUDED.cards_reviewed;
 END;
 $$;

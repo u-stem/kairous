@@ -294,6 +294,9 @@ Deno.serve(async (req) => {
       const totalCards = reviews.length;
       const durationSec = session.duration_sec ?? 0;
 
+      // 最初の教材のみ session_count=1、それ以降は 0 を渡して 1 セッション分だけ加算する
+      let isFirstMaterial = true;
+
       for (const [materialId, cardCount] of materialCardCounts) {
         const { data: material } = await supabase
           .from("materials")
@@ -313,6 +316,7 @@ Deno.serve(async (req) => {
           p_log_date: logDate,
           p_duration_sec: proportionalDuration,
           p_cards_reviewed: cardCount,
+          p_session_count: isFirstMaterial ? 1 : 0,
         });
 
         if (logError) {
@@ -321,6 +325,8 @@ Deno.serve(async (req) => {
             500,
           );
         }
+
+        isFirstMaterial = false;
       }
     }
   }

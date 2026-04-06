@@ -711,6 +711,16 @@ export async function getInterleavingCards(sessionId: string): Promise<Interleav
   } = await supabase.auth.getUser();
   if (!user) return [];
 
+  // RLS に加えてアプリ層でも所有者を確認し、RLS 緩和時の誤操作を防ぐ
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id")
+    .eq("id", sessionId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!session) return [];
+
   // session_materials からセッションに紐づく教材一覧を取得
   const { data: sessionMaterials } = await supabase
     .from("session_materials")
