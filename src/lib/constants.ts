@@ -97,7 +97,7 @@ export const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 export const STATS_PERIODS = [7, 30, 90] as const;
 export type StatsPeriod = (typeof STATS_PERIODS)[number];
 
-// Edge Function の FSRS 初期化でも同じ値を使うため、定数として共有する
+// Edge Function 側でも同じ値を使うため single source of truth とする（Deno 側は手動同期）
 export const SRS_DEFAULTS = {
   stability: 1.0,
   difficulty: 5.0,
