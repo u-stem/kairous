@@ -106,6 +106,9 @@ export const SRS_DEFAULTS = {
 export const SESSION_MAX_CARDS = 20;
 // 覚醒安静 (wakeful rest) のデフォルト時間。記憶定着に効果的な10分間
 export const REST_DURATION_SEC = 600;
+// 25分の集中と5分の休憩で1サイクル。認知負荷のリセットに効果的な比率
+export const POMODORO_FOCUS_SEC = 1500;
+export const POMODORO_BREAK_SEC = 300;
 
 export const RATING_LABELS = {
   1: "忘れた",
