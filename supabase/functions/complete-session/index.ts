@@ -88,6 +88,16 @@ function validateRequest(body: unknown): {
     }
   }
 
+  // 同一 card_id の重複レビューは FSRS 計算の整合性を壊すため拒否する
+  const cardIds = new Set<string>();
+  for (let i = 0; i < reviews.length; i++) {
+    const r = reviews[i] as Record<string, unknown>;
+    if (cardIds.has(r.card_id as string)) {
+      return { ok: false, message: `reviews[${i}].card_id is duplicated` };
+    }
+    cardIds.add(r.card_id as string);
+  }
+
   return { ok: true, session_id, reviews: reviews as ReviewInput[] };
 }
 
