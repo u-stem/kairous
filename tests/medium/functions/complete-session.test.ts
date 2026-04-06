@@ -79,6 +79,9 @@ describe("complete-session Edge Function (DB integration)", () => {
             },
           ],
         },
+        headers: {
+          "x-user-id": userId,
+        },
       });
 
       expect(result.error).toBeNull();
@@ -168,6 +171,9 @@ describe("complete-session Edge Function (DB integration)", () => {
               answered_at: "2026-04-05T10:00:08.000Z",
             },
           ],
+        },
+        headers: {
+          "x-user-id": userId,
         },
       });
 
