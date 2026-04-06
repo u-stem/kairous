@@ -66,12 +66,19 @@ export function SessionReview({ sessionId }: Props) {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-4">
       <div className="w-full max-w-lg space-y-8">
-        <div className="text-center space-y-2">
-          <p className="text-4xl font-bold">
-            {correctCount} / {reviews.length}
-          </p>
-          <p className="text-muted-foreground">正解数</p>
-        </div>
+        {elaborations ? (
+          <div className="text-center space-y-2">
+            <p className="text-4xl font-bold">{reviews.length}</p>
+            <p className="text-muted-foreground">回答数</p>
+          </div>
+        ) : (
+          <div className="text-center space-y-2">
+            <p className="text-4xl font-bold">
+              {correctCount} / {reviews.length}
+            </p>
+            <p className="text-muted-foreground">正解数</p>
+          </div>
+        )}
 
         <div className="space-y-3">
           <p className="text-center font-medium">

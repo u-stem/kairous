@@ -84,7 +84,10 @@ Deno.serve(async (req) => {
     reviewed_at: r.answered_at,
   }));
 
-  const methodSlug = (session.learning_methods as { slug: string } | null)?.slug ?? "srs";
+  const methodSlug = (session.learning_methods as { slug: string } | null)?.slug;
+  if (!methodSlug) {
+    return jsonError("Session has no associated learning method", 400);
+  }
 
   // SRS のみ FSRS 計算 + srs_states 更新を実行する
   if (methodSlug === "srs") {
@@ -181,7 +184,7 @@ Deno.serve(async (req) => {
       );
     }
   } else {
-    // Elaboration: card_reviews のみ INSERT (FSRS なし)
+    // Elaboration 用。Pomodoro は card_reviews がないためこのパスを通らない (PBI 3 で別処理を追加)
     const { error: completeError } = await supabase.rpc("complete_session_reviews", {
       p_session_id: session_id,
       p_user_id: callerId,
@@ -196,6 +199,8 @@ Deno.serve(async (req) => {
       );
     }
   }
+
+  const now = new Date();
 
   // wakeful rest は教材に紐付かないため daily_logs の対象外
   if (session.material_id) {

@@ -2,11 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import type { CardReview, SessionCard } from "@/lib/types/sessions";
-
-type Elaboration = {
-  card_id: string;
-  text: string;
-};
+import type { ElaborationInput } from "@/lib/validations/elaboration";
 
 type Progress = {
   current: number;
@@ -23,7 +19,7 @@ export type ElaborationPlayerState = {
   rate: (rating: 1 | 2 | 3 | 4) => void;
   progress: Progress;
   reviews: CardReview[];
-  elaborations: Elaboration[];
+  elaborations: ElaborationInput[];
 };
 
 export function useElaborationPlayer(cards: SessionCard[]): ElaborationPlayerState {
@@ -31,7 +27,7 @@ export function useElaborationPlayer(cards: SessionCard[]): ElaborationPlayerSta
   const [isRevealed, setIsRevealed] = useState(false);
   const [text, setText] = useState("");
   const [reviews, setReviews] = useState<CardReview[]>([]);
-  const [elaborations, setElaborations] = useState<Elaboration[]>([]);
+  const [elaborations, setElaborations] = useState<ElaborationInput[]>([]);
   // rate コールバック内でクロージャの古い値を参照しないよう ref で同期する
   const cardStartedAt = useRef(new Date().toISOString());
   const currentIndexRef = useRef(0);
@@ -55,7 +51,7 @@ export function useElaborationPlayer(cards: SessionCard[]): ElaborationPlayerSta
         answered_at: new Date().toISOString(),
       };
 
-      const elaboration: Elaboration = {
+      const elaboration: ElaborationInput = {
         card_id: cards[idx].id,
         text,
       };

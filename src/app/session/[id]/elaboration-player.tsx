@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useElaborationPlayer } from "./use-elaboration-player";
-import { RATING_LABELS, RATING_COLORS } from "@/lib/constants";
+import { SELF_RATING_LABELS, RATING_COLORS } from "@/lib/constants";
 import type { SessionCard } from "@/lib/types/sessions";
 
 type Props = {
@@ -93,7 +93,7 @@ export function ElaborationPlayer({ sessionId, cards }: Props) {
             回答を確認
           </button>
         ) : (
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {RATINGS.map((r) => (
               <button
                 key={r}
@@ -101,7 +101,7 @@ export function ElaborationPlayer({ sessionId, cards }: Props) {
                 onClick={() => rate(r)}
                 className={`rounded-lg py-3 text-sm font-medium text-white ${RATING_COLORS[r]}`}
               >
-                {RATING_LABELS[r]}
+                {SELF_RATING_LABELS[r]}
               </button>
             ))}
           </div>

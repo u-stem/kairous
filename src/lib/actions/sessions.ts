@@ -453,6 +453,7 @@ export async function completeElaborationSession(
     // Edge Function 失敗時はセッションを in_progress に戻す
     const { error: compensationError } = await supabase
       .from("sessions")
+      // meta: null でリセットするのは、セッション完了前に保存した elaborations を破棄するため
       .update({ status: "in_progress", ended_at: null, self_rating: null, duration_sec: 0, meta: null })
       .eq("id", parsed.data.sessionId);
     if (compensationError) {

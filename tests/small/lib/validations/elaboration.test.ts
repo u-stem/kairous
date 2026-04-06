@@ -47,4 +47,30 @@ describe("completeElaborationSchema", () => {
     const data = { ...valid, elaborations: [{ card_id: VALID_UUID, text: "" }] };
     expect(completeElaborationSchema.safeParse(data).success).toBe(true);
   });
+
+  it("rejects elaboration text over 10000 characters", () => {
+    const data = {
+      ...valid,
+      elaborations: [{ card_id: VALID_UUID, text: "a".repeat(10001) }],
+    };
+    expect(completeElaborationSchema.safeParse(data).success).toBe(false);
+  });
+
+  it("accepts elaboration text at exactly 10000 characters", () => {
+    const data = {
+      ...valid,
+      elaborations: [{ card_id: VALID_UUID, text: "a".repeat(10000) }],
+    };
+    expect(completeElaborationSchema.safeParse(data).success).toBe(true);
+  });
+
+  it("rejects reviews over 20 items", () => {
+    const reviews = Array.from({ length: 21 }, () => validReview);
+    expect(completeElaborationSchema.safeParse({ ...valid, reviews }).success).toBe(false);
+  });
+
+  it("rejects elaborations over 20 items", () => {
+    const elaborations = Array.from({ length: 21 }, () => validElaboration);
+    expect(completeElaborationSchema.safeParse({ ...valid, elaborations }).success).toBe(false);
+  });
 });
