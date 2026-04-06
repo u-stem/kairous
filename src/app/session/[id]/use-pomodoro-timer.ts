@@ -7,7 +7,7 @@ type Phase = "focus" | "focus_complete" | "break" | "break_complete" | "done";
 export type PomodoroTimerState = {
   phase: Phase;
   remainingSeconds: number;
-  progress: number;
+  remainingRatio: number;
   cycle: number;
   totalFocusSec: number;
   totalBreakSec: number;
@@ -29,7 +29,7 @@ export function usePomodoroTimer(
 
   const isTimerActive = phase === "focus" || phase === "break";
   const currentPhaseDuration = phase === "break" ? breakSec : focusSec;
-  const progress = isTimerActive ? remainingSeconds / currentPhaseDuration : 0;
+  const remainingRatio = isTimerActive ? remainingSeconds / currentPhaseDuration : 0;
 
   useEffect(() => {
     if (!isTimerActive) return;
@@ -75,7 +75,7 @@ export function usePomodoroTimer(
   return {
     phase,
     remainingSeconds,
-    progress,
+    remainingRatio,
     cycle,
     totalFocusSec,
     totalBreakSec,

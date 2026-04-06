@@ -4,7 +4,7 @@ import { cardReviewSchema } from "./sessions";
 export const elaborationSchema = z.object({
   card_id: z.uuid("無効なカードIDです"),
   // 認知的詳述の内容は長くなり得るが、DB 負荷を避けるため上限を設ける
-  text: z.string().max(10000, "説明は10000文字以内です"),
+  text: z.string().min(1, "説明を入力してください").max(10000, "説明は10000文字以内です"),
 });
 
 export const completeElaborationSchema = z.object({

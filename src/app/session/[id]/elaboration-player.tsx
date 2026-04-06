@@ -88,7 +88,8 @@ export function ElaborationPlayer({ sessionId, cards }: Props) {
           <button
             type="button"
             onClick={reveal}
-            className="w-full rounded-lg bg-primary py-3 text-primary-foreground"
+            disabled={text.trim().length === 0}
+            className="w-full rounded-lg bg-primary py-3 text-primary-foreground disabled:opacity-50"
           >
             回答を確認
           </button>

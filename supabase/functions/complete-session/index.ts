@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
         500,
       );
     }
-  } else {
+  } else if (methodSlug === "elaboration") {
     // Elaboration は FSRS 計算なし。card_reviews のみ INSERT し daily_logs は後続で記録する
     const { error: completeError } = await supabase.rpc("complete_session_reviews", {
       p_session_id: session_id,
@@ -198,6 +198,9 @@ Deno.serve(async (req) => {
         500,
       );
     }
+  } else {
+    // interleaving 等が追加された場合はここでハンドリングを追加する
+    return jsonError(`Unsupported method: ${methodSlug}`, 400);
   }
 
   const now = new Date();

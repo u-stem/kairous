@@ -67,10 +67,10 @@ describe("usePomodoroTimer", () => {
     expect(result.current.phase).toBe("done");
   });
 
-  it("progress returns correct ratio during focus", () => {
+  it("remainingRatio returns correct ratio during focus", () => {
     const { result } = renderHook(() => usePomodoroTimer(10, 5));
     act(() => { vi.advanceTimersByTime(5000); });
-    expect(result.current.progress).toBeCloseTo(0.5);
+    expect(result.current.remainingRatio).toBeCloseTo(0.5);
   });
 
   it("totalBreakSec accumulates across cycles", () => {

@@ -17,7 +17,7 @@ export function PomodoroPlayer({ sessionId }: { sessionId: string }) {
 
   const radius = 80;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference * (1 - timer.progress);
+  const strokeDashoffset = circumference * (1 - timer.remainingRatio);
 
   async function handleComplete(selfRating: 1 | 2 | 3 | 4) {
     setSubmitting(true);

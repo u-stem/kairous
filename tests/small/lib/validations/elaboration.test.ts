@@ -43,9 +43,9 @@ describe("completeElaborationSchema", () => {
     expect(completeElaborationSchema.safeParse({ ...valid, selfRating: 5 }).success).toBe(false);
   });
 
-  it("accepts elaboration with empty text", () => {
+  it("rejects elaboration with empty text", () => {
     const data = { ...valid, elaborations: [{ card_id: VALID_UUID, text: "" }] };
-    expect(completeElaborationSchema.safeParse(data).success).toBe(true);
+    expect(completeElaborationSchema.safeParse(data).success).toBe(false);
   });
 
   it("rejects elaboration text over 10000 characters", () => {
