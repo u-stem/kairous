@@ -73,6 +73,7 @@ describe("createCard atomically increments total_cards", () => {
     expect(mockClient.rpc).toHaveBeenCalledWith("increment_total_cards", {
       p_material_id: "mat-1",
       p_delta: 1,
+      p_user_id: "user-1",
     });
   });
 });
@@ -101,6 +102,7 @@ describe("deleteCard atomically decrements total_cards", () => {
     expect(mockClient.rpc).toHaveBeenCalledWith("increment_total_cards", {
       p_material_id: "mat-1",
       p_delta: -1,
+      p_user_id: "user-1",
     });
   });
 });
