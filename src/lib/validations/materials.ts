@@ -24,12 +24,13 @@ export const createMaterialSchema = z.object({
     .string()
     .min(1, "タイトルを入力してください")
     .max(200, "タイトルは200文字以内で入力してください"),
-  description: z.string().optional(),
+  description: z.string().max(2000, "説明は2000文字以内で入力してください").optional(),
   subject_id: z.uuid("有効な科目を選択してください"),
   // 学習手法は1つ以上必須（material_methodsテーブルの整合性を保つため）
   method_ids: z
     .array(z.uuid("無効な学習手法IDです"))
-    .min(1, "学習手法を1つ以上選択してください"),
+    .min(1, "学習手法を1つ以上選択してください")
+    .max(20, "学習手法は20個以内で選択してください"),
 });
 
 export const updateMaterialSchema = z.object({
@@ -37,7 +38,7 @@ export const updateMaterialSchema = z.object({
     .string()
     .min(1, "タイトルを入力してください")
     .max(200, "タイトルは200文字以内で入力してください"),
-  description: z.string().optional(),
+  description: z.string().max(2000, "説明は2000文字以内で入力してください").optional(),
   subject_id: z.uuid("有効な科目を選択してください"),
 });
 

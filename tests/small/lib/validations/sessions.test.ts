@@ -86,6 +86,14 @@ describe("completeSessionSchema", () => {
     expect(completeSessionSchema.safeParse({ ...valid, reviews: [] }).success).toBe(false);
   });
 
+  it("rejects reviews exceeding 500 items", () => {
+    const manyReviews = Array.from({ length: 501 }, (_, i) => ({
+      ...validReview,
+      card_id: `550e8400-e29b-41d4-a716-${String(i).padStart(12, "0")}`,
+    }));
+    expect(completeSessionSchema.safeParse({ ...valid, reviews: manyReviews }).success).toBe(false);
+  });
+
   it("rejects selfRating 0", () => {
     expect(completeSessionSchema.safeParse({ ...valid, selfRating: 0 }).success).toBe(false);
   });

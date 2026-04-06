@@ -59,6 +59,22 @@ describe("createMaterialSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("2000文字超のdescriptionを拒否する", () => {
+    const result = createMaterialSchema.safeParse({
+      ...validData,
+      description: "a".repeat(2001),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("21個以上のmethod_idsを拒否する", () => {
+    const result = createMaterialSchema.safeParse({
+      ...validData,
+      method_ids: Array.from({ length: 21 }, () => VALID_UUID),
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("descriptionを省略できる", () => {
     const { title, subject_id, method_ids } = validData;
     const result = createMaterialSchema.safeParse({ title, subject_id, method_ids });
@@ -90,6 +106,15 @@ describe("updateMaterialSchema", () => {
       subject_id: VALID_UUID,
     });
     expect(result.success).toBe(true);
+  });
+
+  it("2000文字超のdescriptionを拒否する", () => {
+    const result = updateMaterialSchema.safeParse({
+      title: "更新後のタイトル",
+      description: "a".repeat(2001),
+      subject_id: VALID_UUID,
+    });
+    expect(result.success).toBe(false);
   });
 
   it("descriptionを省略できる", () => {
