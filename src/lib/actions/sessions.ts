@@ -13,6 +13,38 @@ import type { ActionResult } from "@/lib/validations/materials";
 import type { CardReview, DueMaterial, SessionCard, SessionDetail } from "@/lib/types/sessions";
 import { SESSION_MAX_CARDS, REST_DURATION_SEC } from "@/lib/constants";
 
+export type SessionInfo = {
+  id: string;
+  methodSlug: string;
+  materialId: string | null;
+};
+
+export async function getSessionInfo(sessionId: string): Promise<SessionInfo | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id, material_id, learning_methods(slug)")
+    .eq("id", sessionId)
+    .eq("user_id", user.id)
+    .eq("status", "in_progress")
+    .single();
+
+  if (!session) return null;
+
+  const method = session.learning_methods as unknown as { slug: string } | null;
+
+  return {
+    id: session.id,
+    methodSlug: method?.slug ?? "srs",
+    materialId: session.material_id,
+  };
+}
+
 export async function getDueMaterials(): Promise<DueMaterial[]> {
   const supabase = await createClient();
   const {
