@@ -27,6 +27,7 @@ export function SessionReview({ sessionId }: Props) {
     };
   });
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   // sessionStorage にレビューがない場合はセッション画面にリダイレクト
   useEffect(() => {
@@ -59,6 +60,8 @@ export function SessionReview({ sessionId }: Props) {
         sessionStorage.removeItem(`session-reviews-${sessionId}`);
         sessionStorage.removeItem(`session-elaborations-${sessionId}`);
         router.push(`/session/${sessionId}/summary`);
+      } else {
+        setError(result.error);
       }
     });
   }
@@ -96,6 +99,7 @@ export function SessionReview({ sessionId }: Props) {
             </button>
           ))}
         </div>
+        {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
       </div>
     </div>
   );

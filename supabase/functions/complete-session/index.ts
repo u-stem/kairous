@@ -184,7 +184,7 @@ Deno.serve(async (req) => {
       );
     }
   } else {
-    // Elaboration 用。Pomodoro は card_reviews がないためこのパスを通らない (PBI 3 で別処理を追加)
+    // Elaboration は FSRS 計算なし。card_reviews のみ INSERT し daily_logs は後続で記録する
     const { error: completeError } = await supabase.rpc("complete_session_reviews", {
       p_session_id: session_id,
       p_user_id: callerId,

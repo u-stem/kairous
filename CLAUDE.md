@@ -63,8 +63,9 @@ bun test           # test
 
 ### Method Classification
 
-- **Card-based** (SRS, Interleaving): use `card_reviews` table
-- **Time/text-based** (Pomodoro, Elaboration, Free Study): use `sessions.meta` JSONB only
+- **Card-based** (SRS, Interleaving): use `card_reviews` table + FSRS
+- **Card+meta-based** (Elaboration): use `card_reviews` table (no FSRS) + `sessions.meta` for elaboration text
+- **Time-based** (Pomodoro, Free Study): use `sessions.meta` JSONB only
 - **Consolidation** (Wakeful Rest): independent session with `meta.parent_session_id`
 
 ### When in Doubt
