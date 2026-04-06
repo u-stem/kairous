@@ -41,7 +41,8 @@ export function SessionPlayer({ sessionId, cards }: Props) {
 
       <main className="flex flex-1 flex-col items-center justify-center px-4">
         <div className="w-full max-w-lg space-y-4">
-          <div className="rounded-lg border p-6">
+          <div className="rounded-lg border p-6" aria-live="polite" aria-atomic="true">
+            <p className="sr-only">{isFlipped ? "カード裏面" : "カード表面"}</p>
             <p className="text-lg whitespace-pre-wrap">{currentCard.front}</p>
             {isFlipped && (
               <>

@@ -55,7 +55,7 @@ export function RestTimer({ sessionId }: { sessionId: string }) {
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
               strokeLinecap="round"
-              className="text-purple-500 transition-all duration-1000"
+              className="text-primary transition-all duration-1000"
             />
           </svg>
           <p className="mt-4 text-3xl font-bold tabular-nums">
@@ -65,13 +65,15 @@ export function RestTimer({ sessionId }: { sessionId: string }) {
         </>
       ) : (
         <div className="text-center">
-          <div className="mb-2 text-3xl text-purple-500">&#10003;</div>
+          <svg className="mx-auto mb-2 h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+          </svg>
           <h1 className="text-xl font-semibold">安静完了</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {Math.floor(REST_DURATION_SEC / 60)} 分間の安静が完了しました
           </p>
           {completionError && (
-            <p className="mt-2 text-sm text-red-500">
+            <p className="mt-2 text-sm text-destructive">
               セッションの保存に失敗しました。ホームに戻ってください。
             </p>
           )}

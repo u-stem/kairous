@@ -5,7 +5,13 @@ import type { PieSectorShapeProps } from "recharts";
 import type { BreakdownItem } from "@/lib/types/stats";
 import { formatStudyTime } from "@/lib/utils/stats";
 
-const COLORS = ["#7c3aed", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe"];
+const COLORS = [
+  "var(--color-chart-1)",
+  "var(--color-chart-2)",
+  "var(--color-chart-3)",
+  "var(--color-chart-4)",
+  "var(--color-chart-5)",
+];
 
 // Cell は recharts v3 で deprecated になったため、shape prop でセクターごとの色を制御する
 // Recharts v3 の shape は単一の props オブジェクトのみ渡すため、index は別パラメータとして受け取れない
@@ -25,7 +31,7 @@ export function BreakdownChart({
     return (
       <section>
         <h3 className="mb-2 font-bold">{title}</h3>
-        <p className="text-sm text-gray-400">データがありません</p>
+        <p className="text-sm text-muted-foreground">データがありません</p>
       </section>
     );
   }
@@ -61,7 +67,7 @@ export function BreakdownChart({
                 />
                 {item.name}
               </span>
-              <span className="text-gray-500">{formatStudyTime(item.totalSec)}</span>
+              <span className="text-muted-foreground">{formatStudyTime(item.totalSec)}</span>
             </li>
           ))}
         </ul>

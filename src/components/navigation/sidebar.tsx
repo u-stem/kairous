@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { navItems, iconPaths } from "./nav-items";
+import { navItems } from "./nav-items";
+import { NavIcon } from "./nav-icon";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -31,19 +32,7 @@ export function Sidebar() {
                       : "text-muted-foreground hover:bg-muted"
                   }`}
                 >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d={iconPaths[item.icon]}
-                    />
-                  </svg>
+                  <NavIcon icon={item.icon} />
                   <span>{item.label}</span>
                 </Link>
               </li>

@@ -12,6 +12,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { SELF_RATING_LABELS } from "@/lib/constants";
 import { CardList } from "./card-list";
 import { MaterialMethodSheet } from "./material-method-sheet";
 
@@ -158,7 +159,7 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
                       <p className="text-xs text-muted-foreground">
                         {Math.floor(session.duration_sec / 60)}分
                         {session.self_rating !== null && (
-                          <span className="ml-2">評価: {session.self_rating}</span>
+                          <span className="ml-2">評価: {SELF_RATING_LABELS[session.self_rating as 1 | 2 | 3 | 4] ?? `${session.self_rating}`}</span>
                         )}
                       </p>
                     </div>

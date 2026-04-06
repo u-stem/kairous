@@ -23,12 +23,13 @@ export function PeriodSelector({ current }: { current: StatsPeriod }) {
     <div className="flex gap-2">
       {PERIODS.map(({ value, label }) => (
         <button
+          type="button"
           key={value}
           onClick={() => router.push(`${pathname}?period=${value}`)}
           className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
             current === value
-              ? "bg-purple-600 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:bg-muted/80"
           }`}
         >
           {label}
