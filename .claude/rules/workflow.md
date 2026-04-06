@@ -4,9 +4,9 @@
 
 ## PR 運用
 
-- **エピック単位で 1 PR**: PBI に対応する feature ブランチで 1 つの PR を作成する
-- サブタスクごとに PR を分けない (互いに依存しており個別マージ不可)
-- PR は着手前チェックリストの時点で作成し、全タスク完了後にレビュー依頼する
+- **PBI 単位で 1 PR**: 1 つの PBI に対して 1 つの feature ブランチと 1 つの PR を作成する
+- PR サイズは 300 行以下を目安にする。超える場合は PBI の分解を検討する
+- サブタスクごとに PR を分けない (PBI 内のサブタスクは同一 PR に含める)
 
 ## 品質保証の階層
 
@@ -50,7 +50,41 @@
 7. **PR を作成し PBI と紐付け**: `closes #N` で PBI をリンク
 8. **Project Board を更新**: ステータスを In Progress に変更
 
-Issue 階層: エピック (大テーマ) > PBI (実装単位) > サブタスク (子タスク)。PBI は必ずエピック配下に置く。
+Issue 階層: エピック (大テーマ) > PBI (実装単位) > サブタスク (子タスク)。PBI は必ずエピック配下に置く (body の `Parent: #N` + sub-issue 両方を設定)。
+
+## 並列開発
+
+独立した PBI は git worktree で並列開発する。競合するファイルを触る PBI は GitHub の依存関係機能 (blocked by) で直列化を強制する。
+
+### 競合判定
+
+PBI 着手前に変更対象ファイルを洗い出し、他の進行中 PBI と競合するか判定する。
+
+- **同一ファイルを触る PBI**: blocked by で直列化 (先行 PR マージ後に着手)
+- **独立したファイルのみ**: 並列実行可能
+- **全域変更 (コメント統一、フォーマット等)**: 他の全 PBI マージ後に単独実行
+
+### worktree 運用
+
+```bash
+# 作成: 兄弟ディレクトリ方式
+git worktree add ../kairous-fix-53 fix/53-stats-timezone
+
+# 完了後: クリーンアップ
+git worktree remove ../kairous-fix-53
+git branch -d fix/53-stats-timezone
+git worktree prune
+```
+
+- 各 worktree で `bun install` が必要 (node_modules は共有されない)
+- worktree ごとに独立した Claude Code セッションを実行可能
+- 完了後は速やかに削除する (長期放置しない)
+
+### 依存関係の管理
+
+- GitHub Issue の **blocked by / blocking** 機能で依存関係を設定する
+- blocked な PR はレビュー可能だが、先行 PR マージ後にリベースしてからマージする
+- 依存チェーンが 3 段以上になる場合は PBI の分解を見直す
 
 ## タスク開始チェックリスト
 
