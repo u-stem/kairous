@@ -4,11 +4,11 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSessionPlayer } from "./use-session-player";
 import { RATING_LABELS, RATING_COLORS } from "@/lib/constants";
-import type { SessionCard } from "@/lib/types/sessions";
+import type { SessionCard, InterleavingCard } from "@/lib/types/sessions";
 
 type Props = {
   sessionId: string;
-  cards: SessionCard[];
+  cards: SessionCard[] | InterleavingCard[];
 };
 
 const RATINGS = [1, 2, 3, 4] as const;
@@ -41,6 +41,11 @@ export function SessionPlayer({ sessionId, cards }: Props) {
 
       <main className="flex flex-1 flex-col items-center justify-center px-4">
         <div className="w-full max-w-lg space-y-4">
+          {"material_title" in currentCard && (
+            <p className="mb-2 text-xs font-medium text-muted-foreground">
+              {(currentCard as InterleavingCard).material_title}
+            </p>
+          )}
           <div className="rounded-lg border p-6" aria-live="polite" aria-atomic="true">
             <p className="sr-only">{isFlipped ? "カード裏面" : "カード表面"}</p>
             <p className="text-lg whitespace-pre-wrap">{currentCard.front}</p>

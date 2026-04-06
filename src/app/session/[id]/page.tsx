@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getSessionInfo, getSessionCards } from "@/lib/actions/sessions";
+import { getSessionInfo, getSessionCards, getInterleavingCards } from "@/lib/actions/sessions";
 import { SessionPlayer } from "./session-player";
 import { ElaborationPlayer } from "./elaboration-player";
 import { PomodoroPlayer } from "./pomodoro-player";
@@ -28,6 +28,12 @@ export default async function SessionPage({ params }: Props) {
 
     case "srs": {
       const cards = await getSessionCards(id, "srs");
+      if (cards.length === 0) notFound();
+      return <SessionPlayer sessionId={id} cards={cards} />;
+    }
+
+    case "interleaving": {
+      const cards = await getInterleavingCards(id);
       if (cards.length === 0) notFound();
       return <SessionPlayer sessionId={id} cards={cards} />;
     }
