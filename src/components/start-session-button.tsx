@@ -35,7 +35,7 @@ export function StartSessionButton({
 
   return (
     <div>
-      <button onClick={() => void handleClick()} disabled={loading} className={className}>
+      <button type="button" onClick={() => void handleClick()} disabled={loading} className={className}>
         {loading ? "..." : label}
       </button>
       {error && (
