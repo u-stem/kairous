@@ -1,12 +1,12 @@
 "use server";
 
-import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
   createSessionSchema,
   completeSessionSchema,
   createRestSessionSchema,
+  completeRestSessionSchema,
   extractFieldErrors,
 } from "@/lib/validations/sessions";
 import type { ActionResult } from "@/lib/validations/materials";
@@ -192,10 +192,17 @@ export async function completeSession(
 
   if (fnResult.error) {
     // Edge Function 失敗時はセッションを in_progress に戻す
-    await supabase
+    const { error: compensationError } = await supabase
       .from("sessions")
       .update({ status: "in_progress", ended_at: null, self_rating: null, duration_sec: 0 })
       .eq("id", parsed.data.sessionId);
+    if (compensationError) {
+      // 補償処理も失敗した場合、セッションが completed のまま残る可能性がある
+      console.error(
+        `completeSession compensation failed for session ${parsed.data.sessionId}:`,
+        compensationError.message,
+      );
+    }
     return { success: false, error: "カードレビューの処理に失敗しました" };
   }
 
@@ -223,10 +230,12 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
 
   if (!session) return null;
 
+  // sessions!inner JOIN で所有権を検証し、TOCTOU リスクを排除する
   const { data: reviews } = await supabase
     .from("card_reviews")
-    .select("card_id, rating, response_ms, cards(front, back)")
-    .eq("session_id", sessionId);
+    .select("card_id, rating, response_ms, cards(front, back), sessions!inner(user_id)")
+    .eq("session_id", sessionId)
+    .eq("sessions.user_id", user.id);
 
   // サマリー画面で「続けて学習」の判断材料を表示するため、残りの due 数を算出する
   let remainingDueCount = 0;
@@ -284,6 +293,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
       rating: number;
       response_ms: number;
       cards: unknown;
+      sessions: unknown;
     }) => ({
       card_id: r.card_id,
       rating: r.rating,
@@ -345,9 +355,9 @@ export async function createRestSession(
 export async function completeRestSession(
   sessionId: string,
 ): Promise<ActionResult<undefined>> {
-  const parsed = z.uuid().safeParse(sessionId);
+  const parsed = completeRestSessionSchema.safeParse({ sessionId });
   if (!parsed.success) {
-    return { success: false, error: "Invalid session ID" };
+    return { success: false, error: "入力内容を確認してください" };
   }
 
   const supabase = await createClient();
@@ -360,7 +370,7 @@ export async function completeRestSession(
   const { data: session } = await supabase
     .from("sessions")
     .select("id, learning_methods!inner(slug)")
-    .eq("id", parsed.data)
+    .eq("id", parsed.data.sessionId)
     .eq("user_id", user.id)
     .eq("status", "in_progress")
     .single();
@@ -379,7 +389,7 @@ export async function completeRestSession(
       duration_sec: REST_DURATION_SEC,
       ended_at: new Date().toISOString(),
     })
-    .eq("id", parsed.data);
+    .eq("id", parsed.data.sessionId);
 
   if (error) return { success: false, error: "セッションの完了に失敗しました" };
 
