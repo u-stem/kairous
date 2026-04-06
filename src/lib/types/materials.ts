@@ -9,6 +9,13 @@ export type Card = Tables<"cards">;
 export type LearningMethod = Tables<"learning_methods">;
 export type MaterialMethod = Tables<"material_methods">;
 
+// MethodSelectList 等で learning_methods の最小フィールドを参照するための型
+export type MethodItem = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
 // 一覧表示に必要な関連データを結合した型（subjects・learning_methodsをJOINしたクエリ結果）
 export type MaterialWithMethods = {
   id: string;

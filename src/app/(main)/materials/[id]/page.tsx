@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { SELF_RATING_LABELS } from "@/lib/constants";
 import { CardList } from "./card-list";
 import { MaterialMethodSheet } from "./material-method-sheet";
+import { MethodSelectList } from "@/components/method-select-list";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -130,15 +131,26 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
             </Card>
           </div>
 
-          {/* SRS手法が有効かつ期限切れカードがある場合にセッション開始ボタンを表示 */}
-          {srsMethod && material.due_count > 0 && (
+          {/* 手法が1つなら1タップで開始、複数なら選択リストを表示してユーザーに選ばせる */}
+          {material.methods.length > 0 && (
             <div className="mt-4">
-              <StartSessionButton
-                materialId={material.id}
-                methodId={srsMethod.id}
-                label={`学習を始める (${material.due_count}枚)`}
-                className="w-full rounded-lg bg-blue-500 py-3 font-medium text-white hover:bg-blue-600 disabled:opacity-50"
-              />
+              <h2 className="mb-2 text-sm font-medium text-muted-foreground">
+                {material.methods.length === 1 ? "学習を開始" : "学習手法を選択"}
+              </h2>
+              {material.methods.length === 1 ? (
+                <StartSessionButton
+                  materialId={material.id}
+                  methodId={material.methods[0].id}
+                  label={`${material.methods[0].name}${srsMethod && material.due_count > 0 ? ` (${material.due_count}枚)` : ""}`}
+                  className="w-full rounded-lg bg-primary py-3 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                />
+              ) : (
+                <MethodSelectList
+                  materialId={material.id}
+                  methods={material.methods}
+                  dueCounts={srsMethod ? { [srsMethod.id]: material.due_count } : undefined}
+                />
+              )}
             </div>
           )}
 

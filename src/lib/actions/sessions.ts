@@ -9,9 +9,50 @@ import {
   completeRestSessionSchema,
   extractFieldErrors,
 } from "@/lib/validations/sessions";
+import {
+  completeElaborationSchema,
+  type ElaborationInput,
+} from "@/lib/validations/elaboration";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { CardReview, DueMaterial, SessionCard, SessionDetail } from "@/lib/types/sessions";
-import { SESSION_MAX_CARDS, REST_DURATION_SEC } from "@/lib/constants";
+import { SESSION_MAX_CARDS, REST_DURATION_SEC, JST_OFFSET_MS } from "@/lib/constants";
+import { completePomodoroSchema } from "@/lib/validations/pomodoro";
+
+export type SessionInfo = {
+  id: string;
+  methodSlug: string;
+  materialId: string | null;
+};
+
+export async function getSessionInfo(sessionId: string): Promise<SessionInfo | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id, material_id, learning_methods(slug)")
+    .eq("id", sessionId)
+    .eq("user_id", user.id)
+    .eq("status", "in_progress")
+    .single();
+
+  if (!session) return null;
+
+  const method = session.learning_methods as unknown as { slug: string } | null;
+
+  // method が null になるのは learning_methods が削除された孤立データのみ
+  // notFound() でハンドルするため、呼び出し元に null を返す
+  if (!method?.slug) return null;
+
+  return {
+    id: session.id,
+    methodSlug: method.slug,
+    materialId: session.material_id,
+  };
+}
 
 export async function getDueMaterials(): Promise<DueMaterial[]> {
   const supabase = await createClient();
@@ -220,7 +261,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
   const { data: session } = await supabase
     .from("sessions")
     .select(`
-      id, method_id, status, duration_sec, self_rating, started_at, ended_at,
+      id, method_id, status, duration_sec, self_rating, started_at, ended_at, meta,
       materials(id, title, subjects(name)),
       learning_methods(slug, name)
     `)
@@ -301,6 +342,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
       card: r.cards as { front: string; back: string },
     })),
     remaining_due_count: remainingDueCount,
+    meta: session.meta as Record<string, unknown> | null,
   };
 }
 
@@ -350,6 +392,177 @@ export async function createRestSession(
   if (error) return { success: false, error: "安静セッションの作成に失敗しました" };
 
   return { success: true, data: { id: session.id } };
+}
+
+export async function completeElaborationSession(
+  sessionId: string,
+  reviews: CardReview[],
+  elaborations: ElaborationInput[],
+  selfRating: number,
+): Promise<ActionResult<undefined>> {
+  const parsed = completeElaborationSchema.safeParse({ sessionId, reviews, elaborations, selfRating });
+  if (!parsed.success) {
+    return { success: false, error: "入力内容を確認してください" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "認証が必要です" };
+
+  // RLS に加えてアプリ層でも所有者と status を確認し、二重完了を防ぐ
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id, started_at, status")
+    .eq("id", parsed.data.sessionId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!session) return { success: false, error: "セッションが見つかりません" };
+  if (session.status !== "in_progress") {
+    return { success: false, error: "このセッションは既に完了しています" };
+  }
+
+  const now = new Date();
+  const durationSec = Math.floor(
+    (now.getTime() - new Date(session.started_at).getTime()) / 1000,
+  );
+
+  // elaborations を meta に保存し、セッションを完了する
+  const { error: updateError } = await supabase
+    .from("sessions")
+    .update({
+      status: "completed",
+      duration_sec: durationSec,
+      self_rating: parsed.data.selfRating,
+      ended_at: now.toISOString(),
+      meta: { elaborations: parsed.data.elaborations },
+    })
+    .eq("id", parsed.data.sessionId);
+
+  if (updateError) return { success: false, error: "セッションの更新に失敗しました" };
+
+  // Edge Function で card_reviews + daily_logs を記録 (FSRS はスキップ)
+  const fnResult = await supabase.functions.invoke("complete-session", {
+    body: {
+      session_id: parsed.data.sessionId,
+      reviews: parsed.data.reviews,
+    },
+  });
+
+  if (fnResult.error) {
+    // Edge Function 失敗時はセッションを in_progress に戻す
+    const { error: compensationError } = await supabase
+      .from("sessions")
+      // meta: null でリセットするのは、セッション完了前に保存した elaborations を破棄するため
+      .update({ status: "in_progress", ended_at: null, self_rating: null, duration_sec: 0, meta: null })
+      .eq("id", parsed.data.sessionId);
+    if (compensationError) {
+      // 補償処理も失敗した場合、セッションが completed のまま残る可能性がある
+      console.error(
+        `completeElaborationSession compensation failed for session ${parsed.data.sessionId}:`,
+        compensationError,
+      );
+    }
+    return { success: false, error: "カードレビューの処理に失敗しました" };
+  }
+
+  revalidatePath("/");
+  return { success: true, data: undefined };
+}
+
+export async function completePomodoroSession(
+  sessionId: string,
+  selfRating: number,
+  pomodorosCompleted: number,
+  totalFocusSec: number,
+  totalBreakSec: number,
+): Promise<ActionResult<undefined>> {
+  const parsed = completePomodoroSchema.safeParse({
+    sessionId,
+    selfRating,
+    pomodorosCompleted,
+    totalFocusSec,
+    totalBreakSec,
+  });
+  if (!parsed.success) {
+    return { success: false, error: "入力内容を確認してください" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "認証が必要です" };
+
+  // RLS に加えてアプリ層でも所有者と status を確認し、二重完了を防ぐ
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id, started_at, status, material_id, method_id")
+    .eq("id", parsed.data.sessionId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!session) return { success: false, error: "セッションが見つかりません" };
+  if (session.status !== "in_progress") {
+    return { success: false, error: "このセッションは既に完了しています" };
+  }
+
+  // クライアント値は表示用 meta にのみ使用し、duration_sec は改ざん耐性のためサーバー側で計算する
+  const now = new Date();
+  const durationSec = Math.floor(
+    (now.getTime() - new Date(session.started_at).getTime()) / 1000,
+  );
+
+  const { error: updateError } = await supabase
+    .from("sessions")
+    .update({
+      status: "completed",
+      duration_sec: durationSec,
+      self_rating: parsed.data.selfRating,
+      ended_at: now.toISOString(),
+      meta: {
+        pomodoros_completed: parsed.data.pomodorosCompleted,
+        total_focus_sec: parsed.data.totalFocusSec,
+        total_break_sec: parsed.data.totalBreakSec,
+      },
+    })
+    .eq("id", parsed.data.sessionId);
+
+  if (updateError) return { success: false, error: "セッションの更新に失敗しました" };
+
+  // Pomodoro は card_reviews がないため Edge Function を呼ばず、直接 daily_logs を記録する
+  if (session.material_id) {
+    const { data: material } = await supabase
+      .from("materials")
+      .select("subject_id")
+      .eq("id", session.material_id)
+      .single();
+
+    if (material) {
+      const logDate = new Date(Date.now() + JST_OFFSET_MS).toISOString().split("T")[0];
+
+      const { error: logError } = await supabase.rpc("upsert_daily_log", {
+        p_user_id: user.id,
+        p_subject_id: material.subject_id,
+        p_method_id: session.method_id,
+        p_log_date: logDate,
+        p_duration_sec: durationSec,
+        p_cards_reviewed: 0,
+      });
+      if (logError) {
+        // daily_log 失敗はセッション完了をブロックしないが、データ欠損を追跡するためログに記録する
+        console.error(
+          `completePomodoroSession daily_log upsert failed for session ${parsed.data.sessionId}:`,
+          logError,
+        );
+      }
+    }
+  }
+
+  revalidatePath("/");
+  return { success: true, data: undefined };
 }
 
 export async function completeRestSession(

@@ -27,10 +27,10 @@ Kairous が実装する各手法は認知科学・神経科学の研究に基づ
 - 実装: FSRSアルゴリズム（SM-2より少ない復習回数で同等の定着率）
 - `srs_states` テーブルで stability・difficulty・due_date を管理
 
-**想起練習（Testing Effect）** `slug: active_recall`
+**想起練習（Testing Effect）** — SRS に統合済み
 - 読むより「思い出す」行為そのものが記憶を強化する（Karpicke & Roediger 2008）
 - 受動的な再読より圧倒的に効率が高い
-- 実装: 白紙再現・問題演習・フラッシュカードのいずれかを選択
+- 実装: SRS のフラッシュカード形式がこの効果を提供する（migration 00012 で統合）
 
 **忘れかけで復習する（レジリエント記憶）** — SRS に内包
 - ほぼ忘れた状態からの想起が高ストレス下でも機能する記憶を形成する
@@ -185,7 +185,7 @@ daily_logs  (集計テーブル: セッション終了時にupsert)
 - 理由: デバイス間で due_date が一致する、クライアント計算のズレを防ぐ
 
 ### 手法をコードでなくデータで持つ
-- `learning_methods.slug` でコード内参照 (`srs`, `pomodoro`, `active_recall`...)
+- `learning_methods.slug` でコード内参照 (`srs`, `pomodoro`, `interleaving`...)
 - `is_system = true` がシステム定義、`false` がユーザー定義
 - 新手法追加時にコード変更不要（設定のみ）
 
@@ -209,8 +209,7 @@ daily_logs  (集計テーブル: セッション終了時にupsert)
 
 | slug | 名前 | category | 根拠 |
 |------|------|----------|------|
-| `srs` | 間隔反復 (FSRS) | memory | エビングハウス忘却曲線・FSRSアルゴリズム |
-| `active_recall` | アクティブリコール | memory | Testing Effect（Karpicke & Roediger 2008） |
+| `srs` | 間隔反復 (FSRS) | memory | エビングハウス忘却曲線・FSRSアルゴリズム（Testing Effect を内包） |
 | `interleaving` | インターリービング | comprehension | 交互学習による転移促進 |
 | `elaboration` | 精緻化（Why学習） | comprehension | 自己説明効果・ファインマン法 |
 | `pomodoro` | ポモドーロ | focus | 認知負荷理論・単一タスク集中 |

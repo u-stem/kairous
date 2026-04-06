@@ -22,6 +22,15 @@ export default async function SummaryPage({ params }: Props) {
     notFound();
   }
 
+  const isPomodoro = session.method.slug === "pomodoro";
+  const pomodoroMeta = isPomodoro
+    ? (session.meta as {
+        pomodoros_completed?: number;
+        total_focus_sec?: number;
+        total_break_sec?: number;
+      } | null)
+    : null;
+
   const accuracy = calculateAccuracyRate(session.card_reviews);
   const ratingCounts = countByRating(session.card_reviews);
 
@@ -52,43 +61,69 @@ export default async function SummaryPage({ params }: Props) {
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="text-2xl font-bold">{session.card_reviews.length}</p>
-            <p className="text-sm text-muted-foreground">カード数</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold">
-              {Math.round(accuracy * 100)}%
-            </p>
-            <p className="text-sm text-muted-foreground">正答率</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold">
-              {formatDuration(session.duration_sec)}
-            </p>
-            <p className="text-sm text-muted-foreground">学習時間</p>
-          </div>
-        </div>
-
-        {session.card_reviews.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium">評価分布</p>
-            <div className="grid grid-cols-4 gap-2">
-              {RATINGS.map((r) => (
-                <div key={r} className="text-center">
-                  <div
-                    className={`${RATING_COLORS[r]} mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-lg text-white font-bold`}
-                  >
-                    {ratingCounts[r]}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {RATING_LABELS[r]}
-                  </p>
-                </div>
-              ))}
+        {isPomodoro ? (
+          // Pomodoro はカードを使わないため、サイクル数と集中時間を表示する
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="text-2xl font-bold">
+                {pomodoroMeta?.pomodoros_completed ?? 0}
+              </p>
+              <p className="text-sm text-muted-foreground">サイクル数</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold">
+                {formatDuration(pomodoroMeta?.total_focus_sec ?? 0)}
+              </p>
+              <p className="text-sm text-muted-foreground">集中時間</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold">
+                {formatDuration(session.duration_sec)}
+              </p>
+              <p className="text-sm text-muted-foreground">学習時間</p>
             </div>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-2xl font-bold">{session.card_reviews.length}</p>
+                <p className="text-sm text-muted-foreground">カード数</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {Math.round(accuracy * 100)}%
+                </p>
+                <p className="text-sm text-muted-foreground">正答率</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {formatDuration(session.duration_sec)}
+                </p>
+                <p className="text-sm text-muted-foreground">学習時間</p>
+              </div>
+            </div>
+
+            {session.card_reviews.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">評価分布</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {RATINGS.map((r) => (
+                    <div key={r} className="text-center">
+                      <div
+                        className={`${RATING_COLORS[r]} mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-lg text-white font-bold`}
+                      >
+                        {ratingCounts[r]}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {RATING_LABELS[r]}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         <SummaryActions

@@ -48,7 +48,7 @@ bun test           # test
 - **material_methods** is the core junction table. Never break the 1-material-to-many-methods structure.
 - **FSRS computation** runs on Supabase Edge Functions only. No client-side calculation.
 - **daily_logs** are upserted by Edge Function on session end. No real-time aggregation.
-- **self_rating (1-4)** is mandatory for learning methods (SRS, active_recall, interleaving, elaboration, pomodoro). NULL for wakeful_rest and free_study.
+- **self_rating (1-4)** is mandatory for learning methods (SRS, interleaving, elaboration, pomodoro). NULL for wakeful_rest and free_study.
 - **Wakeful Rest** timer is optional, launched from session summary. Independent session at `/rest/[id]`.
 - **RLS** enabled on all tables. Edge Functions use service_role key to bypass.
 - **sessions.status**: 'in_progress' | 'completed' | 'abandoned'.
@@ -63,8 +63,9 @@ bun test           # test
 
 ### Method Classification
 
-- **Card-based** (SRS, Active Recall, Interleaving): use `card_reviews` table
-- **Time/text-based** (Pomodoro, Elaboration, Free Study): use `sessions.meta` JSONB only
+- **Card-based** (SRS, Interleaving): use `card_reviews` table + FSRS
+- **Card+meta-based** (Elaboration): use `card_reviews` table (no FSRS) + `sessions.meta` for elaboration text
+- **Time-based** (Pomodoro, Free Study): use `sessions.meta` JSONB only
 - **Consolidation** (Wakeful Rest): independent session with `meta.parent_session_id`
 
 ### When in Doubt

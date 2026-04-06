@@ -1,7 +1,6 @@
-// ウィザードで選択可能な学習手法スラッグ（SRS以外の手法は別途追加予定）
+// ウィザードで選択可能な学習手法スラッグ
 export const MATERIAL_METHOD_SLUGS = [
   "srs",
-  "active_recall",
   "elaboration",
   "pomodoro",
 ] as const;
@@ -9,9 +8,8 @@ export const MATERIAL_METHOD_SLUGS = [
 export type MaterialMethodSlug = (typeof MATERIAL_METHOD_SLUGS)[number];
 
 // カードレビューを使用する手法（sessions側でcard_reviewsテーブルを参照する）
-// CLAUDE.md Method Classification: Card-based = SRS, Active Recall, Interleaving
 // MATERIAL_METHOD_SLUGS（ウィザード選択可能）とは別概念。interleaving は未実装だがカード手法として定義済み
-export const CARD_BASED_SLUGS = ["srs", "active_recall", "interleaving"] as const;
+export const CARD_BASED_SLUGS = ["srs", "interleaving"] as const;
 
 export type MethodCategory =
   | "memory"
@@ -27,7 +25,7 @@ export const METHOD_CATEGORIES: Record<
 > = {
   memory: {
     label: "記憶",
-    slugs: ["srs", "active_recall"],
+    slugs: ["srs"],
   },
   comprehension: {
     label: "理解",
@@ -50,7 +48,6 @@ export const METHOD_CATEGORIES: Record<
 // ウィザード Step2 でのみ表示する説明文。他画面では learning_methods.name を使う
 export const METHOD_DESCRIPTIONS: Record<string, string> = {
   srs: "間隔を空けて復習し、長期記憶に定着させる",
-  active_recall: "カードを見て能動的に思い出す練習をする",
   elaboration: "「なぜ?」を問い、自分の言葉で説明する",
   pomodoro: "25分集中 + 5分休憩のサイクルで学習する",
 };
@@ -109,6 +106,9 @@ export const SRS_DEFAULTS = {
 export const SESSION_MAX_CARDS = 20;
 // 覚醒安静 (wakeful rest) のデフォルト時間。記憶定着に効果的な10分間
 export const REST_DURATION_SEC = 600;
+// 25分の集中と5分の休憩で1サイクル。認知負荷のリセットに効果的な比率
+export const POMODORO_FOCUS_SEC = 1500;
+export const POMODORO_BREAK_SEC = 300;
 
 export const RATING_LABELS = {
   1: "忘れた",

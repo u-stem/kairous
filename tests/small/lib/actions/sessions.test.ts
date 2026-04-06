@@ -158,3 +158,90 @@ describe("getDueMaterials", () => {
     consoleSpy.mockRestore();
   });
 });
+
+// Supabase チェーン呼び出しを再現するヘルパー
+function createChainMock(resolvedValue: { data: unknown; error: unknown }) {
+  const makeChain = (): Record<string, unknown> => {
+    const resolved = Promise.resolve(resolvedValue);
+    const chain: Record<string, unknown> = {
+      select: vi.fn().mockImplementation(() => makeChain()),
+      eq: vi.fn().mockImplementation(() => makeChain()),
+      single: vi.fn().mockReturnValue(resolved),
+      then: resolved.then.bind(resolved),
+    };
+    return chain;
+  };
+  return makeChain();
+}
+
+describe("getSessionInfo", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it("returns null when user is not authenticated", async () => {
+    mockClient = buildMockClientWithRpc({ data: null, error: null });
+    (mockClient.auth.getUser as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: { user: null },
+    });
+
+    const { getSessionInfo } = await import("@/lib/actions/sessions");
+    const result = await getSessionInfo("a0000000-0000-4000-a000-000000000001");
+
+    expect(result).toBeNull();
+  });
+
+  it("returns null when session does not exist", async () => {
+    mockClient = {
+      ...buildMockClientWithRpc({ data: null, error: null }),
+      from: vi.fn().mockReturnValue(createChainMock({ data: null, error: null })),
+    };
+
+    const { getSessionInfo } = await import("@/lib/actions/sessions");
+    const result = await getSessionInfo("a0000000-0000-4000-a000-000000000001");
+
+    expect(result).toBeNull();
+  });
+
+  it("returns null when learning_methods is null (orphaned session)", async () => {
+    mockClient = {
+      ...buildMockClientWithRpc({ data: null, error: null }),
+      from: vi.fn().mockReturnValue(
+        createChainMock({
+          data: { id: "s-1", material_id: "mat-1", learning_methods: null },
+          error: null,
+        }),
+      ),
+    };
+
+    const { getSessionInfo } = await import("@/lib/actions/sessions");
+    const result = await getSessionInfo("a0000000-0000-4000-a000-000000000001");
+
+    expect(result).toBeNull();
+  });
+
+  it("returns SessionInfo with correct methodSlug for a valid session", async () => {
+    mockClient = {
+      ...buildMockClientWithRpc({ data: null, error: null }),
+      from: vi.fn().mockReturnValue(
+        createChainMock({
+          data: {
+            id: "a0000000-0000-4000-a000-000000000001",
+            material_id: "mat-1",
+            learning_methods: { slug: "srs" },
+          },
+          error: null,
+        }),
+      ),
+    };
+
+    const { getSessionInfo } = await import("@/lib/actions/sessions");
+    const result = await getSessionInfo("a0000000-0000-4000-a000-000000000001");
+
+    expect(result).toEqual({
+      id: "a0000000-0000-4000-a000-000000000001",
+      methodSlug: "srs",
+      materialId: "mat-1",
+    });
+  });
+});

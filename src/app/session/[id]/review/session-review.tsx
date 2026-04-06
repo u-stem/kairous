@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { completeSession } from "@/lib/actions/sessions";
+import { completeSession, completeElaborationSession } from "@/lib/actions/sessions";
 import { SELF_RATING_LABELS } from "@/lib/constants";
 import type { CardReview } from "@/lib/types/sessions";
+import type { ElaborationInput } from "@/lib/validations/elaboration";
 
 type Props = {
   sessionId: string;
@@ -15,15 +16,18 @@ const SELF_RATINGS = [1, 2, 3, 4] as const;
 export function SessionReview({ sessionId }: Props) {
   const router = useRouter();
   // sessionStorage の値はマウント時に一度だけ読む（ライフサイクル中に変化しない）
-  const [{ reviews, loaded }] = useState(() => {
-    if (typeof window === "undefined") return { reviews: null, loaded: false };
+  const [{ reviews, elaborations, loaded }] = useState(() => {
+    if (typeof window === "undefined") return { reviews: null, elaborations: null, loaded: false };
     const stored = sessionStorage.getItem(`session-reviews-${sessionId}`);
+    const storedElaborations = sessionStorage.getItem(`session-elaborations-${sessionId}`);
     return {
       reviews: stored ? (JSON.parse(stored) as CardReview[]) : null,
+      elaborations: storedElaborations ? (JSON.parse(storedElaborations) as ElaborationInput[]) : null,
       loaded: true,
     };
   });
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   // sessionStorage にレビューがない場合はセッション画面にリダイレクト
   useEffect(() => {
@@ -45,10 +49,19 @@ export function SessionReview({ sessionId }: Props) {
   function handleRate(selfRating: 1 | 2 | 3 | 4) {
     if (!reviews) return;
     startTransition(async () => {
-      const result = await completeSession(sessionId, reviews, selfRating);
+      let result;
+      // Elaboration セッションは elaborations データが存在するため専用 Action を使う
+      if (elaborations) {
+        result = await completeElaborationSession(sessionId, reviews, elaborations, selfRating);
+      } else {
+        result = await completeSession(sessionId, reviews, selfRating);
+      }
       if (result.success) {
         sessionStorage.removeItem(`session-reviews-${sessionId}`);
+        sessionStorage.removeItem(`session-elaborations-${sessionId}`);
         router.push(`/session/${sessionId}/summary`);
+      } else {
+        setError(result.error);
       }
     });
   }
@@ -56,12 +69,19 @@ export function SessionReview({ sessionId }: Props) {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-4">
       <div className="w-full max-w-lg space-y-8">
-        <div className="text-center space-y-2">
-          <p className="text-4xl font-bold">
-            {correctCount} / {reviews.length}
-          </p>
-          <p className="text-muted-foreground">正解数</p>
-        </div>
+        {elaborations ? (
+          <div className="text-center space-y-2">
+            <p className="text-4xl font-bold">{reviews.length}</p>
+            <p className="text-muted-foreground">回答数</p>
+          </div>
+        ) : (
+          <div className="text-center space-y-2">
+            <p className="text-4xl font-bold">
+              {correctCount} / {reviews.length}
+            </p>
+            <p className="text-muted-foreground">正解数</p>
+          </div>
+        )}
 
         <div className="space-y-3">
           <p className="text-center font-medium">
@@ -79,6 +99,7 @@ export function SessionReview({ sessionId }: Props) {
             </button>
           ))}
         </div>
+        {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
       </div>
     </div>
   );
