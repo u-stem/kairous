@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getSessionInfo, getSessionCards } from "@/lib/actions/sessions";
 import { SessionPlayer } from "./session-player";
+import { ElaborationPlayer } from "./elaboration-player";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -18,8 +19,11 @@ export default async function SessionPage({ params }: Props) {
     case "pomodoro":
       return <p>Pomodoro session (coming soon)</p>;
 
-    case "elaboration":
-      return <p>Elaboration session (coming soon)</p>;
+    case "elaboration": {
+      const cards = await getSessionCards(id);
+      if (cards.length === 0) notFound();
+      return <ElaborationPlayer sessionId={id} cards={cards} />;
+    }
 
     case "srs": {
       const cards = await getSessionCards(id);

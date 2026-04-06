@@ -9,6 +9,10 @@ import {
   completeRestSessionSchema,
   extractFieldErrors,
 } from "@/lib/validations/sessions";
+import {
+  completeElaborationSchema,
+  type ElaborationInput,
+} from "@/lib/validations/elaboration";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { CardReview, DueMaterial, SessionCard, SessionDetail } from "@/lib/types/sessions";
 import { SESSION_MAX_CARDS, REST_DURATION_SEC } from "@/lib/constants";
@@ -386,6 +390,83 @@ export async function createRestSession(
   if (error) return { success: false, error: "安静セッションの作成に失敗しました" };
 
   return { success: true, data: { id: session.id } };
+}
+
+export async function completeElaborationSession(
+  sessionId: string,
+  reviews: CardReview[],
+  elaborations: ElaborationInput[],
+  selfRating: number,
+): Promise<ActionResult<undefined>> {
+  const parsed = completeElaborationSchema.safeParse({ sessionId, reviews, elaborations, selfRating });
+  if (!parsed.success) {
+    return { success: false, error: "入力内容を確認してください" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "認証が必要です" };
+
+  // RLS に加えてアプリ層でも所有者と status を確認し、二重完了を防ぐ
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id, started_at, status")
+    .eq("id", parsed.data.sessionId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!session) return { success: false, error: "セッションが見つかりません" };
+  if (session.status !== "in_progress") {
+    return { success: false, error: "このセッションは既に完了しています" };
+  }
+
+  const now = new Date();
+  const durationSec = Math.floor(
+    (now.getTime() - new Date(session.started_at).getTime()) / 1000,
+  );
+
+  // elaborations を meta に保存し、セッションを完了する
+  const { error: updateError } = await supabase
+    .from("sessions")
+    .update({
+      status: "completed",
+      duration_sec: durationSec,
+      self_rating: parsed.data.selfRating,
+      ended_at: now.toISOString(),
+      meta: { elaborations: parsed.data.elaborations },
+    })
+    .eq("id", parsed.data.sessionId);
+
+  if (updateError) return { success: false, error: "セッションの更新に失敗しました" };
+
+  // Edge Function で card_reviews + daily_logs を記録 (FSRS はスキップ)
+  const fnResult = await supabase.functions.invoke("complete-session", {
+    body: {
+      session_id: parsed.data.sessionId,
+      reviews: parsed.data.reviews,
+    },
+  });
+
+  if (fnResult.error) {
+    // Edge Function 失敗時はセッションを in_progress に戻す
+    const { error: compensationError } = await supabase
+      .from("sessions")
+      .update({ status: "in_progress", ended_at: null, self_rating: null, duration_sec: 0, meta: null })
+      .eq("id", parsed.data.sessionId);
+    if (compensationError) {
+      // 補償処理も失敗した場合、セッションが completed のまま残る可能性がある
+      console.error(
+        `completeElaborationSession compensation failed for session ${parsed.data.sessionId}:`,
+        compensationError,
+      );
+    }
+    return { success: false, error: "カードレビューの処理に失敗しました" };
+  }
+
+  revalidatePath("/");
+  return { success: true, data: undefined };
 }
 
 export async function completeRestSession(
