@@ -45,4 +45,5 @@ export type SessionDetail = {
     card: { front: string; back: string };
   }>;
   remaining_due_count: number;
+  meta: Record<string, unknown> | null;
 };

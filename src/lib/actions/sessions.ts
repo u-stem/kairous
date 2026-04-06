@@ -261,7 +261,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
   const { data: session } = await supabase
     .from("sessions")
     .select(`
-      id, method_id, status, duration_sec, self_rating, started_at, ended_at,
+      id, method_id, status, duration_sec, self_rating, started_at, ended_at, meta,
       materials(id, title, subjects(name)),
       learning_methods(slug, name)
     `)
@@ -342,6 +342,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
       card: r.cards as { front: string; back: string },
     })),
     remaining_due_count: remainingDueCount,
+    meta: session.meta as Record<string, unknown> | null,
   };
 }
 
