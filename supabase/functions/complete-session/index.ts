@@ -189,11 +189,12 @@ Deno.serve(async (req) => {
     (existingStates ?? []).map((s: { card_id: string }) => [s.card_id, s]),
   );
 
-  // 6. FSRS-5 計算 + srs_states 更新
+  // 6. FSRS-5 計算 + srs_states バッチ upsert
+  // セッションあたり最大20枚の N+1 クエリを避け、1回の RPC で原子性とレイテンシを両立する
   const f = fsrs();
   const now = new Date();
 
-  for (const review of reviews) {
+  const newStates = reviews.map((review) => {
     const existing = stateMap.get(review.card_id) as
       | {
           id: string;
@@ -241,7 +242,7 @@ Deno.serve(async (req) => {
     const result = scheduling[review.rating as Grade];
     const newCard = result.card;
 
-    const newState = {
+    return {
       card_id: review.card_id,
       user_id: session.user_id,
       stability: newCard.stability,
@@ -252,27 +253,17 @@ Deno.serve(async (req) => {
       state: FSRS_STATE_TEXT[newCard.state] ?? "New",
       last_reviewed_at: review.answered_at,
     };
+  });
 
-    if (existing) {
-      const { error } = await supabase
-        .from("srs_states")
-        .update(newState)
-        .eq("id", existing.id);
-      if (error) {
-        return jsonError(
-          `srs_states UPDATE failed: ${error.message}`,
-          500,
-        );
-      }
-    } else {
-      const { error } = await supabase.from("srs_states").insert(newState);
-      if (error) {
-        return jsonError(
-          `srs_states INSERT failed: ${error.message}`,
-          500,
-        );
-      }
-    }
+  const { error: srsError } = await supabase.rpc("batch_upsert_srs_states", {
+    p_states: newStates,
+  });
+
+  if (srsError) {
+    return jsonError(
+      `srs_states batch upsert failed: ${srsError.message}`,
+      500,
+    );
   }
 
   // 7. daily_logs upsert (wakeful rest = material_id NULL の場合はスキップ)
