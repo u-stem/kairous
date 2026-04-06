@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
 
   const { data: session, error: sessionError } = await supabase
     .from("sessions")
-    .select("material_id, method_id, user_id, duration_sec")
+    .select("material_id, method_id, user_id, duration_sec, learning_methods(slug)")
     .eq("id", session_id)
     .single();
 
@@ -84,98 +84,117 @@ Deno.serve(async (req) => {
     reviewed_at: r.answered_at,
   }));
 
-  // FSRS の差分計算に前回の状態が必要なため、既存の srs_states を取得する
-  const cardIds = reviews.map((r) => r.card_id);
-  const { data: existingStates } = await supabase
-    .from("srs_states")
-    .select(
-      "id, card_id, stability, difficulty, reps, lapses, due_date, state, last_reviewed_at",
-    )
-    .eq("user_id", session.user_id)
-    .in("card_id", cardIds);
+  const methodSlug = (session.learning_methods as { slug: string } | null)?.slug ?? "srs";
 
-  const stateMap = new Map(
-    (existingStates ?? []).map((s: { card_id: string }) => [s.card_id, s]),
-  );
+  // SRS のみ FSRS 計算 + srs_states 更新を実行する
+  if (methodSlug === "srs") {
+    // FSRS の差分計算に前回の状態が必要なため、既存の srs_states を取得する
+    const cardIds = reviews.map((r) => r.card_id);
+    const { data: existingStates } = await supabase
+      .from("srs_states")
+      .select(
+        "id, card_id, stability, difficulty, reps, lapses, due_date, state, last_reviewed_at",
+      )
+      .eq("user_id", session.user_id)
+      .in("card_id", cardIds);
 
-  // N+1 クエリを避けるため、全カードの FSRS 計算を先に行い 1回の RPC でバッチ upsert する
-  const f = fsrs();
-  const now = new Date();
-
-  const newStates = reviews.map((review) => {
-    const existing = stateMap.get(review.card_id) as
-      | {
-          id: string;
-          stability: number;
-          difficulty: number;
-          reps: number;
-          lapses: number;
-          due_date: string;
-          state: string;
-          last_reviewed_at: string | null;
-        }
-      | undefined;
-
-    let card: FSRSCard;
-    if (existing) {
-      const lastReview = existing.last_reviewed_at
-        ? new Date(existing.last_reviewed_at)
-        : undefined;
-      const reviewTime = new Date(review.answered_at);
-      card = {
-        due: new Date(existing.due_date),
-        stability: existing.stability,
-        difficulty: existing.difficulty,
-        elapsed_days: lastReview
-          ? Math.max(
-              0,
-              Math.floor(
-                (reviewTime.getTime() - lastReview.getTime()) / 86400000,
-              ),
-            )
-          : 0,
-        scheduled_days: 0,
-        learning_steps: 0,
-        reps: existing.reps,
-        lapses: existing.lapses,
-        state: FSRS_STATE_MAP[existing.state] ?? State.New,
-        last_review: lastReview,
-      };
-    } else {
-      card = createEmptyCard(new Date(review.answered_at));
-    }
-
-    // rating 1-4 は Grade (Again=1, Hard=2, Good=3, Easy=4) と一致
-    const scheduling = f.repeat(card, new Date(review.answered_at));
-    const result = scheduling[review.rating as Grade];
-    const newCard = result.card;
-
-    return {
-      card_id: review.card_id,
-      user_id: session.user_id,
-      stability: newCard.stability,
-      difficulty: newCard.difficulty,
-      reps: newCard.reps,
-      lapses: newCard.lapses,
-      due_date: newCard.due.toISOString().split("T")[0],
-      state: FSRS_STATE_TEXT[newCard.state] ?? "New",
-      last_reviewed_at: review.answered_at,
-    };
-  });
-
-  // card_reviews INSERT と srs_states UPSERT を単一トランザクションで実行
-  const { error: completeError } = await supabase.rpc("complete_session_reviews", {
-    p_session_id: session_id,
-    p_user_id: callerId,
-    p_reviews: reviewRows,
-    p_srs_states: newStates,
-  });
-
-  if (completeError) {
-    return jsonError(
-      `complete_session_reviews failed: ${completeError.message}`,
-      500,
+    const stateMap = new Map(
+      (existingStates ?? []).map((s: { card_id: string }) => [s.card_id, s]),
     );
+
+    // N+1 クエリを避けるため、全カードの FSRS 計算を先に行い 1回の RPC でバッチ upsert する
+    const f = fsrs();
+
+    const newStates = reviews.map((review) => {
+      const existing = stateMap.get(review.card_id) as
+        | {
+            id: string;
+            stability: number;
+            difficulty: number;
+            reps: number;
+            lapses: number;
+            due_date: string;
+            state: string;
+            last_reviewed_at: string | null;
+          }
+        | undefined;
+
+      let card: FSRSCard;
+      if (existing) {
+        const lastReview = existing.last_reviewed_at
+          ? new Date(existing.last_reviewed_at)
+          : undefined;
+        const reviewTime = new Date(review.answered_at);
+        card = {
+          due: new Date(existing.due_date),
+          stability: existing.stability,
+          difficulty: existing.difficulty,
+          elapsed_days: lastReview
+            ? Math.max(
+                0,
+                Math.floor(
+                  (reviewTime.getTime() - lastReview.getTime()) / 86400000,
+                ),
+              )
+            : 0,
+          scheduled_days: 0,
+          learning_steps: 0,
+          reps: existing.reps,
+          lapses: existing.lapses,
+          state: FSRS_STATE_MAP[existing.state] ?? State.New,
+          last_review: lastReview,
+        };
+      } else {
+        card = createEmptyCard(new Date(review.answered_at));
+      }
+
+      // rating 1-4 は Grade (Again=1, Hard=2, Good=3, Easy=4) と一致
+      const scheduling = f.repeat(card, new Date(review.answered_at));
+      const result = scheduling[review.rating as Grade];
+      const newCard = result.card;
+
+      return {
+        card_id: review.card_id,
+        user_id: session.user_id,
+        stability: newCard.stability,
+        difficulty: newCard.difficulty,
+        reps: newCard.reps,
+        lapses: newCard.lapses,
+        due_date: newCard.due.toISOString().split("T")[0],
+        state: FSRS_STATE_TEXT[newCard.state] ?? "New",
+        last_reviewed_at: review.answered_at,
+      };
+    });
+
+    // card_reviews INSERT と srs_states UPSERT を単一トランザクションで実行
+    const { error: completeError } = await supabase.rpc("complete_session_reviews", {
+      p_session_id: session_id,
+      p_user_id: callerId,
+      p_reviews: reviewRows,
+      p_srs_states: newStates,
+    });
+
+    if (completeError) {
+      return jsonError(
+        `complete_session_reviews failed: ${completeError.message}`,
+        500,
+      );
+    }
+  } else {
+    // Elaboration: card_reviews のみ INSERT (FSRS なし)
+    const { error: completeError } = await supabase.rpc("complete_session_reviews", {
+      p_session_id: session_id,
+      p_user_id: callerId,
+      p_reviews: reviewRows,
+      p_srs_states: [],
+    });
+
+    if (completeError) {
+      return jsonError(
+        `complete_session_reviews failed: ${completeError.message}`,
+        500,
+      );
+    }
   }
 
   // wakeful rest は教材に紐付かないため daily_logs の対象外
