@@ -101,9 +101,10 @@ export async function createCard(
         lapses: 0,
       });
 
-      // SRS state の挿入失敗はカード自体の作成を妨げないが、復習スケジュールが欠落するため警告を返す
       if (srsError) {
-        console.error(`srs_states insert failed for card ${card.id}:`, srsError.message);
+        // カードは作成済みだが SRS 状態が欠落し復習キューに出現しなくなるため、エラー扱いにする
+        console.error(`srs_states insert failed for card ${card.id}:`, srsError);
+        return { success: false, error: "カードは作成されましたが、SRS初期状態の設定に失敗しました" };
       }
     }
   }
