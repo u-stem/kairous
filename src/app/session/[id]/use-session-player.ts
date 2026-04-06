@@ -22,7 +22,7 @@ export function useSessionPlayer(cards: SessionCard[]): SessionPlayerState {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [reviews, setReviews] = useState<CardReview[]>([]);
-  // カード表示開始時刻を記録し、回答までの所要時間を算出する
+  // FSRS が応答時間を学習効率の指標として使うため、カード表示時刻を記録する
   const cardStartedAt = useRef(new Date().toISOString());
 
   const currentCard = cards[currentIndex];

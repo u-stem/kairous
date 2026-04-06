@@ -45,7 +45,7 @@ export const METHOD_CATEGORIES: Record<
   },
 };
 
-// ウィザードStep2で表示する学習手法の説明
+// ウィザード Step2 でのみ表示する説明文。他画面では learning_methods.name を使う
 export const METHOD_DESCRIPTIONS: Record<string, string> = {
   srs: "間隔を空けて復習し、長期記憶に定着させる",
   active_recall: "カードを見て能動的に思い出す練習をする",
@@ -53,7 +53,7 @@ export const METHOD_DESCRIPTIONS: Record<string, string> = {
   pomodoro: "25分集中 + 5分休憩のサイクルで学習する",
 };
 
-// カテゴリに対応するTailwindカラークラス（バッジ・ラベル表示で使用）
+// UI コンポーネント間でカテゴリの視覚的一貫性を保つためのカラーマッピング
 const COLOR_MAP: Record<MethodCategory, { light: string; dark: string }> = {
   memory: {
     light: "bg-indigo-50 text-indigo-600",
@@ -93,11 +93,11 @@ export function getMethodColorClasses(category: string): {
 export const APP_TIMEZONE = "Asia/Tokyo" as const;
 export const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
-// Stats 画面の期間セレクターで使用する選択肢
+// 学習継続率の短期・中期・長期の傾向を観察するための3段階
 export const STATS_PERIODS = [7, 30, 90] as const;
 export type StatsPeriod = (typeof STATS_PERIODS)[number];
 
-// FSRS初期化時のデフォルト値（Supabase Edge Functionで参照）
+// Edge Function 側でも同じ値を使うため single source of truth とする（Deno 側は手動同期）
 export const SRS_DEFAULTS = {
   stability: 1.0,
   difficulty: 5.0,

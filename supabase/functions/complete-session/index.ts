@@ -31,8 +31,6 @@ function jsonError(message: string, status: number): Response {
   });
 }
 
-// --- Input validation ---
-
 function isUUID(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -93,10 +91,8 @@ function validateRequest(body: unknown): {
   return { ok: true, session_id, reviews: reviews as ReviewInput[] };
 }
 
-// --- Authorization ---
-// Edge Function は Server Action から service_role key 経由で呼ばれる想定。
-// Authorization ヘッダーの JWT から user_id を取得し、セッション所有者と照合する。
-
+// Server Action (service_role key) とクライアント直接呼び出し (JWT) の両方に対応するため、
+// Authorization ヘッダーから user_id を抽出する
 async function extractUserId(
   req: Request,
   supabase: ReturnType<typeof createClient>,
@@ -110,7 +106,6 @@ async function extractUserId(
 }
 
 Deno.serve(async (req) => {
-  // 1. 入力バリデーション
   let body: unknown;
   try {
     body = await req.json();
@@ -130,7 +125,6 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  // 2. セッション情報を取得
   const { data: session, error: sessionError } = await supabase
     .from("sessions")
     .select("material_id, method_id, user_id, duration_sec")
@@ -141,9 +135,8 @@ Deno.serve(async (req) => {
     return jsonError("Session not found", 404);
   }
 
-  // 3. 認可チェック: JWT の user_id とセッション所有者が一致すること
+  // 他ユーザーのセッションを完了させる攻撃を防ぐため、呼び出し元を検証する
   const callerId = await extractUserId(req, supabase);
-  // service_role key (Server Action) 経由か、JWT で認証済みのユーザーのみ許可
   const authHeader = req.headers.get("Authorization") ?? "";
   const isServiceRole = authHeader === `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`;
 
@@ -154,7 +147,6 @@ Deno.serve(async (req) => {
     return jsonError("Not authorized to complete this session", 403);
   }
 
-  // 4. card_reviews 一括 INSERT
   const reviewRows = reviews.map((r) => ({
     session_id,
     card_id: r.card_id,
@@ -175,7 +167,7 @@ Deno.serve(async (req) => {
     );
   }
 
-  // 5. 各カードの現在の srs_states を取得
+  // FSRS の差分計算に前回の状態が必要なため、既存の srs_states を取得する
   const cardIds = reviews.map((r) => r.card_id);
   const { data: existingStates } = await supabase
     .from("srs_states")
@@ -189,8 +181,7 @@ Deno.serve(async (req) => {
     (existingStates ?? []).map((s: { card_id: string }) => [s.card_id, s]),
   );
 
-  // 6. FSRS-5 計算 + srs_states バッチ upsert
-  // セッションあたり最大20枚の N+1 クエリを避け、1回の RPC で原子性とレイテンシを両立する
+  // N+1 クエリを避けるため、全カードの FSRS 計算を先に行い 1回の RPC でバッチ upsert する
   const f = fsrs();
   const now = new Date();
 
@@ -266,7 +257,7 @@ Deno.serve(async (req) => {
     );
   }
 
-  // 7. daily_logs upsert (wakeful rest = material_id NULL の場合はスキップ)
+  // wakeful rest は教材に紐付かないため daily_logs の対象外
   if (session.material_id) {
     const { data: material } = await supabase
       .from("materials")

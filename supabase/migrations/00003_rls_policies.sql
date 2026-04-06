@@ -1,6 +1,5 @@
 -- supabase/migrations/00003_rls_policies.sql
 
--- 全テーブルで RLS を有効化
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE materials ENABLE ROW LEVEL SECURITY;
