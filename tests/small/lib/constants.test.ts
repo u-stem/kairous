@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   MATERIAL_METHOD_SLUGS,
+  CARD_BASED_SLUGS,
   METHOD_CATEGORIES,
   getMethodColorClasses,
 } from "@/lib/constants";
@@ -15,6 +16,24 @@ describe("MATERIAL_METHOD_SLUGS", () => {
 
   it("4つの手法のみ含む", () => {
     expect(MATERIAL_METHOD_SLUGS).toHaveLength(4);
+  });
+});
+
+describe("CARD_BASED_SLUGS", () => {
+  it("srs を含む", () => {
+    expect(CARD_BASED_SLUGS).toContain("srs");
+  });
+
+  it("active_recall を含む", () => {
+    expect(CARD_BASED_SLUGS).toContain("active_recall");
+  });
+
+  it("interleaving を含む", () => {
+    expect(CARD_BASED_SLUGS).toContain("interleaving");
+  });
+
+  it("3 つの手法のみ含む", () => {
+    expect(CARD_BASED_SLUGS).toHaveLength(3);
   });
 });
 

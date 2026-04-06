@@ -69,33 +69,25 @@ export async function removeMaterialMethod(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "認証が必要です" };
 
-  // RLSに加えてuser_idで絞り込み、他ユーザーの教材への操作を防ぐ
-  const { data: material } = await supabase
-    .from("materials")
-    .select("id")
-    .eq("id", materialId)
-    .eq("user_id", user.id)
-    .single();
+  // RPC で所有者チェック + 残数チェック + 削除を原子的に実行し TOCTOU を防ぐ
+  const { error } = await supabase.rpc("remove_material_method", {
+    p_material_id: materialId,
+    p_method_id: methodId,
+    p_user_id: user.id,
+  });
 
-  if (!material) return { success: false, error: "教材が見つかりません" };
-
-  // 学習科学の観点から手法ゼロは意味をなさないため、削除前に残数を確認する
-  const { count } = await supabase
-    .from("material_methods")
-    .select("id", { count: "exact", head: true })
-    .eq("material_id", materialId);
-
-  if (count !== null && count <= 1) {
-    return { success: false, error: "最低1つの学習手法が必要です" };
+  if (error) {
+    if (error.message.includes("not owned by user")) {
+      return { success: false, error: "教材が見つかりません" };
+    }
+    if (error.message.includes("at least one method required")) {
+      return { success: false, error: "最低1つの学習手法が必要です" };
+    }
+    if (error.message.includes("not found for material")) {
+      return { success: false, error: "この手法は紐付けされていません" };
+    }
+    return { success: false, error: "学習手法の削除に失敗しました" };
   }
-
-  const { error } = await supabase
-    .from("material_methods")
-    .delete()
-    .eq("material_id", materialId)
-    .eq("method_id", methodId);
-
-  if (error) return { success: false, error: "学習手法の削除に失敗しました" };
 
   revalidatePath(`/materials/${materialId}`);
   return { success: true, data: undefined };

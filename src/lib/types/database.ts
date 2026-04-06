@@ -527,6 +527,14 @@ export type Database = {
         }
         Returns: string
       }
+      remove_material_method: {
+        Args: {
+          p_material_id: string
+          p_method_id: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       upsert_daily_log: {
         Args: {
           p_user_id: string

@@ -9,7 +9,9 @@ export const MATERIAL_METHOD_SLUGS = [
 export type MaterialMethodSlug = (typeof MATERIAL_METHOD_SLUGS)[number];
 
 // カードレビューを使用する手法（sessions側でcard_reviewsテーブルを参照する）
-export const CARD_BASED_SLUGS = ["srs", "active_recall"] as const;
+// CLAUDE.md Method Classification: Card-based = SRS, Active Recall, Interleaving
+// MATERIAL_METHOD_SLUGS（ウィザード選択可能）とは別概念。interleaving は未実装だがカード手法として定義済み
+export const CARD_BASED_SLUGS = ["srs", "active_recall", "interleaving"] as const;
 
 export type MethodCategory =
   | "memory"
