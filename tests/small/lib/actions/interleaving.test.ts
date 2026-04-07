@@ -74,25 +74,17 @@ function buildMockClient({
 }
 
 // getInterleavingCards 用の専用モッククライアントを組み立てる
-// sessions 所有権確認、session_materials 取得、cards 取得、srs_states 取得の各クエリをモックする
+// sessions 所有権確認 + RPC (get_interleaving_due_cards) をモックする
 function buildGetInterleavingCardsMockClient({
   userId = "user-1",
   authenticated = true,
   sessionOwned = true,
-  sessionMaterials = [
-    { material_id: "mat-1", materials: { title: "Material A" } },
-    { material_id: "mat-2", materials: { title: "Material B" } },
-  ] as Array<{ material_id: string; materials: { title: string } }> | null,
-  cardsByMaterial = {
-    "mat-1": [
-      { id: "card-1", front: "Q1", back: "A1", display_order: 1 },
-      { id: "card-2", front: "Q2", back: "A2", display_order: 2 },
-    ],
-    "mat-2": [
-      { id: "card-3", front: "Q3", back: "A3", display_order: 1 },
-    ],
-  } as Record<string, Array<{ id: string; front: string; back: string; display_order: number }>>,
-  notDueCardIds = [] as string[],
+  // RPC が返す due cards (card_id, front, back, display_order, material_title)
+  rpcCards = [
+    { card_id: "card-1", front: "Q1", back: "A1", display_order: 1, material_title: "Material A" },
+    { card_id: "card-2", front: "Q2", back: "A2", display_order: 2, material_title: "Material A" },
+    { card_id: "card-3", front: "Q3", back: "A3", display_order: 1, material_title: "Material B" },
+  ] as Array<{ card_id: string; front: string; back: string; display_order: number; material_title: string }>,
 } = {}) {
   const fromMock = vi.fn();
 
@@ -106,42 +98,8 @@ function buildGetInterleavingCardsMockClient({
     }),
   };
 
-  // session_materials 取得チェーン
-  const sessionMaterialsChain = {
-    select: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockResolvedValue({ data: sessionMaterials, error: null }),
-  };
-
-  // cards 取得チェーン (material_id ごとに異なる結果を返す)
-  let cardCallCount = 0;
-  const materialIds = Object.keys(cardsByMaterial);
-  const cardsChain = {
-    select: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    order: vi.fn().mockImplementation(() => {
-      const matId = materialIds[cardCallCount] ?? materialIds[materialIds.length - 1];
-      const cards = cardsByMaterial[matId] ?? [];
-      cardCallCount++;
-      return Promise.resolve({ data: cards, error: null });
-    }),
-  };
-
-  // srs_states の due_date フィルタチェーン
-  const srsStatesChain = {
-    select: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    gt: vi.fn().mockReturnThis(),
-    in: vi.fn().mockResolvedValue({
-      data: notDueCardIds.map((id) => ({ card_id: id })),
-      error: null,
-    }),
-  };
-
   fromMock.mockImplementation((table: string) => {
     if (table === "sessions") return sessionOwnershipChain;
-    if (table === "session_materials") return sessionMaterialsChain;
-    if (table === "cards") return cardsChain;
-    if (table === "srs_states") return srsStatesChain;
     return {};
   });
 
@@ -152,7 +110,7 @@ function buildGetInterleavingCardsMockClient({
       }),
     },
     from: fromMock,
-    rpc: vi.fn(),
+    rpc: vi.fn().mockResolvedValue({ data: rpcCards, error: null }),
   };
 }
 
@@ -248,21 +206,16 @@ describe("getInterleavingCards", () => {
   });
 
   it("limits results to SESSION_MAX_CARDS", async () => {
-    // SESSION_MAX_CARDS(20) を超えるカードを用意する
-    const manyCards = Array.from({ length: 15 }, (_, i) => ({
-      id: `card-mat1-${i}`,
+    // SESSION_MAX_CARDS(20) を超えるカードを RPC から返す
+    const manyCards = Array.from({ length: 30 }, (_, i) => ({
+      card_id: `card-${i}`,
       front: `Q${i}`,
       back: `A${i}`,
       display_order: i,
-    }));
-    const manyCards2 = Array.from({ length: 15 }, (_, i) => ({
-      id: `card-mat2-${i}`,
-      front: `Q2-${i}`,
-      back: `A2-${i}`,
-      display_order: i,
+      material_title: `Material ${i % 2 === 0 ? "A" : "B"}`,
     }));
     mockClient = buildGetInterleavingCardsMockClient({
-      cardsByMaterial: { "mat-1": manyCards, "mat-2": manyCards2 },
+      rpcCards: manyCards,
     });
 
     const { getInterleavingCards } = await import("@/lib/actions/sessions");
@@ -283,10 +236,10 @@ describe("getInterleavingCards", () => {
 
   it("combines due cards from all materials", async () => {
     mockClient = buildGetInterleavingCardsMockClient({
-      cardsByMaterial: {
-        "mat-1": [{ id: "card-1", front: "Q1", back: "A1", display_order: 1 }],
-        "mat-2": [{ id: "card-2", front: "Q2", back: "A2", display_order: 1 }],
-      },
+      rpcCards: [
+        { card_id: "card-1", front: "Q1", back: "A1", display_order: 1, material_title: "Material A" },
+        { card_id: "card-2", front: "Q2", back: "A2", display_order: 1, material_title: "Material B" },
+      ],
     });
 
     const { getInterleavingCards } = await import("@/lib/actions/sessions");

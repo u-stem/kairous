@@ -498,6 +498,16 @@ export type Database = {
           title: string
         }[]
       }
+      get_interleaving_due_cards: {
+        Args: { p_session_id: string; p_today: string; p_user_id: string }
+        Returns: {
+          back: string
+          card_id: string
+          display_order: number
+          front: string
+          material_title: string
+        }[]
+      }
       increment_total_cards:
         | {
             Args: { p_delta: number; p_material_id: string }
@@ -511,17 +521,30 @@ export type Database = {
         Args: { p_material_id: string; p_method_id: string; p_user_id: string }
         Returns: undefined
       }
-      upsert_daily_log: {
-        Args: {
-          p_cards_reviewed: number
-          p_duration_sec: number
-          p_log_date: string
-          p_method_id: string
-          p_subject_id: string
-          p_user_id: string
-        }
-        Returns: undefined
-      }
+      upsert_daily_log:
+        | {
+            Args: {
+              p_cards_reviewed: number
+              p_duration_sec: number
+              p_log_date: string
+              p_method_id: string
+              p_subject_id: string
+              p_user_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_cards_reviewed: number
+              p_duration_sec: number
+              p_log_date: string
+              p_method_id: string
+              p_session_count?: number
+              p_subject_id: string
+              p_user_id: string
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       [_ in never]: never

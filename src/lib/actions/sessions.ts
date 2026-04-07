@@ -721,48 +721,21 @@ export async function getInterleavingCards(sessionId: string): Promise<Interleav
 
   if (!session) return [];
 
-  // session_materials からセッションに紐づく教材一覧を取得
-  const { data: sessionMaterials } = await supabase
-    .from("session_materials")
-    .select("material_id, materials(title)")
-    .eq("session_id", sessionId);
-
-  if (!sessionMaterials || sessionMaterials.length === 0) return [];
-
+  // 全教材の due cards を RPC 1 回で取得し、N+1 クエリを回避する
   const today = new Date().toISOString().split("T")[0];
-  const allCards: InterleavingCard[] = [];
+  const { data: rpcCards } = await supabase.rpc("get_interleaving_due_cards", {
+    p_session_id: sessionId,
+    p_user_id: user.id,
+    p_today: today,
+  });
 
-  for (const sm of sessionMaterials) {
-    const materialTitle = (sm.materials as unknown as { title: string })?.title ?? "";
-
-    const { data: cards } = await supabase
-      .from("cards")
-      .select("id, front, back, display_order")
-      .eq("material_id", sm.material_id)
-      .order("display_order");
-
-    if (!cards || cards.length === 0) continue;
-
-    // SRS の due_date フィルタを適用
-    const cardIds = cards.map((c) => c.id);
-    const { data: notDueStates } = await supabase
-      .from("srs_states")
-      .select("card_id")
-      .eq("user_id", user.id)
-      .gt("due_date", today)
-      .in("card_id", cardIds);
-
-    const notDueCardIds = new Set((notDueStates ?? []).map((s) => s.card_id));
-
-    const dueCards = cards
-      .filter((c) => !notDueCardIds.has(c.id))
-      .map((c) => ({
-        ...c,
-        material_title: materialTitle,
-      }));
-
-    allCards.push(...dueCards);
-  }
+  const allCards: InterleavingCard[] = (rpcCards ?? []).map((c) => ({
+    id: c.card_id,
+    front: c.front,
+    back: c.back,
+    display_order: c.display_order,
+    material_title: c.material_title,
+  }));
 
   // 交互配置効果を生むため、教材を跨いでシャッフルする (Fisher-Yates)
   for (let i = allCards.length - 1; i > 0; i--) {
