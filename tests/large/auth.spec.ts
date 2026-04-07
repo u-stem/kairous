@@ -8,6 +8,11 @@ import type { TestUserData } from "./helpers/types";
 // 認証テストは未ログイン状態で実行する
 test.use({ storageState: { cookies: [], origins: [] } });
 
+function getTestUser(): TestUserData {
+  const userPath = resolve(__dirname, ".auth", "test-user.json");
+  return JSON.parse(readFileSync(userPath, "utf-8")) as TestUserData;
+}
+
 test.describe("サインアップ", () => {
   // テスト全体で共有するサインアップ用メールアドレス
   const signupEmail = `e2e-signup-${Date.now()}@kairous.local`;
@@ -32,7 +37,6 @@ test.describe("サインアップ", () => {
 
     // サーバーアクションのリダイレクト後、ページが完全に読み込まれるまで待つ
     await expect(page).toHaveURL("/", { timeout: 10_000 });
-    await page.waitForLoadState("networkidle");
     await expect(page.getByText("今日の学習")).toBeVisible();
   });
 
@@ -66,12 +70,7 @@ test.describe("ログイン", () => {
   let testUser: TestUserData;
 
   test.beforeAll(() => {
-    // global-setup で作成されたテストユーザー情報をファイルから読み込む
-    const raw = readFileSync(
-      resolve(__dirname, ".auth", "test-user.json"),
-      "utf-8"
-    );
-    testUser = JSON.parse(raw) as TestUserData;
+    testUser = getTestUser();
   });
 
   test("既存ユーザーがログインしてホームに遷移する", async ({ page }) => {
@@ -82,7 +81,6 @@ test.describe("ログイン", () => {
     await page.getByRole("button", { name: "ログイン" }).click();
 
     await expect(page).toHaveURL("/", { timeout: 10_000 });
-    await page.waitForLoadState("networkidle");
     await expect(page.getByText("今日の学習")).toBeVisible();
   });
 
@@ -109,12 +107,7 @@ test.describe("ログアウト", () => {
   let testUser: TestUserData;
 
   test.beforeAll(() => {
-    // global-setup で作成されたテストユーザー情報をファイルから読み込む
-    const raw = readFileSync(
-      resolve(__dirname, ".auth", "test-user.json"),
-      "utf-8"
-    );
-    testUser = JSON.parse(raw) as TestUserData;
+    testUser = getTestUser();
   });
 
   test("ログイン後にログアウトするとログインページに遷移する", async ({
