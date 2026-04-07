@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   createSubjectSchema,
   extractFieldErrors,
@@ -48,13 +49,14 @@ export async function createSubject(
 export async function getSubjects(): Promise<Subject[]> {
   const { user, supabase } = await getAuthenticatedUser();
 
-  if (!user) return [];
+  if (!user) redirect("/auth/login");
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("subjects")
     .select("*")
     .eq("user_id", user.id)
     .order("display_order");
 
+  if (error) throw new Error(`getSubjects failed: ${error.message}`);
   return data ?? [];
 }

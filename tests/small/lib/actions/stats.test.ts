@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from "vitest";
 
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn((url: string) => {
+    throw new Error(`NEXT_REDIRECT:${url}`);
+  }),
+}));
+
 // テスト結果が実行日に依存しないよう日付を固定する
 beforeAll(() => {
   vi.useFakeTimers();
@@ -101,15 +107,13 @@ describe("getStats", () => {
     expect(result.byMethod[0].name).toBe("SRS");
   });
 
-  it("returns empty stats when user is not authenticated", async () => {
+  it("redirects to login when user is not authenticated", async () => {
     mockClient = buildMockClient();
     mockClient.auth.getUser = vi.fn().mockResolvedValue({
       data: { user: null },
     });
     const { getStats } = await import("@/lib/actions/stats");
-    const result = await getStats(7);
 
-    expect(result.summary.totalSec).toBe(0);
-    expect(result.daily).toEqual([]);
+    await expect(getStats(7)).rejects.toThrow("NEXT_REDIRECT:/auth/login");
   });
 });

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   createMaterialSchema,
   updateMaterialSchema,
@@ -80,7 +81,7 @@ export async function getMaterials(
   options?: { subjectId?: string; search?: string },
 ): Promise<MaterialWithMethods[]> {
   const { user, supabase } = await getAuthenticatedUser();
-  if (!user) return [];
+  if (!user) redirect("/auth/login");
 
   let query = supabase
     .from("materials")
@@ -103,7 +104,8 @@ export async function getMaterials(
     query = query.ilike("title", `%${escaped}%`);
   }
 
-  const { data } = await query;
+  const { data, error } = await query;
+  if (error) throw new Error(`getMaterials failed: ${error.message}`);
   if (!data) return [];
 
   // 一覧画面で復習が必要なカード数を表示し、学習優先度を判断できるようにする
@@ -153,9 +155,9 @@ export async function getMaterials(
 
 export async function getMaterial(id: string): Promise<MaterialDetail | null> {
   const { user, supabase } = await getAuthenticatedUser();
-  if (!user) return null;
+  if (!user) redirect("/auth/login");
 
-  const { data: material } = await supabase
+  const { data: material, error } = await supabase
     .from("materials")
     .select(`
       id, title, description, subject_id, total_cards, created_at,
@@ -168,6 +170,7 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
     .eq("user_id", user.id)
     .single();
 
+  if (error) throw new Error(`getMaterial failed: ${error.message}`);
   if (!material) return null;
 
   // 詳細ページで復習が必要なカード数を表示し、セッション開始の判断材料にする
