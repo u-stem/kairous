@@ -5,6 +5,13 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+// requireAuth は未認証時に redirect で throw するためモックが必要
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn((url: string) => {
+    throw new Error(`NEXT_REDIRECT:${url}`);
+  }),
+}));
+
 // RPC 呼び出しのモッククライアントを組み立てる
 function buildMockClientWithRpc(rpcResult: { data: unknown; error: unknown }) {
   const rpcMock = vi.fn().mockResolvedValue(rpcResult);
@@ -35,7 +42,7 @@ describe("getDueMaterials", () => {
   it("calls rpc('get_due_materials') with p_user_id and p_today", async () => {
     mockClient = buildMockClientWithRpc({ data: [], error: null });
 
-    const { getDueMaterials } = await import("@/lib/actions/sessions");
+    const { getDueMaterials } = await import("@/lib/actions/session-queries");
     await getDueMaterials();
 
     expect(mockClient.rpc).toHaveBeenCalledWith(
@@ -50,22 +57,21 @@ describe("getDueMaterials", () => {
     expect(typeof rpcArgs[1].p_today).toBe("string");
   });
 
-  it("returns empty array when user is not authenticated", async () => {
+  it("redirects to /auth/login when user is not authenticated", async () => {
     mockClient = buildMockClientWithRpc({ data: null, error: null });
     (mockClient.auth.getUser as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: { user: null },
     });
 
-    const { getDueMaterials } = await import("@/lib/actions/sessions");
-    const result = await getDueMaterials();
+    const { getDueMaterials } = await import("@/lib/actions/session-queries");
 
-    expect(result).toEqual([]);
+    await expect(getDueMaterials()).rejects.toThrow("NEXT_REDIRECT:/auth/login");
   });
 
   it("returns empty array when rpc returns null", async () => {
     mockClient = buildMockClientWithRpc({ data: null, error: null });
 
-    const { getDueMaterials } = await import("@/lib/actions/sessions");
+    const { getDueMaterials } = await import("@/lib/actions/session-queries");
     const result = await getDueMaterials();
 
     expect(result).toEqual([]);
@@ -74,7 +80,7 @@ describe("getDueMaterials", () => {
   it("returns empty array when rpc returns empty array", async () => {
     mockClient = buildMockClientWithRpc({ data: [], error: null });
 
-    const { getDueMaterials } = await import("@/lib/actions/sessions");
+    const { getDueMaterials } = await import("@/lib/actions/session-queries");
     const result = await getDueMaterials();
 
     expect(result).toEqual([]);
@@ -107,7 +113,7 @@ describe("getDueMaterials", () => {
     ];
     mockClient = buildMockClientWithRpc({ data: rpcRows, error: null });
 
-    const { getDueMaterials } = await import("@/lib/actions/sessions");
+    const { getDueMaterials } = await import("@/lib/actions/session-queries");
     const result = await getDueMaterials();
 
     expect(result).toHaveLength(2);
@@ -130,7 +136,7 @@ describe("getDueMaterials", () => {
   it("p_today is in YYYY-MM-DD format", async () => {
     mockClient = buildMockClientWithRpc({ data: [], error: null });
 
-    const { getDueMaterials } = await import("@/lib/actions/sessions");
+    const { getDueMaterials } = await import("@/lib/actions/session-queries");
     await getDueMaterials();
 
     const rpcCallArgs = (mockClient.rpc as ReturnType<typeof vi.fn>).mock.calls[0] as [
@@ -147,7 +153,7 @@ describe("getDueMaterials", () => {
     });
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const { getDueMaterials } = await import("@/lib/actions/sessions");
+    const { getDueMaterials } = await import("@/lib/actions/session-queries");
     const result = await getDueMaterials();
 
     expect(result).toEqual([]);
@@ -179,16 +185,17 @@ describe("getSessionInfo", () => {
     vi.resetModules();
   });
 
-  it("returns null when user is not authenticated", async () => {
+  it("redirects to /auth/login when user is not authenticated", async () => {
     mockClient = buildMockClientWithRpc({ data: null, error: null });
     (mockClient.auth.getUser as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: { user: null },
     });
 
-    const { getSessionInfo } = await import("@/lib/actions/sessions");
-    const result = await getSessionInfo("a0000000-0000-4000-a000-000000000001");
+    const { getSessionInfo } = await import("@/lib/actions/session-queries");
 
-    expect(result).toBeNull();
+    await expect(
+      getSessionInfo("a0000000-0000-4000-a000-000000000001"),
+    ).rejects.toThrow("NEXT_REDIRECT:/auth/login");
   });
 
   it("returns null when session does not exist", async () => {
@@ -197,7 +204,7 @@ describe("getSessionInfo", () => {
       from: vi.fn().mockReturnValue(createChainMock({ data: null, error: null })),
     };
 
-    const { getSessionInfo } = await import("@/lib/actions/sessions");
+    const { getSessionInfo } = await import("@/lib/actions/session-queries");
     const result = await getSessionInfo("a0000000-0000-4000-a000-000000000001");
 
     expect(result).toBeNull();
@@ -214,7 +221,7 @@ describe("getSessionInfo", () => {
       ),
     };
 
-    const { getSessionInfo } = await import("@/lib/actions/sessions");
+    const { getSessionInfo } = await import("@/lib/actions/session-queries");
     const result = await getSessionInfo("a0000000-0000-4000-a000-000000000001");
 
     expect(result).toBeNull();
@@ -235,7 +242,7 @@ describe("getSessionInfo", () => {
       ),
     };
 
-    const { getSessionInfo } = await import("@/lib/actions/sessions");
+    const { getSessionInfo } = await import("@/lib/actions/session-queries");
     const result = await getSessionInfo("a0000000-0000-4000-a000-000000000001");
 
     expect(result).toEqual({

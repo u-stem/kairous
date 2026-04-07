@@ -97,12 +97,9 @@ describe("createMaterial", () => {
     });
   });
 
-  it("returns UNAUTHENTICATED error when user is not authenticated", async () => {
+  it("redirects to /auth/login when user is not authenticated", async () => {
     mockClient = buildMockClient({ user: null });
-    const [{ createMaterial }, { ACTION_ERRORS }] = await Promise.all([
-      import("@/lib/actions/materials"),
-      import("@/lib/constants"),
-    ]);
+    const { createMaterial } = await import("@/lib/actions/materials");
 
     const formData = new FormData();
     formData.set("title", "英単語帳");
@@ -113,12 +110,9 @@ describe("createMaterial", () => {
       JSON.stringify(["b0000000-0000-4000-b000-000000000001"]),
     );
 
-    const result = await createMaterial(formData);
-
-    expect(result).toEqual({
-      success: false,
-      error: ACTION_ERRORS.UNAUTHENTICATED,
-    });
+    await expect(createMaterial(formData)).rejects.toThrow(
+      "NEXT_REDIRECT:/auth/login",
+    );
   });
 });
 
@@ -224,24 +218,17 @@ describe("updateMaterial", () => {
     vi.resetModules();
   });
 
-  it("returns UNAUTHENTICATED error when user is not authenticated", async () => {
+  it("redirects to /auth/login when user is not authenticated", async () => {
     mockClient = buildMockClient({ user: null });
-    const [{ updateMaterial }, { ACTION_ERRORS }] = await Promise.all([
-      import("@/lib/actions/materials"),
-      import("@/lib/constants"),
-    ]);
+    const { updateMaterial } = await import("@/lib/actions/materials");
 
     const formData = new FormData();
     formData.set("title", "新しいタイトル");
-    // subject_id は UUID 形式が必須（バリデーションより先に認証エラーが発生するようにする）
     formData.set("subject_id", "a0000000-0000-4000-a000-000000000001");
 
-    const result = await updateMaterial("mat-1", formData);
-
-    expect(result).toEqual({
-      success: false,
-      error: ACTION_ERRORS.UNAUTHENTICATED,
-    });
+    await expect(updateMaterial("mat-1", formData)).rejects.toThrow(
+      "NEXT_REDIRECT:/auth/login",
+    );
   });
 });
 
@@ -250,18 +237,12 @@ describe("deleteMaterial", () => {
     vi.resetModules();
   });
 
-  it("returns UNAUTHENTICATED error when user is not authenticated", async () => {
+  it("redirects to /auth/login when user is not authenticated", async () => {
     mockClient = buildMockClient({ user: null });
-    const [{ deleteMaterial }, { ACTION_ERRORS }] = await Promise.all([
-      import("@/lib/actions/materials"),
-      import("@/lib/constants"),
-    ]);
+    const { deleteMaterial } = await import("@/lib/actions/materials");
 
-    const result = await deleteMaterial("mat-1");
-
-    expect(result).toEqual({
-      success: false,
-      error: ACTION_ERRORS.UNAUTHENTICATED,
-    });
+    await expect(deleteMaterial("mat-1")).rejects.toThrow(
+      "NEXT_REDIRECT:/auth/login",
+    );
   });
 });

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createInterleavingSession } from "@/lib/actions/sessions";
+import { createInterleavingSession } from "@/lib/actions/session-commands";
 
 type Props = {
   materialIds: string[];

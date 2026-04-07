@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { createSession, createRestSession } from "@/lib/actions/sessions";
+import { createSession, createRestSession } from "@/lib/actions/session-commands";
 import { REST_DURATION_SEC } from "@/lib/constants";
 import { toast } from "sonner";
 

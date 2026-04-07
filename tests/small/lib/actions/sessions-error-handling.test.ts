@@ -78,7 +78,7 @@ describe("completeSession compensation error logging (B3)", () => {
       },
     };
 
-    const { completeSession } = await import("@/lib/actions/sessions");
+    const { completeSession } = await import("@/lib/actions/session-commands");
     const result = await completeSession(
       "a0000000-0000-4000-a000-000000000001",
       [
@@ -151,7 +151,7 @@ describe("getSession card_reviews ownership filter (S3)", () => {
       functions: { invoke: vi.fn() },
     } as unknown as MockClient;
 
-    const { getSession } = await import("@/lib/actions/sessions");
+    const { getSession } = await import("@/lib/actions/session-queries");
     await getSession("a0000000-0000-4000-a000-000000000001");
 
     // card_reviews の select に sessions!inner が含まれている
@@ -179,7 +179,7 @@ describe("completeRestSession validation schema (S7)", () => {
       functions: { invoke: vi.fn() },
     };
 
-    const { completeRestSession } = await import("@/lib/actions/sessions");
+    const { completeRestSession } = await import("@/lib/actions/session-commands");
     const result = await completeRestSession("not-a-uuid");
 
     expect(result.success).toBe(false);

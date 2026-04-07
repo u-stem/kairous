@@ -5,6 +5,13 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+// requireAuth は未認証時に redirect で throw するためモックが必要
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn((url: string) => {
+    throw new Error(`NEXT_REDIRECT:${url}`);
+  }),
+}));
+
 type ChainMock = {
   select: ReturnType<typeof vi.fn>;
   eq: ReturnType<typeof vi.fn>;
@@ -78,13 +85,11 @@ describe("getCard", () => {
     expect((result as Record<string, unknown>)["materials"]).toBeUndefined();
   });
 
-  it("returns null when not authenticated", async () => {
+  it("redirects to /auth/login when not authenticated", async () => {
     mockClient = buildMockClient(null, cardRow);
     const { getCard } = await import("@/lib/actions/cards");
 
-    const result = await getCard(CARD_ID);
-
-    expect(result).toBeNull();
+    await expect(getCard(CARD_ID)).rejects.toThrow("NEXT_REDIRECT:/auth/login");
   });
 
   it("returns null when card belongs to another user", async () => {

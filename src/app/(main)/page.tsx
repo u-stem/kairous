@@ -1,4 +1,4 @@
-import { getDueMaterials } from "@/lib/actions/sessions";
+import { getDueMaterials } from "@/lib/actions/session-queries";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { TodayMaterialList } from "./today-material-list";

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getSession } from "@/lib/actions/sessions";
+import { getSession } from "@/lib/actions/session-queries";
 import { RATING_LABELS, RATING_COLORS } from "@/lib/constants";
 import {
   calculateAccuracyRate,
