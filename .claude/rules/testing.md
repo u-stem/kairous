@@ -8,7 +8,7 @@
 |------|------|----------|------|
 | Small | tests/small/ | なし (全モック) | `bun test:small` (pre-commit) |
 | Medium | tests/medium/ | Supabase ローカル | `bun test:medium` (CI) |
-| Large | tests/large/ | ブラウザ + Supabase | `bun test:large` (CI post-deploy) |
+| Large | tests/large/ | Playwright + Supabase ローカル | `bun test:large` (CI パイプライン内) |
 
 ## ルール
 
@@ -17,3 +17,6 @@
 - Small テストで Supabase クライアントを直接呼ばない (必ずモック)
 - Medium テストはテストごとにデータをクリーンアップする
 - フレーク (不安定なテスト) を見つけたら即座に修正する
+- Large テストは Playwright (`tests/large/*.spec.ts`) で実行する
+- テストデータは `tests/shared/helpers.ts` のファクトリ関数で作成し、テスト後にクリーンアップする
+- ローカル実行時は Supabase ローカルと dev サーバーが起動していること
