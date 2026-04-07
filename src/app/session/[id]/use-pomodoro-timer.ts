@@ -33,7 +33,7 @@ export function usePomodoroTimer(
   const isTimerActive = phase === "focus" || phase === "break";
   const remainingRatio = isTimerActive ? timer.progress : 0;
 
-  // 初回マウント時に自動スタート（依存配列 [] なのでマウント時に1回のみ実行）
+  // 初回マウント時に自動スタート (timer は毎レンダー新しいオブジェクトのため依存配列に入れると無限ループする)
   useEffect(() => {
     timer.start();
     // eslint-disable-next-line react-hooks/exhaustive-deps

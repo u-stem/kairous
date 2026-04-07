@@ -24,6 +24,9 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-require-imports": "off",
       "@typescript-eslint/no-unsafe-argument": "error",
+      // useCountdownTimer の hook 返り値はオブジェクトのため useEffect 依存配列に入れると無限ループする。
+      // タイマー完了→フェーズ遷移の setState は effect 内でしか実行できないパターン
+      "react-hooks/set-state-in-effect": "warn",
     },
   },
   // Supabase 自動生成ファイルは type-checked ルールの対象外

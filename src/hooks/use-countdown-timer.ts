@@ -25,7 +25,7 @@ export function useCountdownTimer(totalSeconds: number): CountdownState {
   const totalSecondsRef = useRef(totalSeconds);
   useEffect(() => {
     totalSecondsRef.current = totalSeconds;
-  });
+  }, [totalSeconds]);
 
   const isComplete = remainingSeconds <= 0;
   const progress = durationForProgress > 0 ? remainingSeconds / durationForProgress : 0;

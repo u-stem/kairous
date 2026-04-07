@@ -220,7 +220,7 @@ export async function completeSession(
 
   if (!session) return { success: false, error: ACTION_ERRORS.NOT_FOUND("セッション") };
   if (session.status !== "in_progress") {
-    return { success: false, error: "このセッションは既に完了しています" };
+    return { success: false, error: ACTION_ERRORS.SESSION_ALREADY_COMPLETED };
   }
 
   const now = new Date();
@@ -427,7 +427,7 @@ export async function completeElaborationSession(
 
   if (!session) return { success: false, error: ACTION_ERRORS.NOT_FOUND("セッション") };
   if (session.status !== "in_progress") {
-    return { success: false, error: "このセッションは既に完了しています" };
+    return { success: false, error: ACTION_ERRORS.SESSION_ALREADY_COMPLETED };
   }
 
   const now = new Date();
@@ -494,7 +494,7 @@ export async function completePomodoroSession(
 
   if (!session) return { success: false, error: ACTION_ERRORS.NOT_FOUND("セッション") };
   if (session.status !== "in_progress") {
-    return { success: false, error: "このセッションは既に完了しています" };
+    return { success: false, error: ACTION_ERRORS.SESSION_ALREADY_COMPLETED };
   }
 
   // クライアント値は表示用 meta にのみ使用し、duration_sec は改ざん耐性のためサーバー側で計算する

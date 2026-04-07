@@ -143,7 +143,7 @@ export const ACTION_ERRORS = {
   DELETE_FAILED: (entity: string) => `${entity}の削除に失敗しました`,
   PERMISSION_DENIED: "権限がありません",
   EDGE_FUNCTION_FAILED: "カードレビューの処理に失敗しました",
-  COMPENSATION_FAILED: "セッション状態の復元に失敗しました",
+  SESSION_ALREADY_COMPLETED: "このセッションは既に完了しています",
 } as const;
 
 // --- バリデーション制約値 ---
