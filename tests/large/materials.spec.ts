@@ -55,6 +55,7 @@ test.describe.serial("教材 CRUD", () => {
 
     // 一覧から教材リンクをクリックして詳細へ遷移する
     await page.getByRole("link", { name: "E2Eテスト教材" }).click();
+    await page.waitForURL(/\/materials\/[0-9a-f-]{36}$/, { timeout: 10_000 });
     await page.getByRole("link", { name: "編集" }).click();
 
     // タイトルを変更して保存する
