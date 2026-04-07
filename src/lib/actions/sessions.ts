@@ -20,11 +20,25 @@ import { completePomodoroSchema } from "@/lib/validations/pomodoro";
 import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
 import { invokeCompleteSession } from "@/lib/actions/session-compensation";
 import { toJstDateString } from "@/lib/utils/date";
-import type { Database } from "@/lib/types/database";
-
-// RPC 戻り値の行型: IDE の型推論補助のため明示的に定義する
-type DueMaterialRow = Database["public"]["Functions"]["get_due_materials"]["Returns"][number];
-type InterleavingCardRow = Database["public"]["Functions"]["get_interleaving_due_cards"]["Returns"][number];
+// RPC 戻り値の行型: database.ts の自動生成型と同期する。IDE の型推論補助のため明示的に定義する
+type DueMaterialRow = {
+  due_count: number;
+  material_id: string;
+  method_id: string;
+  method_name: string;
+  method_slug: string;
+  subject_color: string;
+  subject_id: string;
+  subject_name: string;
+  title: string;
+};
+type InterleavingCardRow = {
+  back: string;
+  card_id: string;
+  display_order: number;
+  front: string;
+  material_title: string;
+};
 
 // Supabase JOIN 結果の型: SDK は joined テーブルを unknown として推論するため名前付き型で上書きする
 type JoinedMethod = { slug: string };

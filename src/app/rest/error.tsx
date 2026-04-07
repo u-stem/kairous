@@ -5,6 +5,8 @@ import { useEffect } from "react";
 
 export default function RestError({
   error,
+  // Next.js Error Boundary 規約の引数。タイマー中断後の状態復元が困難なため使用しない
+  reset: _reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
