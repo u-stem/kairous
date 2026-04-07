@@ -1,7 +1,6 @@
 "use server";
 
 import { z } from "zod";
-import { redirect } from "next/navigation";
 import { STATS_PERIODS } from "@/lib/constants";
 import { requireAuth } from "@/lib/actions/auth-utils";
 import type { StatsData, StatsPeriod } from "@/lib/types/stats";
