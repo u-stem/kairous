@@ -1,38 +1,26 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect } from "react";
+import { useCountdownTimer } from "@/hooks/use-countdown-timer";
 
-interface RestTimerState {
+export interface RestTimerState {
   remainingSeconds: number;
   isComplete: boolean;
   progress: number;
 }
 
 export function useRestTimer(totalSeconds: number): RestTimerState {
-  const [remainingSeconds, setRemainingSeconds] = useState(totalSeconds);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timer = useCountdownTimer(totalSeconds);
 
-  const isComplete = remainingSeconds <= 0;
-  const progress = remainingSeconds / totalSeconds;
-
+  // マウント時に自動スタート（既存の挙動を維持）
   useEffect(() => {
-    if (isComplete) return;
+    timer.start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    intervalRef.current = setInterval(() => {
-      setRemainingSeconds((prev) => {
-        const next = prev - 1;
-        if (next <= 0) {
-          if (intervalRef.current) clearInterval(intervalRef.current);
-          return 0;
-        }
-        return next;
-      });
-    }, 1000);
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isComplete]);
-
-  return { remainingSeconds, isComplete, progress };
+  return {
+    remainingSeconds: timer.remainingSeconds,
+    isComplete: timer.isComplete,
+    progress: timer.progress,
+  };
 }
