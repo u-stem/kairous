@@ -1,13 +1,7 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { test, expect } from "@playwright/test";
 import { createTestSubject, cleanupTestData } from "./helpers/db";
+import { getTestUser } from "./helpers/types";
 import type { TestUserData } from "./helpers/types";
-
-function getTestUser(): TestUserData {
-  const userPath = resolve(__dirname, ".auth", "test-user.json");
-  return JSON.parse(readFileSync(userPath, "utf-8")) as TestUserData;
-}
 
 test.describe.serial("教材 CRUD", () => {
   let userId: string;

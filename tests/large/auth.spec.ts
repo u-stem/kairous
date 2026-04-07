@@ -1,17 +1,10 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { test, expect } from "@playwright/test";
 import { adminClient } from "./helpers/db";
-import { E2E_PASSWORD } from "./helpers/types";
+import { E2E_PASSWORD, getTestUser } from "./helpers/types";
 import type { TestUserData } from "./helpers/types";
 
 // 認証テストは未ログイン状態で実行する
 test.use({ storageState: { cookies: [], origins: [] } });
-
-function getTestUser(): TestUserData {
-  const userPath = resolve(__dirname, ".auth", "test-user.json");
-  return JSON.parse(readFileSync(userPath, "utf-8")) as TestUserData;
-}
 
 test.describe("サインアップ", () => {
   // リトライ時もファイル再読み込みで新しい UUID が生成され、前回分の afterAll 漏れを防ぐ
