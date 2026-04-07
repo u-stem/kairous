@@ -1,22 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { LearningMethod } from "@/lib/types/materials";
 import type { Json } from "@/lib/types/database";
-import { MATERIAL_METHOD_SLUGS } from "@/lib/constants";
+import { MATERIAL_METHOD_SLUGS, ACTION_ERRORS, PG_ERROR_CODES } from "@/lib/constants";
+import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
+import { createClient } from "@/lib/supabase/server";
 
 export async function addMaterialMethod(
   materialId: string,
   methodId: string,
   config?: Record<string, unknown>,
 ): Promise<ActionResult<undefined>> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // RLSに加えてuser_idで絞り込み、他ユーザーの教材への追加を防ぐ
   const { data: material } = await supabase
@@ -26,7 +24,7 @@ export async function addMaterialMethod(
     .eq("user_id", user.id)
     .single();
 
-  if (!material) return { success: false, error: "教材が見つかりません" };
+  if (!material) return { success: false, error: ACTION_ERRORS.NOT_FOUND("教材") };
 
   // ウィザード外から不正なスラッグを紐付けられないよう、許可リストで検証する
   const { data: method } = await supabase
@@ -35,7 +33,7 @@ export async function addMaterialMethod(
     .eq("id", methodId)
     .single();
 
-  if (!method) return { success: false, error: "学習手法が見つかりません" };
+  if (!method) return { success: false, error: ACTION_ERRORS.NOT_FOUND("学習手法") };
 
   if (!(MATERIAL_METHOD_SLUGS as readonly string[]).includes(method.slug)) {
     return { success: false, error: "この学習手法は紐付けできません" };
@@ -49,10 +47,10 @@ export async function addMaterialMethod(
 
   if (error) {
     // PostgreSQL unique violation: 既に同じ手法が紐付けられている
-    if (error.code === "23505") {
+    if (error.code === PG_ERROR_CODES.UNIQUE_VIOLATION) {
       return { success: false, error: "この手法は既に紐付けされています" };
     }
-    return { success: false, error: "学習手法の追加に失敗しました" };
+    return { success: false, error: ACTION_ERRORS.CREATE_FAILED("学習手法") };
   }
 
   revalidatePath(`/materials/${materialId}`);
@@ -63,11 +61,8 @@ export async function removeMaterialMethod(
   materialId: string,
   methodId: string,
 ): Promise<ActionResult<undefined>> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // RPC で所有者チェック + 残数チェック + 削除を原子的に実行し TOCTOU を防ぐ
   const { error } = await supabase.rpc("remove_material_method", {
@@ -78,7 +73,7 @@ export async function removeMaterialMethod(
 
   if (error) {
     if (error.message.includes("not owned by user")) {
-      return { success: false, error: "教材が見つかりません" };
+      return { success: false, error: ACTION_ERRORS.NOT_FOUND("教材") };
     }
     if (error.message.includes("at least one method required")) {
       return { success: false, error: "最低1つの学習手法が必要です" };
@@ -86,7 +81,7 @@ export async function removeMaterialMethod(
     if (error.message.includes("not found for material")) {
       return { success: false, error: "この手法は紐付けされていません" };
     }
-    return { success: false, error: "学習手法の削除に失敗しました" };
+    return { success: false, error: ACTION_ERRORS.DELETE_FAILED("学習手法") };
   }
 
   revalidatePath(`/materials/${materialId}`);

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import {
   createMaterialSchema,
   updateMaterialSchema,
@@ -9,6 +9,15 @@ import {
 } from "@/lib/validations/materials";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { MaterialWithMethods, MaterialDetail } from "@/lib/types/materials";
+import { ACTION_ERRORS } from "@/lib/constants";
+import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
+import { toJstDateString } from "@/lib/utils/date";
+
+// Supabase JOIN 結果の型: SDK は joined テーブルを unknown として推論するため名前付き型で上書きする
+type JoinedSubject = { id: string; name: string; color: string };
+type JoinedLearningMethod = { id: string; slug: string; name: string; category: string };
+type JoinedCardMaterialId = { material_id: string };
+type JoinedMethodSlugName = { slug: string; name: string };
 
 export async function createMaterial(
   formData: FormData,
@@ -30,16 +39,13 @@ export async function createMaterial(
   if (!parsed.success) {
     return {
       success: false,
-      error: "入力内容を確認してください",
+      error: ACTION_ERRORS.INVALID_INPUT,
       fieldErrors: extractFieldErrors(parsed.error),
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // material_methods が material_id FK を必要とするため、教材を先に作成する
   const { data: material, error: materialError } = await supabase
@@ -53,7 +59,7 @@ export async function createMaterial(
     .select("id")
     .single();
 
-  if (materialError) return { success: false, error: "教材の作成に失敗しました" };
+  if (materialError) return { success: false, error: ACTION_ERRORS.CREATE_FAILED("教材") };
 
   const methodRows = parsed.data.method_ids.map((methodId) => ({
     material_id: material.id,
@@ -80,11 +86,8 @@ export async function createMaterial(
 export async function getMaterials(
   options?: { subjectId?: string; search?: string },
 ): Promise<MaterialWithMethods[]> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) redirect("/auth/login");
 
   let query = supabase
     .from("materials")
@@ -107,7 +110,8 @@ export async function getMaterials(
     query = query.ilike("title", `%${escaped}%`);
   }
 
-  const { data } = await query;
+  const { data, error } = await query;
+  if (error) throw new Error(`getMaterials failed: ${error.message}`);
   if (!data) return [];
 
   // 一覧画面で復習が必要なカード数を表示し、学習優先度を判断できるようにする
@@ -116,7 +120,7 @@ export async function getMaterials(
 
   // 空配列での .in() は PostgreSQL シンタックスエラーになるためガードする
   if (materialIds.length > 0) {
-    const today = new Date().toISOString().split("T")[0];
+    const today = toJstDateString(new Date());
 
     const { data: dueCounts } = await supabase
       .from("srs_states")
@@ -127,8 +131,7 @@ export async function getMaterials(
 
     if (dueCounts) {
       for (const row of dueCounts) {
-        const materialId = (row.cards as unknown as { material_id: string })
-          .material_id;
+        const materialId = (row.cards as JoinedCardMaterialId).material_id;
         dueMap.set(materialId, (dueMap.get(materialId) ?? 0) + 1);
       }
     }
@@ -139,16 +142,11 @@ export async function getMaterials(
     title: m.title,
     description: m.description,
     subject_id: m.subject_id,
-    subject: m.subjects as unknown as { id: string; name: string; color: string },
+    subject: m.subjects as JoinedSubject,
     total_cards: m.total_cards,
     due_count: dueMap.get(m.id) ?? 0,
     methods: (m.material_methods ?? []).map((mm: Record<string, unknown>) => {
-      const lm = mm.learning_methods as {
-        id: string;
-        slug: string;
-        name: string;
-        category: string;
-      };
+      const lm = mm.learning_methods as JoinedLearningMethod;
       return { id: lm.id, slug: lm.slug, name: lm.name, category: lm.category };
     }),
     created_at: m.created_at,
@@ -156,13 +154,10 @@ export async function getMaterials(
 }
 
 export async function getMaterial(id: string): Promise<MaterialDetail | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) redirect("/auth/login");
 
-  const { data: material } = await supabase
+  const { data: material, error } = await supabase
     .from("materials")
     .select(`
       id, title, description, subject_id, total_cards, created_at,
@@ -175,10 +170,11 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
     .eq("user_id", user.id)
     .single();
 
+  if (error) throw new Error(`getMaterial failed: ${error.message}`);
   if (!material) return null;
 
   // 詳細ページで復習が必要なカード数を表示し、セッション開始の判断材料にする
-  const today = new Date().toISOString().split("T")[0];
+  const today = toJstDateString(new Date());
   const cardIds =
     (await supabase.from("cards").select("id").eq("material_id", id)).data?.map(
       (c) => c.id,
@@ -230,28 +226,19 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
     title: material.title,
     description: material.description,
     subject_id: material.subject_id,
-    subject: material.subjects as unknown as {
-      id: string;
-      name: string;
-      color: string;
-    },
+    subject: material.subjects as JoinedSubject,
     total_cards: material.total_cards,
     due_count: dueCount,
     methods: (material.material_methods ?? []).map(
       (mm: Record<string, unknown>) => {
-        const lm = mm.learning_methods as {
-          id: string;
-          slug: string;
-          name: string;
-          category: string;
-        };
+        const lm = mm.learning_methods as JoinedLearningMethod;
         return { id: lm.id, slug: lm.slug, name: lm.name, category: lm.category };
       },
     ),
     created_at: material.created_at,
     recent_sessions: (sessions ?? []).map((s) => ({
       id: s.id,
-      method: s.learning_methods as unknown as { slug: string; name: string },
+      method: s.learning_methods as JoinedMethodSlugName,
       duration_sec: s.duration_sec,
       self_rating: s.self_rating,
       started_at: s.started_at,
@@ -273,16 +260,13 @@ export async function updateMaterial(
   if (!parsed.success) {
     return {
       success: false,
-      error: "入力内容を確認してください",
+      error: ACTION_ERRORS.INVALID_INPUT,
       fieldErrors: extractFieldErrors(parsed.error),
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   const { error } = await supabase
     .from("materials")
@@ -294,7 +278,7 @@ export async function updateMaterial(
     .eq("id", id)
     .eq("user_id", user.id);
 
-  if (error) return { success: false, error: "教材の更新に失敗しました" };
+  if (error) return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("教材") };
 
   // 更新後のデータを即座に反映するため、関連する全ページのキャッシュを無効化する
   revalidatePath(`/materials/${id}`);
@@ -303,11 +287,8 @@ export async function updateMaterial(
 }
 
 export async function deleteMaterial(id: string): Promise<ActionResult<undefined>> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   const { error } = await supabase
     .from("materials")
@@ -315,7 +296,7 @@ export async function deleteMaterial(id: string): Promise<ActionResult<undefined
     .eq("id", id)
     .eq("user_id", user.id);
 
-  if (error) return { success: false, error: "教材の削除に失敗しました" };
+  if (error) return { success: false, error: ACTION_ERRORS.DELETE_FAILED("教材") };
 
   revalidatePath("/materials");
   return { success: true, data: undefined };

@@ -50,7 +50,7 @@ describe("due card counting (DB integration)", () => {
       .in("card_id", cardIds);
 
     const notDueIds = new Set((notDueStates ?? []).map((s: { card_id: string }) => s.card_id));
-    const dueCount = allCards!.filter((c) => !notDueIds.has(c.id)).length;
+    const dueCount = allCards!.filter((c: { id: string }) => !notDueIds.has(c.id)).length;
 
     expect(dueCount).toBe(1);
   });
@@ -77,7 +77,7 @@ describe("due card counting (DB integration)", () => {
       .in("card_id", cardIds);
 
     const notDueIds = new Set((notDueStates ?? []).map((s: { card_id: string }) => s.card_id));
-    const dueCount = allCards!.filter((c) => !notDueIds.has(c.id)).length;
+    const dueCount = allCards!.filter((c: { id: string }) => !notDueIds.has(c.id)).length;
 
     expect(dueCount).toBe(0);
   });

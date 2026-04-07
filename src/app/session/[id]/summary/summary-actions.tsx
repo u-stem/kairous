@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { createSession, createRestSession } from "@/lib/actions/sessions";
 import { REST_DURATION_SEC } from "@/lib/constants";
+import { toast } from "sonner";
 
 type Props = {
   sessionId: string;
@@ -27,6 +28,8 @@ export function SummaryActions({
       const result = await createSession(materialId, methodId);
       if (result.success) {
         router.push(`/session/${result.data.id}`);
+      } else {
+        toast.error(result.error);
       }
     });
   }
@@ -36,6 +39,8 @@ export function SummaryActions({
       const result = await createRestSession(sessionId);
       if (result.success) {
         router.push(`/rest/${result.data.id}`);
+      } else {
+        toast.error(result.error);
       }
     });
   }

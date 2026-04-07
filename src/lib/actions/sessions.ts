@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import {
   createSessionSchema,
   completeSessionSchema,
@@ -16,8 +15,36 @@ import {
 import { createInterleavingSessionSchema } from "@/lib/validations/interleaving";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { CardReview, DueMaterial, SessionCard, InterleavingCard, SessionDetail } from "@/lib/types/sessions";
-import { SESSION_MAX_CARDS, REST_DURATION_SEC, JST_OFFSET_MS } from "@/lib/constants";
+import { SESSION_MAX_CARDS, REST_DURATION_SEC, ACTION_ERRORS } from "@/lib/constants";
 import { completePomodoroSchema } from "@/lib/validations/pomodoro";
+import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
+import { invokeCompleteSession } from "@/lib/actions/session-compensation";
+import { toJstDateString } from "@/lib/utils/date";
+// RPC 戻り値の行型: database.ts の自動生成型と同期する。IDE の型推論補助のため明示的に定義する
+type DueMaterialRow = {
+  due_count: number;
+  material_id: string;
+  method_id: string;
+  method_name: string;
+  method_slug: string;
+  subject_color: string;
+  subject_id: string;
+  subject_name: string;
+  title: string;
+};
+type InterleavingCardRow = {
+  back: string;
+  card_id: string;
+  display_order: number;
+  front: string;
+  material_title: string;
+};
+
+// Supabase JOIN 結果の型: SDK は joined テーブルを unknown として推論するため名前付き型で上書きする
+type JoinedMethod = { slug: string };
+type JoinedMethodWithName = { slug: string; name: string };
+type JoinedMaterial = { id: string; title: string; subjects: { name: string } };
+type JoinedMaterialTitle = { title: string };
 
 export type SessionInfo = {
   id: string;
@@ -26,10 +53,7 @@ export type SessionInfo = {
 };
 
 export async function getSessionInfo(sessionId: string): Promise<SessionInfo | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getAuthenticatedUser();
   if (!user) return null;
 
   const { data: session } = await supabase
@@ -42,7 +66,7 @@ export async function getSessionInfo(sessionId: string): Promise<SessionInfo | n
 
   if (!session) return null;
 
-  const method = session.learning_methods as unknown as { slug: string } | null;
+  const method = session.learning_methods as JoinedMethod | null;
 
   // method が null になるのは learning_methods が削除された孤立データのみ
   // notFound() でハンドルするため、呼び出し元に null を返す
@@ -56,14 +80,11 @@ export async function getSessionInfo(sessionId: string): Promise<SessionInfo | n
 }
 
 export async function getDueMaterials(): Promise<DueMaterial[]> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getAuthenticatedUser();
   if (!user) return [];
 
   // N+1 回避: materials→cards→srs_states の3クエリを RPC で1クエリに集約
-  const today = new Date().toISOString().split("T")[0];
+  const today = toJstDateString(new Date());
   const { data: rows, error } = await supabase.rpc("get_due_materials", {
     p_user_id: user.id,
     p_today: today,
@@ -76,7 +97,7 @@ export async function getDueMaterials(): Promise<DueMaterial[]> {
 
   if (!rows || rows.length === 0) return [];
 
-  return rows.map((row) => ({
+  return rows.map((row: DueMaterialRow) => ({
     id: row.material_id,
     title: row.title,
     subject: {
@@ -97,16 +118,13 @@ export async function createSession(
   if (!parsed.success) {
     return {
       success: false,
-      error: "入力内容を確認してください",
+      error: ACTION_ERRORS.INVALID_INPUT,
       fieldErrors: extractFieldErrors(parsed.error),
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // RLS に加えてアプリ層でも所有者を確認し、RLS 緩和時の誤操作を防ぐ
   const { data: material } = await supabase
@@ -116,7 +134,7 @@ export async function createSession(
     .eq("user_id", user.id)
     .single();
 
-  if (!material) return { success: false, error: "教材が見つかりません" };
+  if (!material) return { success: false, error: ACTION_ERRORS.NOT_FOUND("教材") };
 
   const { data: session, error } = await supabase
     .from("sessions")
@@ -129,16 +147,13 @@ export async function createSession(
     .select("id")
     .single();
 
-  if (error) return { success: false, error: "セッションの作成に失敗しました" };
+  if (error) return { success: false, error: ACTION_ERRORS.CREATE_FAILED("セッション") };
 
   return { success: true, data: { id: session.id } };
 }
 
 export async function getSessionCards(sessionId: string, methodSlug?: string): Promise<SessionCard[]> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getAuthenticatedUser();
   if (!user) return [];
 
   // RLS に加えてアプリ層でも所有者を確認し、RLS 緩和時の誤操作を防ぐ
@@ -151,7 +166,7 @@ export async function getSessionCards(sessionId: string, methodSlug?: string): P
 
   if (!session?.material_id) return [];
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = toJstDateString(new Date());
 
   const { data: allCards } = await supabase
     .from("cards")
@@ -189,14 +204,11 @@ export async function completeSession(
 ): Promise<ActionResult<undefined>> {
   const parsed = completeSessionSchema.safeParse({ sessionId, reviews, selfRating });
   if (!parsed.success) {
-    return { success: false, error: "入力内容を確認してください" };
+    return { success: false, error: ACTION_ERRORS.INVALID_INPUT };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // RLS に加えてアプリ層でも所有者と status を確認し、二重完了を防ぐ
   const { data: session } = await supabase
@@ -206,9 +218,9 @@ export async function completeSession(
     .eq("user_id", user.id)
     .single();
 
-  if (!session) return { success: false, error: "セッションが見つかりません" };
+  if (!session) return { success: false, error: ACTION_ERRORS.NOT_FOUND("セッション") };
   if (session.status !== "in_progress") {
-    return { success: false, error: "このセッションは既に完了しています" };
+    return { success: false, error: ACTION_ERRORS.SESSION_ALREADY_COMPLETED };
   }
 
   const now = new Date();
@@ -226,42 +238,23 @@ export async function completeSession(
     })
     .eq("id", parsed.data.sessionId);
 
-  if (updateError) return { success: false, error: "セッションの更新に失敗しました" };
+  if (updateError) return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("セッション") };
 
   // FSRS 計算と統計更新を原子的に実行するため、Edge Function に処理を委譲する。
   // supabase.functions.invoke はユーザーの JWT を Authorization ヘッダーに自動付与する
-  const fnResult = await supabase.functions.invoke("complete-session", {
-    body: {
-      session_id: parsed.data.sessionId,
-      reviews: parsed.data.reviews,
-    },
-  });
-
-  if (fnResult.error) {
-    // Edge Function 失敗時はセッションを in_progress に戻す
-    const { error: compensationError } = await supabase
-      .from("sessions")
-      .update({ status: "in_progress", ended_at: null, self_rating: null, duration_sec: 0 })
-      .eq("id", parsed.data.sessionId);
-    if (compensationError) {
-      // 補償処理も失敗した場合、セッションが completed のまま残る可能性がある
-      console.error(
-        `completeSession compensation failed for session ${parsed.data.sessionId}:`,
-        compensationError,
-      );
-    }
-    return { success: false, error: "カードレビューの処理に失敗しました" };
-  }
+  const fnResult = await invokeCompleteSession(
+    supabase,
+    parsed.data.sessionId,
+    { session_id: parsed.data.sessionId, reviews: parsed.data.reviews },
+  );
+  if (!fnResult.ok) return { success: false, error: fnResult.error };
 
   revalidatePath("/");
   return { success: true, data: undefined };
 }
 
 export async function getSession(sessionId: string): Promise<SessionDetail | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getAuthenticatedUser();
   if (!user) return null;
 
   const { data: session } = await supabase
@@ -286,11 +279,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
 
   // サマリー画面で「続けて学習」の判断材料を表示するため、残りの due 数を算出する
   let remainingDueCount = 0;
-  const mat = session.materials as unknown as {
-    id: string;
-    title: string;
-    subjects: { name: string };
-  } | null;
+  const mat = session.materials as JoinedMaterial | null;
 
   // Interleaving セッションは material_id=NULL のため、session_materials から教材一覧を取得
   let interleavingMaterials: Array<{ id: string; title: string }> | null = null;
@@ -303,13 +292,13 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
     if (smRows && smRows.length > 0) {
       interleavingMaterials = smRows.map((sm) => ({
         id: sm.material_id,
-        title: (sm.materials as unknown as { title: string })?.title ?? "",
+        title: (sm.materials as JoinedMaterialTitle | null)?.title ?? "",
       }));
     }
   }
 
   if (mat) {
-    const today = new Date().toISOString().split("T")[0];
+    const today = toJstDateString(new Date());
 
     const { data: allCards } = await supabase
       .from("cards")
@@ -337,7 +326,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
     }
   }
 
-  const method = session.learning_methods as unknown as { slug: string; name: string };
+  const method = session.learning_methods as JoinedMethodWithName;
 
   return {
     id: session.id,
@@ -374,14 +363,11 @@ export async function createRestSession(
 ): Promise<ActionResult<{ id: string }>> {
   const parsed = createRestSessionSchema.safeParse({ parentSessionId });
   if (!parsed.success) {
-    return { success: false, error: "入力内容を確認してください" };
+    return { success: false, error: ACTION_ERRORS.INVALID_INPUT };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // RLS に加えてアプリ層でも所有者を確認し、他ユーザーのセッションへの紐付けを防ぐ
   const { data: parentSession } = await supabase
@@ -391,7 +377,7 @@ export async function createRestSession(
     .eq("user_id", user.id)
     .single();
 
-  if (!parentSession) return { success: false, error: "セッションが見つかりません" };
+  if (!parentSession) return { success: false, error: ACTION_ERRORS.NOT_FOUND("セッション") };
 
   const { data: restMethod } = await supabase
     .from("learning_methods")
@@ -399,7 +385,7 @@ export async function createRestSession(
     .eq("slug", "wakeful_rest")
     .single();
 
-  if (!restMethod) return { success: false, error: "安静タイマー手法が見つかりません" };
+  if (!restMethod) return { success: false, error: ACTION_ERRORS.NOT_FOUND("安静タイマー手法") };
 
   const { data: session, error } = await supabase
     .from("sessions")
@@ -412,7 +398,7 @@ export async function createRestSession(
     .select("id")
     .single();
 
-  if (error) return { success: false, error: "安静セッションの作成に失敗しました" };
+  if (error) return { success: false, error: ACTION_ERRORS.CREATE_FAILED("安静セッション") };
 
   return { success: true, data: { id: session.id } };
 }
@@ -425,14 +411,11 @@ export async function completeElaborationSession(
 ): Promise<ActionResult<undefined>> {
   const parsed = completeElaborationSchema.safeParse({ sessionId, reviews, elaborations, selfRating });
   if (!parsed.success) {
-    return { success: false, error: "入力内容を確認してください" };
+    return { success: false, error: ACTION_ERRORS.INVALID_INPUT };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // RLS に加えてアプリ層でも所有者と status を確認し、二重完了を防ぐ
   const { data: session } = await supabase
@@ -442,9 +425,9 @@ export async function completeElaborationSession(
     .eq("user_id", user.id)
     .single();
 
-  if (!session) return { success: false, error: "セッションが見つかりません" };
+  if (!session) return { success: false, error: ACTION_ERRORS.NOT_FOUND("セッション") };
   if (session.status !== "in_progress") {
-    return { success: false, error: "このセッションは既に完了しています" };
+    return { success: false, error: ACTION_ERRORS.SESSION_ALREADY_COMPLETED };
   }
 
   const now = new Date();
@@ -464,32 +447,17 @@ export async function completeElaborationSession(
     })
     .eq("id", parsed.data.sessionId);
 
-  if (updateError) return { success: false, error: "セッションの更新に失敗しました" };
+  if (updateError) return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("セッション") };
 
   // Edge Function で card_reviews + daily_logs を記録 (FSRS はスキップ)
-  const fnResult = await supabase.functions.invoke("complete-session", {
-    body: {
-      session_id: parsed.data.sessionId,
-      reviews: parsed.data.reviews,
-    },
-  });
-
-  if (fnResult.error) {
-    // Edge Function 失敗時はセッションを in_progress に戻す
-    const { error: compensationError } = await supabase
-      .from("sessions")
-      // meta: null でリセットするのは、セッション完了前に保存した elaborations を破棄するため
-      .update({ status: "in_progress", ended_at: null, self_rating: null, duration_sec: 0, meta: null })
-      .eq("id", parsed.data.sessionId);
-    if (compensationError) {
-      // 補償処理も失敗した場合、セッションが completed のまま残る可能性がある
-      console.error(
-        `completeElaborationSession compensation failed for session ${parsed.data.sessionId}:`,
-        compensationError,
-      );
-    }
-    return { success: false, error: "カードレビューの処理に失敗しました" };
-  }
+  // meta: null を extraCompensationFields に渡すのは、失敗時に完了前に保存した elaborations を破棄するため
+  const fnResult = await invokeCompleteSession(
+    supabase,
+    parsed.data.sessionId,
+    { session_id: parsed.data.sessionId, reviews: parsed.data.reviews },
+    { meta: null },
+  );
+  if (!fnResult.ok) return { success: false, error: fnResult.error };
 
   revalidatePath("/");
   return { success: true, data: undefined };
@@ -510,14 +478,11 @@ export async function completePomodoroSession(
     totalBreakSec,
   });
   if (!parsed.success) {
-    return { success: false, error: "入力内容を確認してください" };
+    return { success: false, error: ACTION_ERRORS.INVALID_INPUT };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // RLS に加えてアプリ層でも所有者と status を確認し、二重完了を防ぐ
   const { data: session } = await supabase
@@ -527,9 +492,9 @@ export async function completePomodoroSession(
     .eq("user_id", user.id)
     .single();
 
-  if (!session) return { success: false, error: "セッションが見つかりません" };
+  if (!session) return { success: false, error: ACTION_ERRORS.NOT_FOUND("セッション") };
   if (session.status !== "in_progress") {
-    return { success: false, error: "このセッションは既に完了しています" };
+    return { success: false, error: ACTION_ERRORS.SESSION_ALREADY_COMPLETED };
   }
 
   // クライアント値は表示用 meta にのみ使用し、duration_sec は改ざん耐性のためサーバー側で計算する
@@ -553,7 +518,7 @@ export async function completePomodoroSession(
     })
     .eq("id", parsed.data.sessionId);
 
-  if (updateError) return { success: false, error: "セッションの更新に失敗しました" };
+  if (updateError) return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("セッション") };
 
   // Pomodoro は card_reviews がないため Edge Function を呼ばず、直接 daily_logs を記録する
   if (session.material_id) {
@@ -564,7 +529,7 @@ export async function completePomodoroSession(
       .single();
 
     if (material) {
-      const logDate = new Date(Date.now() + JST_OFFSET_MS).toISOString().split("T")[0];
+      const logDate = toJstDateString(new Date());
 
       const { error: logError } = await supabase.rpc("upsert_daily_log", {
         p_user_id: user.id,
@@ -593,14 +558,11 @@ export async function completeRestSession(
 ): Promise<ActionResult<undefined>> {
   const parsed = completeRestSessionSchema.safeParse({ sessionId });
   if (!parsed.success) {
-    return { success: false, error: "入力内容を確認してください" };
+    return { success: false, error: ACTION_ERRORS.INVALID_INPUT };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // 所有者・進行中・安静セッションの3条件を同時に検証し、不正な完了を防ぐ
   const { data: session } = await supabase
@@ -611,9 +573,9 @@ export async function completeRestSession(
     .eq("status", "in_progress")
     .single();
 
-  if (!session) return { success: false, error: "セッションが見つかりません" };
+  if (!session) return { success: false, error: ACTION_ERRORS.NOT_FOUND("セッション") };
 
-  const method = session.learning_methods as unknown as { slug: string };
+  const method = session.learning_methods as JoinedMethod;
   if (method.slug !== "wakeful_rest") {
     return { success: false, error: "安静セッションではありません" };
   }
@@ -627,7 +589,7 @@ export async function completeRestSession(
     })
     .eq("id", parsed.data.sessionId);
 
-  if (error) return { success: false, error: "セッションの完了に失敗しました" };
+  if (error) return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("セッション") };
 
   revalidatePath("/");
   return { success: true, data: undefined };
@@ -641,11 +603,8 @@ export async function createInterleavingSession(
     return { success: false, error: "インターリービングには2つ以上の教材が必要です" };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // interleaving の method_id を取得
   const { data: method } = await supabase
@@ -654,7 +613,7 @@ export async function createInterleavingSession(
     .eq("slug", "interleaving")
     .single();
 
-  if (!method) return { success: false, error: "インターリービング手法が見つかりません" };
+  if (!method) return { success: false, error: ACTION_ERRORS.NOT_FOUND("インターリービング手法") };
 
   // RLS に加えてアプリ層でも全教材の所有権を確認する
   const { data: ownedMaterials } = await supabase
@@ -664,7 +623,7 @@ export async function createInterleavingSession(
     .in("id", parsed.data.materialIds);
 
   if (!ownedMaterials || ownedMaterials.length !== parsed.data.materialIds.length) {
-    return { success: false, error: "教材が見つかりません" };
+    return { success: false, error: ACTION_ERRORS.NOT_FOUND("教材") };
   }
 
   // material_id = NULL で interleaving セッションを作成
@@ -679,7 +638,7 @@ export async function createInterleavingSession(
     .single();
 
   if (sessionError || !session) {
-    return { success: false, error: "セッションの作成に失敗しました" };
+    return { success: false, error: ACTION_ERRORS.CREATE_FAILED("セッション") };
   }
 
   // session_materials に対象教材を一括登録
@@ -698,17 +657,14 @@ export async function createInterleavingSession(
       .from("sessions")
       .update({ status: "abandoned" })
       .eq("id", session.id);
-    return { success: false, error: "セッションの作成に失敗しました" };
+    return { success: false, error: ACTION_ERRORS.CREATE_FAILED("セッション") };
   }
 
   return { success: true, data: { id: session.id } };
 }
 
 export async function getInterleavingCards(sessionId: string): Promise<InterleavingCard[]> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getAuthenticatedUser();
   if (!user) return [];
 
   // RLS に加えてアプリ層でも所有者を確認し、RLS 緩和時の誤操作を防ぐ
@@ -722,7 +678,7 @@ export async function getInterleavingCards(sessionId: string): Promise<Interleav
   if (!session) return [];
 
   // 全教材の due cards を RPC 1 回で取得し、N+1 クエリを回避する
-  const today = new Date().toISOString().split("T")[0];
+  const today = toJstDateString(new Date());
   const { data: rpcCards, error: rpcError } = await supabase.rpc("get_interleaving_due_cards", {
     p_session_id: sessionId,
     p_user_id: user.id,
@@ -734,7 +690,7 @@ export async function getInterleavingCards(sessionId: string): Promise<Interleav
     return [];
   }
 
-  const allCards: InterleavingCard[] = (rpcCards ?? []).map((c) => ({
+  const allCards: InterleavingCard[] = (rpcCards ?? []).map((c: InterleavingCardRow) => ({
     id: c.card_id,
     front: c.front,
     back: c.back,

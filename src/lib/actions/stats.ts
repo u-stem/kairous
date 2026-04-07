@@ -1,8 +1,9 @@
 "use server";
 
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { STATS_PERIODS } from "@/lib/constants";
+import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
 import type { StatsData, StatsPeriod } from "@/lib/types/stats";
 import { aggregateDaily, aggregateByKey } from "@/lib/utils/stats";
 import { toJstDateString } from "@/lib/utils/date";
@@ -31,11 +32,8 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
   const parsed = periodSchema.safeParse(period);
   if (!parsed.success) return EMPTY_STATS;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return EMPTY_STATS;
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) redirect("/auth/login");
 
   const today = new Date();
   const currentStart = new Date(today);
@@ -48,13 +46,14 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
   const prevStartStr = toJstDateString(prevStart);
 
   // 現在 + 前期間を1クエリで取得し、コード側で分割する
-  const { data: logs } = await supabase
+  const { data: logs, error } = await supabase
     .from("daily_logs")
     .select("log_date, total_sec, session_count, cards_reviewed, subject_id, method_id")
     .eq("user_id", user.id)
     .gte("log_date", prevStartStr)
     .order("log_date", { ascending: true });
 
+  if (error) throw new Error(`getStats failed: ${error.message}`);
   if (!logs || logs.length === 0) return EMPTY_STATS;
 
   const currentLogs = logs.filter((l) => l.log_date >= currentStartStr);
