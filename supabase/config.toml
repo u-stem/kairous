@@ -375,6 +375,12 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# ローカル環境では supabase-edge-runtime の JWT 検証バグ (CryptoKey 型不一致) を回避するため
+# ゲートウェイ側の JWT 検証を無効化し、Edge Function 内で supabase.auth.getUser() による
+# アプリレベルの認証を使う。本番環境は verify_jwt = true (デフォルト) のまま。
+[functions.complete-session]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
