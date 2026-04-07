@@ -176,7 +176,7 @@ Claude PR Review が PR push 時に自動実行される。
 
 ## 振り返りの運用
 
-マイルストーン完了時に振り返りを GitHub Discussions (振り返りカテゴリ) に投稿する。Discussion テンプレート (`.github/DISCUSSION_TEMPLATE/振り返り.yml`) を使用すること。
+マイルストーン完了時に振り返りを GitHub Discussions (振り返りカテゴリ) に投稿する。Discussion テンプレート (`.github/DISCUSSION_TEMPLATE/振り返り.yml`) を使用すること。PR マージ後にエピック / マイルストーンが完了したかを確認し、完了していれば振り返りを同セッション内で投稿する。後回しにしない。
 
 ### 振り返り本文
 
