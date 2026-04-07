@@ -14,8 +14,8 @@ function getTestUser(): TestUserData {
 }
 
 test.describe("サインアップ", () => {
-  // テスト全体で共有するサインアップ用メールアドレス
-  const signupEmail = `e2e-signup-${Date.now()}@kairous.local`;
+  // リトライ時もファイル再読み込みで新しい UUID が生成され、前回分の afterAll 漏れを防ぐ
+  const signupEmail = `e2e-signup-${crypto.randomUUID()}@kairous.local`;
   const signupPassword = "signup-test-password-123";
 
   test.afterAll(async () => {
