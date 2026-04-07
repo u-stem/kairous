@@ -26,6 +26,11 @@ src/
   components/       # Shared UI components
   hooks/            # Shared custom hooks (useCountdownTimer etc.)
   lib/              # Utilities, Supabase client, types
+tests/
+  shared/           # DB helpers shared by Medium & Large tests
+  small/            # Unit tests (vitest + jsdom)
+  medium/           # Integration tests (vitest + Supabase local)
+  large/            # E2E tests (Playwright + Supabase local)
 supabase/
   migrations/       # SQL migrations
   functions/        # Edge Functions (FSRS, daily_logs upsert)
@@ -39,7 +44,9 @@ bun dev            # dev server
 bun build          # production build
 bun lint           # lint
 bun typecheck      # type check
-bun test           # test
+bun test:small     # Small tests (unit, mocked)
+bun test:medium    # Medium tests (Supabase local)
+bun test:large     # Large tests (Playwright E2E)
 ```
 
 ## Design Decisions
