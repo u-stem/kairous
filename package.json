@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:small": "vitest run --project small",
     "test:medium": "vitest run --project medium",
-    "test:large": "echo 'Large テストは chrome-devtools MCP 経由で実行。/run-tests large を使用'",
+    "test:large": "playwright test --config tests/large/playwright.config.ts",
     "test:watch": "vitest",
     "check": "bun run lint && bun run typecheck && bun test:small",
     "prepare": "lefthook install"
@@ -37,6 +37,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
