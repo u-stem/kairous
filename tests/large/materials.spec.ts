@@ -113,6 +113,7 @@ test.describe("手法紐付け", () => {
     await cleanupTestData(userId);
   });
 
+
   test("教材の手法を追加・削除できる", async ({ page }) => {
     // 1. ポモドーロのみで教材を作成する
     await page.goto("/materials/new");
@@ -164,5 +165,119 @@ test.describe("手法紐付け", () => {
     // 6. 間隔反復 (FSRS) チップが消え、ポモドーロが残っていることを確認する
     await expect(page.locator("span").filter({ hasText: "間隔反復 (FSRS)" })).not.toBeVisible();
     await expect(page.locator("span").filter({ hasText: "ポモドーロ" }).first()).toBeVisible();
+  });
+});
+
+test.describe("カード管理", () => {
+  let userId: string;
+  let subjectName: string;
+
+  test.beforeAll(async () => {
+    const user = getTestUser();
+    userId = user.id;
+    // テストごとに一意な科目名を使い、他のテストデータと衝突しない
+    subjectName = `E2Eカード科目-${Date.now()}`;
+    await createTestSubject(userId, subjectName);
+  });
+
+  test.afterAll(async () => {
+    await cleanupTestData(userId);
+  });
+
+  test("カードを追加・編集・削除できる", async ({ page }) => {
+    // === ウィザードで SRS 手法 + 初期カード 1 枚の教材を作成する ===
+    await page.goto("/materials/new");
+
+    // Step 1: タイトルと科目を入力する
+    await page.locator("#material-title").fill("カードテスト教材");
+    await page.getByRole("combobox").click();
+    await page.getByRole("option", { name: subjectName }).click();
+    await page.getByRole("button", { name: "次へ" }).click();
+
+    // Step 2: 間隔反復 (FSRS) を選択するとカード入力ステップが出現する
+    await page.getByText("間隔反復 (FSRS)").click();
+    await page.getByRole("button", { name: "次へ" }).click();
+
+    // Step 3: カード「apple / りんご」を追加する
+    await page.locator("#card-front").fill("apple");
+    await page.locator("#card-back").fill("りんご");
+    await page.getByRole("button", { name: "追加" }).click();
+
+    // 完了ボタンのテキストは「完了（N枚のカード）」と動的に変わるため正規表現で一致させる
+    await page.getByRole("button", { name: /^完了/ }).click();
+
+    // 作成後は /materials/{uuid} にリダイレクトされる
+    await expect(page).toHaveURL(/\/materials\/[0-9a-f-]{36}$/, {
+      timeout: 10_000,
+    });
+
+    // === カードタブに切り替えて初期カードを確認する ===
+    await page.getByRole("tab", { name: /カード/ }).click();
+    await expect(page.locator("p.truncate.text-sm.font-medium").filter({ hasText: "apple" })).toBeVisible();
+
+    // === カード追加ページでカード「banana / バナナ」を追加する ===
+    await page.getByRole("link", { name: "カードを追加" }).click();
+    await expect(page).toHaveURL(/\/materials\/[0-9a-f-]{36}\/cards\/new$/, {
+      timeout: 10_000,
+    });
+
+    await page.locator("#card-front").fill("banana");
+    await page.locator("#card-back").fill("バナナ");
+    await page.getByRole("button", { name: "追加" }).click();
+
+    // 成功フィードバック（N枚のカードを追加しました）が表示されるのを待つ
+    await expect(page.locator("p").filter({ hasText: /枚のカードを追加しました/ })).toBeVisible({
+      timeout: 5_000,
+    });
+
+    // 完了ボタンで教材詳細ページへ戻る（?tab=cards 付きで遷移する）
+    await page.getByRole("button", { name: "完了" }).click();
+    await expect(page).toHaveURL(/\/materials\/[0-9a-f-]{36}(\?tab=cards)?$/, {
+      timeout: 10_000,
+    });
+
+    // カードタブを再度クリックしてリストを表示する（URL にタブ指定がない場合の保険）
+    await page.getByRole("tab", { name: /カード/ }).click();
+    await expect(page.locator("p.truncate.text-sm.font-medium").filter({ hasText: "banana" })).toBeVisible();
+
+    // === banana カードを編集する ===
+    // banana カードの行を特定して編集リンクをクリックする
+    const bananaRow = page
+      .locator("div.flex.items-start.gap-3.rounded-lg")
+      .filter({ has: page.locator("p.truncate.text-sm.font-medium", { hasText: "banana" }) });
+    await bananaRow.getByRole("link", { name: "カードを編集" }).click();
+
+    await expect(page).toHaveURL(/\/materials\/[0-9a-f-]{36}\/cards\/[0-9a-f-]{36}\/edit$/, {
+      timeout: 10_000,
+    });
+
+    // 表面テキストを変更して保存する
+    await page.locator("#card-front").clear();
+    await page.locator("#card-front").fill("banana (updated)");
+    await page.getByRole("button", { name: "保存" }).click();
+
+    // 保存後は教材詳細ページへ戻る
+    await expect(page).toHaveURL(/\/materials\/[0-9a-f-]{36}(\?tab=cards)?$/, {
+      timeout: 10_000,
+    });
+
+    // カードタブを開いて更新後のテキストを確認する
+    await page.getByRole("tab", { name: /カード/ }).click();
+    await expect(page.locator("p.truncate.text-sm.font-medium").filter({ hasText: "banana (updated)" })).toBeVisible();
+
+    // === banana (updated) カードを削除する ===
+    const updatedBananaRow = page
+      .locator("div.flex.items-start.gap-3.rounded-lg")
+      .filter({ has: page.locator("p.truncate.text-sm.font-medium", { hasText: "banana (updated)" }) });
+    await updatedBananaRow.getByRole("button", { name: "カードを削除" }).click();
+
+    // 削除確認ダイアログで「削除する」ボタンをクリックする
+    await page.getByRole("button", { name: "削除する" }).click();
+
+    // 削除されたカードが消え、apple カードは残っていることを確認する
+    await expect(page.locator("p.truncate.text-sm.font-medium").filter({ hasText: "banana (updated)" })).not.toBeVisible({
+      timeout: 5_000,
+    });
+    await expect(page.locator("p.truncate.text-sm.font-medium").filter({ hasText: "apple" })).toBeVisible();
   });
 });
