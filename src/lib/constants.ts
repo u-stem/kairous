@@ -131,3 +131,34 @@ export const RATING_COLORS = {
   3: "bg-green-500",
   4: "bg-blue-500",
 } as const;
+
+// --- Server Action エラーメッセージ ---
+// 散在していたハードコード文字列を一箇所に集約し、変更漏れを防ぐ
+export const ACTION_ERRORS = {
+  UNAUTHENTICATED: "認証が必要です",
+  INVALID_INPUT: "入力内容を確認してください",
+  NOT_FOUND: (entity: string) => `${entity}が見つかりません`,
+  CREATE_FAILED: (entity: string) => `${entity}の作成に失敗しました`,
+  UPDATE_FAILED: (entity: string) => `${entity}の更新に失敗しました`,
+  DELETE_FAILED: (entity: string) => `${entity}の削除に失敗しました`,
+  PERMISSION_DENIED: "権限がありません",
+  EDGE_FUNCTION_FAILED: "カードレビューの処理に失敗しました",
+  COMPENSATION_FAILED: "セッション状態の復元に失敗しました",
+} as const;
+
+// --- バリデーション制約値 ---
+// 各 validation ファイルに散在していたマジックナンバーを集約
+export const VALIDATION_LIMITS = {
+  SUBJECT_NAME_MAX: 100,
+  MATERIAL_TITLE_MAX: 200,
+  MATERIAL_DESCRIPTION_MAX: 2000,
+  CARD_TEXT_MAX: 5000,
+  ELABORATION_TEXT_MAX: 10000,
+  REVIEWS_MAX: 500,
+  INTERLEAVING_MATERIALS_MAX: 10,
+} as const;
+
+// --- PostgreSQL エラーコード ---
+export const PG_ERROR_CODES = {
+  UNIQUE_VIOLATION: "23505",
+} as const;
