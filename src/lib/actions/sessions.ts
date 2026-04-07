@@ -18,6 +18,7 @@ import type { CardReview, DueMaterial, SessionCard, InterleavingCard, SessionDet
 import { SESSION_MAX_CARDS, REST_DURATION_SEC, ACTION_ERRORS } from "@/lib/constants";
 import { completePomodoroSchema } from "@/lib/validations/pomodoro";
 import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
+import { invokeCompleteSession } from "@/lib/actions/session-compensation";
 import { toJstDateString } from "@/lib/utils/date";
 
 export type SessionInfo = {
@@ -216,28 +217,12 @@ export async function completeSession(
 
   // FSRS 計算と統計更新を原子的に実行するため、Edge Function に処理を委譲する。
   // supabase.functions.invoke はユーザーの JWT を Authorization ヘッダーに自動付与する
-  const fnResult = await supabase.functions.invoke("complete-session", {
-    body: {
-      session_id: parsed.data.sessionId,
-      reviews: parsed.data.reviews,
-    },
-  });
-
-  if (fnResult.error) {
-    // Edge Function 失敗時はセッションを in_progress に戻す
-    const { error: compensationError } = await supabase
-      .from("sessions")
-      .update({ status: "in_progress", ended_at: null, self_rating: null, duration_sec: 0 })
-      .eq("id", parsed.data.sessionId);
-    if (compensationError) {
-      // 補償処理も失敗した場合、セッションが completed のまま残る可能性がある
-      console.error(
-        `completeSession compensation failed for session ${parsed.data.sessionId}:`,
-        compensationError,
-      );
-    }
-    return { success: false, error: ACTION_ERRORS.EDGE_FUNCTION_FAILED };
-  }
+  const fnResult = await invokeCompleteSession(
+    supabase,
+    parsed.data.sessionId,
+    { session_id: parsed.data.sessionId, reviews: parsed.data.reviews },
+  );
+  if (!fnResult.ok) return { success: false, error: fnResult.error };
 
   revalidatePath("/");
   return { success: true, data: undefined };
@@ -444,29 +429,14 @@ export async function completeElaborationSession(
   if (updateError) return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("セッション") };
 
   // Edge Function で card_reviews + daily_logs を記録 (FSRS はスキップ)
-  const fnResult = await supabase.functions.invoke("complete-session", {
-    body: {
-      session_id: parsed.data.sessionId,
-      reviews: parsed.data.reviews,
-    },
-  });
-
-  if (fnResult.error) {
-    // Edge Function 失敗時はセッションを in_progress に戻す
-    const { error: compensationError } = await supabase
-      .from("sessions")
-      // meta: null でリセットするのは、セッション完了前に保存した elaborations を破棄するため
-      .update({ status: "in_progress", ended_at: null, self_rating: null, duration_sec: 0, meta: null })
-      .eq("id", parsed.data.sessionId);
-    if (compensationError) {
-      // 補償処理も失敗した場合、セッションが completed のまま残る可能性がある
-      console.error(
-        `completeElaborationSession compensation failed for session ${parsed.data.sessionId}:`,
-        compensationError,
-      );
-    }
-    return { success: false, error: ACTION_ERRORS.EDGE_FUNCTION_FAILED };
-  }
+  // meta: null を extraCompensationFields に渡すのは、失敗時に完了前に保存した elaborations を破棄するため
+  const fnResult = await invokeCompleteSession(
+    supabase,
+    parsed.data.sessionId,
+    { session_id: parsed.data.sessionId, reviews: parsed.data.reviews },
+    { meta: null },
+  );
+  if (!fnResult.ok) return { success: false, error: fnResult.error };
 
   revalidatePath("/");
   return { success: true, data: undefined };
