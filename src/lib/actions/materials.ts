@@ -45,7 +45,6 @@ export async function createMaterial(
   }
 
   const { user, supabase } = await requireAuth();
-  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // material_methods が material_id FK を必要とするため、教材を先に作成する
   const { data: material, error: materialError } = await supabase
@@ -87,7 +86,6 @@ export async function getMaterials(
   options?: { subjectId?: string; search?: string },
 ): Promise<MaterialWithMethods[]> {
   const { user, supabase } = await requireAuth();
-  if (!user) redirect("/auth/login");
 
   let query = supabase
     .from("materials")
@@ -155,7 +153,6 @@ export async function getMaterials(
 
 export async function getMaterial(id: string): Promise<MaterialDetail | null> {
   const { user, supabase } = await requireAuth();
-  if (!user) redirect("/auth/login");
 
   const { data: material, error } = await supabase
     .from("materials")
@@ -266,7 +263,6 @@ export async function updateMaterial(
   }
 
   const { user, supabase } = await requireAuth();
-  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   const { error } = await supabase
     .from("materials")
@@ -288,7 +284,6 @@ export async function updateMaterial(
 
 export async function deleteMaterial(id: string): Promise<ActionResult<undefined>> {
   const { user, supabase } = await requireAuth();
-  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   const { error } = await supabase
     .from("materials")

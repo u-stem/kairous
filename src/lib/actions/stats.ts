@@ -33,7 +33,6 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
   if (!parsed.success) return EMPTY_STATS;
 
   const { user, supabase } = await requireAuth();
-  if (!user) redirect("/auth/login");
 
   const today = new Date();
   const currentStart = new Date(today);

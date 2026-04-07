@@ -28,10 +28,6 @@ export async function createSubject(
 
   const { user, supabase } = await requireAuth();
 
-  if (!user) {
-    return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
-  }
-
   const { data, error } = await supabase
     .from("subjects")
     .insert({ name: parsed.data.name, user_id: user.id })
@@ -48,8 +44,6 @@ export async function createSubject(
 
 export async function getSubjects(): Promise<Subject[]> {
   const { user, supabase } = await requireAuth();
-
-  if (!user) redirect("/auth/login");
 
   const { data, error } = await supabase
     .from("subjects")
