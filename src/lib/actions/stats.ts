@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { STATS_PERIODS } from "@/lib/constants";
-import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
+import { requireAuth } from "@/lib/actions/auth-utils";
 import type { StatsData, StatsPeriod } from "@/lib/types/stats";
 import { aggregateDaily, aggregateByKey } from "@/lib/utils/stats";
 import { toJstDateString } from "@/lib/utils/date";
@@ -32,7 +32,7 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
   const parsed = periodSchema.safeParse(period);
   if (!parsed.success) return EMPTY_STATS;
 
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
   if (!user) redirect("/auth/login");
 
   const today = new Date();

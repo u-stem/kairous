@@ -9,7 +9,7 @@ import {
 import type { ActionResult } from "@/lib/validations/materials";
 import type { Subject } from "@/lib/types/materials";
 import { ACTION_ERRORS } from "@/lib/constants";
-import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
+import { requireAuth } from "@/lib/actions/auth-utils";
 
 export async function createSubject(
   formData: FormData,
@@ -26,7 +26,7 @@ export async function createSubject(
     };
   }
 
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
 
   if (!user) {
     return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
@@ -47,7 +47,7 @@ export async function createSubject(
 }
 
 export async function getSubjects(): Promise<Subject[]> {
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
 
   if (!user) redirect("/auth/login");
 

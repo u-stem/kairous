@@ -17,7 +17,7 @@ import type { ActionResult } from "@/lib/validations/materials";
 import type { CardReview, DueMaterial, SessionCard, InterleavingCard, SessionDetail } from "@/lib/types/sessions";
 import { SESSION_MAX_CARDS, REST_DURATION_SEC, ACTION_ERRORS } from "@/lib/constants";
 import { completePomodoroSchema } from "@/lib/validations/pomodoro";
-import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
+import { requireAuth } from "@/lib/actions/auth-utils";
 import { invokeCompleteSession } from "@/lib/actions/session-compensation";
 import { toJstDateString } from "@/lib/utils/date";
 // RPC 戻り値の行型: database.ts の自動生成型と同期する。IDE の型推論補助のため明示的に定義する
@@ -53,7 +53,7 @@ export type SessionInfo = {
 };
 
 export async function getSessionInfo(sessionId: string): Promise<SessionInfo | null> {
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
   if (!user) return null;
 
   const { data: session } = await supabase
@@ -80,7 +80,7 @@ export async function getSessionInfo(sessionId: string): Promise<SessionInfo | n
 }
 
 export async function getDueMaterials(): Promise<DueMaterial[]> {
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
   if (!user) return [];
 
   // N+1 回避: materials→cards→srs_states の3クエリを RPC で1クエリに集約
@@ -123,7 +123,7 @@ export async function createSession(
     };
   }
 
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
   if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // RLS に加えてアプリ層でも所有者を確認し、RLS 緩和時の誤操作を防ぐ
@@ -153,7 +153,7 @@ export async function createSession(
 }
 
 export async function getSessionCards(sessionId: string, methodSlug?: string): Promise<SessionCard[]> {
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
   if (!user) return [];
 
   // RLS に加えてアプリ層でも所有者を確認し、RLS 緩和時の誤操作を防ぐ
@@ -207,7 +207,7 @@ export async function completeSession(
     return { success: false, error: ACTION_ERRORS.INVALID_INPUT };
   }
 
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
   if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // RLS に加えてアプリ層でも所有者と status を確認し、二重完了を防ぐ
@@ -254,7 +254,7 @@ export async function completeSession(
 }
 
 export async function getSession(sessionId: string): Promise<SessionDetail | null> {
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
   if (!user) return null;
 
   const { data: session } = await supabase
@@ -366,7 +366,7 @@ export async function createRestSession(
     return { success: false, error: ACTION_ERRORS.INVALID_INPUT };
   }
 
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
   if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // RLS に加えてアプリ層でも所有者を確認し、他ユーザーのセッションへの紐付けを防ぐ
@@ -414,7 +414,7 @@ export async function completeElaborationSession(
     return { success: false, error: ACTION_ERRORS.INVALID_INPUT };
   }
 
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
   if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // RLS に加えてアプリ層でも所有者と status を確認し、二重完了を防ぐ
@@ -481,7 +481,7 @@ export async function completePomodoroSession(
     return { success: false, error: ACTION_ERRORS.INVALID_INPUT };
   }
 
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
   if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // RLS に加えてアプリ層でも所有者と status を確認し、二重完了を防ぐ
@@ -561,7 +561,7 @@ export async function completeRestSession(
     return { success: false, error: ACTION_ERRORS.INVALID_INPUT };
   }
 
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
   if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // 所有者・進行中・安静セッションの3条件を同時に検証し、不正な完了を防ぐ
@@ -603,7 +603,7 @@ export async function createInterleavingSession(
     return { success: false, error: "インターリービングには2つ以上の教材が必要です" };
   }
 
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
   if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // interleaving の method_id を取得
@@ -664,7 +664,7 @@ export async function createInterleavingSession(
 }
 
 export async function getInterleavingCards(sessionId: string): Promise<InterleavingCard[]> {
-  const { user, supabase } = await getAuthenticatedUser();
+  const { user, supabase } = await requireAuth();
   if (!user) return [];
 
   // RLS に加えてアプリ層でも所有者を確認し、RLS 緩和時の誤操作を防ぐ
