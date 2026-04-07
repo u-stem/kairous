@@ -24,12 +24,21 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
     },
     {
+      // storageState を使う認証済みテスト (materials 等)
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
         storageState: STORAGE_STATE_PATH,
       },
       dependencies: ["setup"],
+      testIgnore: /auth\.spec\.ts/,
+    },
+    {
+      // 認証テスト: ログアウトが storageState セッションを無効化するため最後に実行する
+      name: "auth-tests",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /auth\.spec\.ts/,
+      dependencies: ["chromium"],
     },
   ],
 
