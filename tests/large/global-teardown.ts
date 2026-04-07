@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { deleteTestUser } from "./helpers/db";
+import { cleanupTestData, deleteTestUser } from "./helpers/db";
 import type { TestUserData } from "./helpers/types";
 
 async function globalTeardown() {
@@ -12,6 +12,8 @@ async function globalTeardown() {
     // test-user.json がない場合: global-setup が失敗したケース
     return;
   }
+  // アプリデータを先に削除 (CASCADE でない FK がある場合の安全策)
+  await cleanupTestData(user.id);
   await deleteTestUser(user.id);
 }
 

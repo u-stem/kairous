@@ -36,6 +36,8 @@ export default defineConfig({
   webServer: {
     command: process.env.CI ? "bun run build && bun run start" : "bun run dev",
     port: 3000,
+    // CI ではビルド時間を含むため余裕を持たせる
+    timeout: 120_000,
     reuseExistingServer: !process.env.CI,
   },
 });
