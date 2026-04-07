@@ -1,14 +1,9 @@
 import { test as setup, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import type { TestUserData } from "./helpers/types";
 
 const authFile = "tests/large/.auth/user.json";
-
-interface TestUserData {
-  id: string;
-  email: string;
-  password: string;
-}
 
 setup("authenticate", async ({ page }) => {
   // global-setup で作成したテストユーザーの認証情報を読む
