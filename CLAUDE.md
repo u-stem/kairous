@@ -24,6 +24,7 @@ src/
     session/        # /session/[id], /session/[id]/review, /session/[id]/summary
     rest/           # /rest/[id] (wakeful rest timer)
   components/       # Shared UI components
+  hooks/            # Shared custom hooks (useCountdownTimer etc.)
   lib/              # Utilities, Supabase client, types
 supabase/
   migrations/       # SQL migrations
