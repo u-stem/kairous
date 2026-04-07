@@ -45,7 +45,7 @@
 2. **PBI (Issue) を作成**: Why + 受け入れ条件を記載。ラベル (区分 + 内容) を付与。Parent にエピックを設定
 3. **サブタスクに分解**: PBI の sub-issues として登録。進捗を可視化する
 4. **マイルストーンを設定**: 該当するマイルストーンがなければ作成し、エピック/PBI に紐付ける
-5. **設計判断を記録**: 非自明な設計判断は GitHub Discussions (設計判断 ADR) に投稿
+5. **設計判断を記録**: 非自明な設計判断は GitHub Discussions (設計判断 ADR) にテンプレートを使って投稿
 6. **ブランチを作成**: `feat/`, `fix/` 等の prefix でブランチを切る
 7. **PR を作成し PBI と紐付け**: `closes #N` で PBI をリンク
 8. **Project Board を更新**: ステータスを In Progress に変更
@@ -172,12 +172,16 @@ Claude PR Review が PR push 時に自動実行される。
 
 ## 振り返りの運用
 
-マイルストーン完了時に振り返りを GitHub Discussions (振り返りカテゴリ) に投稿する。
+マイルストーン完了時に振り返りを GitHub Discussions (振り返りカテゴリ) に投稿する。Discussion テンプレート (`.github/DISCUSSION_TEMPLATE/振り返り.yml`) を使用すること。
 
 ### 振り返り本文
 
-- 概要、よかったこと、改善すべきこと、数値を記載
-- アクションアイテムは `- [ ]` チェックリストで明記
+テンプレートに従い、以下を記載する:
+- 概要 (Epic/PBI/PR/テスト数)
+- よかったこと
+- 改善すべきこと
+- 数値
+- アクションアイテム (`- [ ]` チェックリスト、必須)
 - アクションのないふわっとした「学び」はアクション化しないで OK (記録として残す)
 
 ### アクションの消化
@@ -193,7 +197,7 @@ Claude PR Review が PR push 時に自動実行される。
 
 ## ADR (設計判断) の運用
 
-GitHub Discussions (設計判断 ADR カテゴリ) で設計判断を記録する。
+GitHub Discussions (設計判断 ADR カテゴリ) で設計判断を記録する。Discussion テンプレート (`.github/DISCUSSION_TEMPLATE/設計判断-adr.yml`) を使用すること。
 
 ### ステータスとクローズ
 
