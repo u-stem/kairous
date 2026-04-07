@@ -192,17 +192,18 @@ Server Component から呼ばれるデータ取得関数は、エラー時に `t
 | `getMaterials` | `[]` を返す | `throw` |
 | `getMaterial` | エラー無視 | `throw` |
 | `getStats` | 空 stats を返す | `throw` |
-| `getDueMaterials` | `[]` を返す | `throw` |
-| `getInterleavingCards` | `[]` を返す | `throw` |
+| `getDueMaterials` | `[]` を返す | `console.error` + `[]` を維持 |
+| `getInterleavingCards` | `[]` を返す | `console.error` + `[]` を維持 |
 | `getSubjects` | `[]` を返す | `throw` |
 
 認証エラー (user なし) は `redirect("/auth/login")` のまま変更しない。Supabase クエリエラーのみ `throw` する。
 
-注意: `getStats` は現在、未認証時に `redirect` せず `EMPTY_STATS` を返している。他関数と挙動を揃え、未認証時は `redirect("/auth/login")` に変更する。バリデーション失敗 (不正な period) は引き続き `EMPTY_STATS` を返す (ユーザー入力エラーであり例外ではない)。
+例外:
+- `getDueMaterials` / `getInterleavingCards`: ホーム画面 (`/`) で使用。throw するとページ全体が error.tsx に落ちユーザー体験が悪い。`console.error` + 空配列を維持する
+- `getStats`: 未認証時に `redirect` せず `EMPTY_STATS` を返している。他関数と挙動を揃え、未認証時は `redirect("/auth/login")` に変更する。バリデーション失敗 (不正な period) は引き続き `EMPTY_STATS` を返す (ユーザー入力エラーであり例外ではない)
 
 **修正が必要な既存テスト**:
-- `tests/small/lib/actions/sessions.test.ts`: `getDueMaterials` のエラー時テスト (空配列期待 → throw 期待に変更)
-- `tests/small/lib/actions/stats.test.ts`: `getStats` のエラー時テスト (空 stats 期待 → throw 期待に変更)
+- `tests/small/lib/actions/stats.test.ts`: `getStats` の未認証テスト (空 stats 期待 → `redirect` 呼び出しの検証に変更。`next/navigation` の `redirect` を `vi.mock` でモック。既存テストに `redirect` モックの前例がないため、新しいモックパターンを導入する)
 
 ### 2c. DB エラーコード型安全化
 
