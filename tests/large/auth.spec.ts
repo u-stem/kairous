@@ -1,5 +1,9 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { test, expect } from "@playwright/test";
 import { adminClient } from "./helpers/db";
+import { E2E_PASSWORD } from "./helpers/types";
+import type { TestUserData } from "./helpers/types";
 
 // 認証テストは未ログイン状態で実行する
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -55,5 +59,79 @@ test.describe("サインアップ", () => {
     await page.getByRole("link", { name: "ログイン" }).click();
 
     await expect(page).toHaveURL("/auth/login");
+  });
+});
+
+test.describe("ログイン", () => {
+  let testUser: TestUserData;
+
+  test.beforeAll(() => {
+    // global-setup で作成されたテストユーザー情報をファイルから読み込む
+    const raw = readFileSync(
+      resolve(__dirname, ".auth", "test-user.json"),
+      "utf-8"
+    );
+    testUser = JSON.parse(raw) as TestUserData;
+  });
+
+  test("既存ユーザーがログインしてホームに遷移する", async ({ page }) => {
+    await page.goto("/auth/login");
+
+    await page.locator("#email").fill(testUser.email);
+    await page.locator("#password").fill(E2E_PASSWORD);
+    await page.getByRole("button", { name: "ログイン" }).click();
+
+    await expect(page).toHaveURL("/", { timeout: 10_000 });
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText("今日の学習")).toBeVisible();
+  });
+
+  test("間違ったパスワードでエラーが表示される", async ({ page }) => {
+    await page.goto("/auth/login");
+
+    await page.locator("#email").fill(testUser.email);
+    await page.locator("#password").fill("wrong-password-99999");
+    await page.getByRole("button", { name: "ログイン" }).click();
+
+    await expect(page.locator("p.text-red-600")).toBeVisible();
+  });
+
+  test("サインアップページへのリンクが機能する", async ({ page }) => {
+    await page.goto("/auth/login");
+
+    await page.getByRole("link", { name: "サインアップ" }).click();
+
+    await expect(page).toHaveURL("/auth/signup");
+  });
+});
+
+test.describe("ログアウト", () => {
+  let testUser: TestUserData;
+
+  test.beforeAll(() => {
+    // global-setup で作成されたテストユーザー情報をファイルから読み込む
+    const raw = readFileSync(
+      resolve(__dirname, ".auth", "test-user.json"),
+      "utf-8"
+    );
+    testUser = JSON.parse(raw) as TestUserData;
+  });
+
+  test("ログイン後にログアウトするとログインページに遷移する", async ({
+    page,
+  }) => {
+    // まずログインする
+    await page.goto("/auth/login");
+    await page.locator("#email").fill(testUser.email);
+    await page.locator("#password").fill(E2E_PASSWORD);
+    await page.getByRole("button", { name: "ログイン" }).click();
+    await expect(page).toHaveURL("/", { timeout: 10_000 });
+
+    // プロフィールページへ遷移してログアウトする
+    await page.goto("/profile");
+    await page.getByRole("button", { name: "ログアウト" }).click();
+
+    // ログインページへリダイレクトされることを確認
+    await expect(page).toHaveURL("/auth/login", { timeout: 10_000 });
   });
 });
