@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import {
   createMaterialSchema,
   updateMaterialSchema,
@@ -9,6 +8,8 @@ import {
 } from "@/lib/validations/materials";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { MaterialWithMethods, MaterialDetail } from "@/lib/types/materials";
+import { ACTION_ERRORS } from "@/lib/constants";
+import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
 
 export async function createMaterial(
   formData: FormData,
@@ -30,16 +31,13 @@ export async function createMaterial(
   if (!parsed.success) {
     return {
       success: false,
-      error: "入力内容を確認してください",
+      error: ACTION_ERRORS.INVALID_INPUT,
       fieldErrors: extractFieldErrors(parsed.error),
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // material_methods が material_id FK を必要とするため、教材を先に作成する
   const { data: material, error: materialError } = await supabase
@@ -53,7 +51,7 @@ export async function createMaterial(
     .select("id")
     .single();
 
-  if (materialError) return { success: false, error: "教材の作成に失敗しました" };
+  if (materialError) return { success: false, error: ACTION_ERRORS.CREATE_FAILED("教材") };
 
   const methodRows = parsed.data.method_ids.map((methodId) => ({
     material_id: material.id,
@@ -80,10 +78,7 @@ export async function createMaterial(
 export async function getMaterials(
   options?: { subjectId?: string; search?: string },
 ): Promise<MaterialWithMethods[]> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getAuthenticatedUser();
   if (!user) return [];
 
   let query = supabase
@@ -156,10 +151,7 @@ export async function getMaterials(
 }
 
 export async function getMaterial(id: string): Promise<MaterialDetail | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getAuthenticatedUser();
   if (!user) return null;
 
   const { data: material } = await supabase
@@ -273,16 +265,13 @@ export async function updateMaterial(
   if (!parsed.success) {
     return {
       success: false,
-      error: "入力内容を確認してください",
+      error: ACTION_ERRORS.INVALID_INPUT,
       fieldErrors: extractFieldErrors(parsed.error),
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   const { error } = await supabase
     .from("materials")
@@ -294,7 +283,7 @@ export async function updateMaterial(
     .eq("id", id)
     .eq("user_id", user.id);
 
-  if (error) return { success: false, error: "教材の更新に失敗しました" };
+  if (error) return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("教材") };
 
   // 更新後のデータを即座に反映するため、関連する全ページのキャッシュを無効化する
   revalidatePath(`/materials/${id}`);
@@ -303,11 +292,8 @@ export async function updateMaterial(
 }
 
 export async function deleteMaterial(id: string): Promise<ActionResult<undefined>> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   const { error } = await supabase
     .from("materials")
@@ -315,7 +301,7 @@ export async function deleteMaterial(id: string): Promise<ActionResult<undefined
     .eq("id", id)
     .eq("user_id", user.id);
 
-  if (error) return { success: false, error: "教材の削除に失敗しました" };
+  if (error) return { success: false, error: ACTION_ERRORS.DELETE_FAILED("教材") };
 
   revalidatePath("/materials");
   return { success: true, data: undefined };

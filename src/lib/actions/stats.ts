@@ -1,8 +1,8 @@
 "use server";
 
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
 import { STATS_PERIODS } from "@/lib/constants";
+import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
 import type { StatsData, StatsPeriod } from "@/lib/types/stats";
 import { aggregateDaily, aggregateByKey } from "@/lib/utils/stats";
 import { toJstDateString } from "@/lib/utils/date";
@@ -31,10 +31,7 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
   const parsed = periodSchema.safeParse(period);
   if (!parsed.success) return EMPTY_STATS;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getAuthenticatedUser();
   if (!user) return EMPTY_STATS;
 
   const today = new Date();

@@ -1,11 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { cardSchema, extractFieldErrors } from "@/lib/validations/materials";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { Card } from "@/lib/types/materials";
-import { SRS_DEFAULTS, CARD_BASED_SLUGS } from "@/lib/constants";
+import { SRS_DEFAULTS, CARD_BASED_SLUGS, ACTION_ERRORS } from "@/lib/constants";
+import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
 
 export async function createCard(
   materialId: string,
@@ -19,16 +19,13 @@ export async function createCard(
   if (!parsed.success) {
     return {
       success: false,
-      error: "入力内容を確認してください",
+      error: ACTION_ERRORS.INVALID_INPUT,
       fieldErrors: extractFieldErrors(parsed.error),
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // RLSに加えてuser_idで絞り込み、他ユーザーの教材への追加を防ぐ
   const { data: material, error: materialError } = await supabase
@@ -39,7 +36,7 @@ export async function createCard(
     .single();
 
   if (materialError || !material)
-    return { success: false, error: "教材が見つかりません" };
+    return { success: false, error: ACTION_ERRORS.NOT_FOUND("教材") };
 
   // display_order の決定と INSERT を単一トランザクションで実行し、並行リクエスト時の重複を防ぐ
   const { data: cardId, error: cardError } = await supabase.rpc("create_card_with_order", {
@@ -48,7 +45,7 @@ export async function createCard(
     p_back: parsed.data.back,
   });
 
-  if (cardError || !cardId) return { success: false, error: "カードの作成に失敗しました" };
+  if (cardError || !cardId) return { success: false, error: ACTION_ERRORS.CREATE_FAILED("カード") };
 
   const card = { id: cardId };
 
@@ -114,10 +111,7 @@ export async function createCard(
 }
 
 export async function getCard(cardId: string): Promise<Card | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getAuthenticatedUser();
   if (!user) return null;
 
   // cards に user_id がないため、materials JOIN で所有権を確認する
@@ -139,10 +133,7 @@ export async function getCard(cardId: string): Promise<Card | null> {
 }
 
 export async function getCards(materialId: string): Promise<Card[]> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getAuthenticatedUser();
   if (!user) return [];
 
   // 所有権の確認と同時にカード一覧を取得する（2クエリを1クエリに統合できないためJOINで代替）
@@ -176,16 +167,13 @@ export async function updateCard(
   if (!parsed.success) {
     return {
       success: false,
-      error: "入力内容を確認してください",
+      error: ACTION_ERRORS.INVALID_INPUT,
       fieldErrors: extractFieldErrors(parsed.error),
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // cardsにuser_idがないため、materials JOINで所有権を確認する
   const { data: cardRow } = await supabase
@@ -194,30 +182,27 @@ export async function updateCard(
     .eq("id", id)
     .single();
 
-  if (!cardRow) return { success: false, error: "カードが見つかりません" };
+  if (!cardRow) return { success: false, error: ACTION_ERRORS.NOT_FOUND("カード") };
 
   const materialOwner = (
     cardRow.materials as unknown as { user_id: string }
   ).user_id;
-  if (materialOwner !== user.id) return { success: false, error: "権限がありません" };
+  if (materialOwner !== user.id) return { success: false, error: ACTION_ERRORS.PERMISSION_DENIED };
 
   const { error } = await supabase
     .from("cards")
     .update({ front: parsed.data.front, back: parsed.data.back })
     .eq("id", id);
 
-  if (error) return { success: false, error: "カードの更新に失敗しました" };
+  if (error) return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("カード") };
 
   revalidatePath(`/materials/${cardRow.material_id}`);
   return { success: true, data: undefined };
 }
 
 export async function deleteCard(id: string): Promise<ActionResult<undefined>> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  const { user, supabase } = await getAuthenticatedUser();
+  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
 
   // cardsにuser_idがないため、materials JOINで所有権を確認する
   // total_cards は RPC で原子的に更新するため SELECT 不要
@@ -227,12 +212,12 @@ export async function deleteCard(id: string): Promise<ActionResult<undefined>> {
     .eq("id", id)
     .single();
 
-  if (!cardRow) return { success: false, error: "カードが見つかりません" };
+  if (!cardRow) return { success: false, error: ACTION_ERRORS.NOT_FOUND("カード") };
 
   const mat = cardRow.materials as unknown as {
     user_id: string;
   };
-  if (mat.user_id !== user.id) return { success: false, error: "権限がありません" };
+  if (mat.user_id !== user.id) return { success: false, error: ACTION_ERRORS.PERMISSION_DENIED };
 
   // srs_statesとcard_reviewsはCASCADEで自動削除される
   const { error: deleteError } = await supabase
@@ -240,7 +225,7 @@ export async function deleteCard(id: string): Promise<ActionResult<undefined>> {
     .delete()
     .eq("id", id);
 
-  if (deleteError) return { success: false, error: "カードの削除に失敗しました" };
+  if (deleteError) return { success: false, error: ACTION_ERRORS.DELETE_FAILED("カード") };
 
   // read-then-write ではなく RPC で原子的に増減し、並行リクエスト時の race condition を防ぐ
   // GREATEST(0, ...) により負数にはならない

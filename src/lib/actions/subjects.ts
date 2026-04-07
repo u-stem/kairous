@@ -1,13 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import {
   createSubjectSchema,
   extractFieldErrors,
 } from "@/lib/validations/materials";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { Subject } from "@/lib/types/materials";
+import { ACTION_ERRORS } from "@/lib/constants";
+import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
 
 export async function createSubject(
   formData: FormData,
@@ -19,18 +20,15 @@ export async function createSubject(
   if (!parsed.success) {
     return {
       success: false,
-      error: "入力内容を確認してください",
+      error: ACTION_ERRORS.INVALID_INPUT,
       fieldErrors: extractFieldErrors(parsed.error),
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getAuthenticatedUser();
 
   if (!user) {
-    return { success: false, error: "認証が必要です" };
+    return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
   }
 
   const { data, error } = await supabase
@@ -40,7 +38,7 @@ export async function createSubject(
     .single();
 
   if (error) {
-    return { success: false, error: "科目の作成に失敗しました" };
+    return { success: false, error: ACTION_ERRORS.CREATE_FAILED("科目") };
   }
 
   revalidatePath("/materials");
@@ -48,10 +46,7 @@ export async function createSubject(
 }
 
 export async function getSubjects(): Promise<Subject[]> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getAuthenticatedUser();
 
   if (!user) return [];
 
