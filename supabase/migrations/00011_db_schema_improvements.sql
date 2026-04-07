@@ -29,11 +29,13 @@ BEGIN
     RAISE EXCEPTION 'material % not owned by user %', p_material_id, p_user_id;
   END IF;
 
-  -- FOR UPDATE locks rows to prevent concurrent deletes
+  -- FOR UPDATE で行をロックしてから COUNT する (集計関数に FOR UPDATE は使えないためサブクエリに分ける)
   SELECT COUNT(*) INTO v_count
-  FROM material_methods
-  WHERE material_id = p_material_id
-  FOR UPDATE;
+  FROM (
+    SELECT id FROM material_methods
+    WHERE material_id = p_material_id
+    FOR UPDATE
+  ) locked_rows;
 
   IF v_count <= 1 THEN
     RAISE EXCEPTION 'at least one method required for material %', p_material_id;

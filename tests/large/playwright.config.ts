@@ -8,8 +8,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  // CI では Supabase ローカルへの競合書き込みを防ぐため直列実行
-  workers: process.env.CI ? 1 : undefined,
+  // 全環境で直列実行: 複数 worker が同じ storageState のリフレッシュトークンを
+  // 同時に使用するとトークンローテーションで無効化されるため
+  workers: 1,
   reporter: process.env.CI ? "github" : "html",
 
   use: {
@@ -24,12 +25,21 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
     },
     {
+      // storageState を使う認証済みテスト (materials 等)
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
         storageState: STORAGE_STATE_PATH,
       },
       dependencies: ["setup"],
+      testIgnore: /auth\.spec\.ts/,
+    },
+    {
+      // 認証テスト: ログアウトが storageState セッションを無効化するため最後に実行する
+      name: "auth-tests",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /auth\.spec\.ts/,
+      dependencies: ["chromium"],
     },
   ],
 

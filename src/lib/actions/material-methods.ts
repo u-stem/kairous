@@ -42,7 +42,8 @@ export async function addMaterialMethod(
   const { error } = await supabase.from("material_methods").insert({
     material_id: materialId,
     method_id: methodId,
-    config: (config ?? null) as Json | null,
+    // config は NOT NULL でデフォルト '{}' のため、未指定時は空オブジェクトで明示する
+    config: (config ?? {}) as Json,
   });
 
   if (error) {

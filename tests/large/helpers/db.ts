@@ -9,6 +9,7 @@ export {
   createTestCard,
   getSrsMethodId,
   getWakefulRestMethodId,
+  getMethodIdBySlug,
   linkMaterialMethod,
   createTestSrsState,
   createTestSession,
