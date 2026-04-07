@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { STORAGE_STATE_PATH } from "./helpers/types";
 
 export default defineConfig({
   globalSetup: "./global-setup",
@@ -7,6 +8,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
+  // CI では Supabase ローカルへの競合書き込みを防ぐため直列実行
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? "github" : "html",
 
@@ -25,7 +27,7 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        storageState: "tests/large/.auth/user.json",
+        storageState: STORAGE_STATE_PATH,
       },
       dependencies: ["setup"],
     },
