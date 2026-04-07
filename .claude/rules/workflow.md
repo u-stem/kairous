@@ -199,6 +199,10 @@ Claude PR Review が PR push 時に自動実行される。
 
 GitHub Discussions (設計判断 ADR カテゴリ) で設計判断を記録する。Discussion テンプレート (`.github/DISCUSSION_TEMPLATE/設計判断-adr.yml`) を使用すること。
 
+### 採番
+
+タイトルに連番を含める: `ADR-NNN: <タイトル>` (例: `ADR-001: SRS セッション実行フロー`)。既存の ADR は次回参照時にリネームする。
+
 ### ステータスとクローズ
 
 | ステータス | Discussion | 説明 |
