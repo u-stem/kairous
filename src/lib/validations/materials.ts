@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { VALIDATION_LIMITS } from "@/lib/constants";
 
 // Server Action の戻り値型。成功/失敗を型レベルで区別することでハンドリング漏れを防ぐ
 export type ActionResult<T> =
@@ -16,15 +17,15 @@ export const createSubjectSchema = z.object({
   name: z
     .string()
     .min(1, "科目名を入力してください")
-    .max(100, "科目名は100文字以内で入力してください"),
+    .max(VALIDATION_LIMITS.SUBJECT_NAME_MAX, "科目名は100文字以内で入力してください"),
 });
 
 export const createMaterialSchema = z.object({
   title: z
     .string()
     .min(1, "タイトルを入力してください")
-    .max(200, "タイトルは200文字以内で入力してください"),
-  description: z.string().max(2000, "説明は2000文字以内で入力してください").optional(),
+    .max(VALIDATION_LIMITS.MATERIAL_TITLE_MAX, "タイトルは200文字以内で入力してください"),
+  description: z.string().max(VALIDATION_LIMITS.MATERIAL_DESCRIPTION_MAX, "説明は2000文字以内で入力してください").optional(),
   subject_id: z.uuid("有効な科目を選択してください"),
   // 学習手法は1つ以上必須（material_methodsテーブルの整合性を保つため）
   method_ids: z
@@ -37,8 +38,8 @@ export const updateMaterialSchema = z.object({
   title: z
     .string()
     .min(1, "タイトルを入力してください")
-    .max(200, "タイトルは200文字以内で入力してください"),
-  description: z.string().max(2000, "説明は2000文字以内で入力してください").optional(),
+    .max(VALIDATION_LIMITS.MATERIAL_TITLE_MAX, "タイトルは200文字以内で入力してください"),
+  description: z.string().max(VALIDATION_LIMITS.MATERIAL_DESCRIPTION_MAX, "説明は2000文字以内で入力してください").optional(),
   subject_id: z.uuid("有効な科目を選択してください"),
 });
 
@@ -46,11 +47,11 @@ export const cardSchema = z.object({
   front: z
     .string()
     .min(1, "表面のテキストを入力してください")
-    .max(5000, "表面のテキストは5000文字以内で入力してください"),
+    .max(VALIDATION_LIMITS.CARD_TEXT_MAX, "表面のテキストは5000文字以内で入力してください"),
   back: z
     .string()
     .min(1, "裏面のテキストを入力してください")
-    .max(5000, "裏面のテキストは5000文字以内で入力してください"),
+    .max(VALIDATION_LIMITS.CARD_TEXT_MAX, "裏面のテキストは5000文字以内で入力してください"),
 });
 
 export type CreateSubjectInput = z.infer<typeof createSubjectSchema>;

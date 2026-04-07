@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { VALIDATION_LIMITS } from "@/lib/constants";
 
 // Server Action の共通型を re-export し、sessions 側の import を一箇所にまとめる
 export { type ActionResult, extractFieldErrors } from "./materials";
@@ -19,7 +20,7 @@ export const createSessionSchema = z.object({
 // time/text-based メソッドは別スキーマで定義する (現在のスコープ外)
 export const completeSessionSchema = z.object({
   sessionId: z.uuid("無効なセッションIDです"),
-  reviews: z.array(cardReviewSchema).min(1, "レビューが空です").max(500, "レビューは500件以内です"),
+  reviews: z.array(cardReviewSchema).min(1, "レビューが空です").max(VALIDATION_LIMITS.REVIEWS_MAX, "レビューは500件以内です"),
   selfRating: z.number().int().min(1, "評価は1以上です").max(4, "評価は4以下です"),
 });
 
