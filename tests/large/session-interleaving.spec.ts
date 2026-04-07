@@ -17,9 +17,11 @@ test.describe("Interleaving セッション", () => {
     const user = getTestUser();
     userId = user.id;
 
+    // get_due_materials RPC は slug='srs' の教材のみ返すため、
+    // interleaving の前提条件 (due 教材 2 件以上) には srs メソッドで準備する
     const srsMethodId = await getMethodIdBySlug("srs");
 
-    // Material A: 別の subject に属するカードを用意して interleaving の多教材条件を満たす
+    // Material A
     const subjectA = await createTestSubject(userId, `E2E-IntA-${Date.now()}`);
     const materialA = await createTestMaterial(subjectA.id, userId, "Interleaving教材A");
     const cardA = await createTestCard(materialA.id, "IL表面A", "IL裏面A", 0);

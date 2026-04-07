@@ -8,7 +8,7 @@ import {
 } from "./helpers/db";
 import { getTestUser } from "./helpers/types";
 
-// src/lib/constants.ts と同じ値
+// src/lib/constants.ts と同じ値 (Playwright は Node.js 環境のため直接 import 不可。変更時は両方を更新する)
 const POMODORO_FOCUS_SEC = 1500;
 const POMODORO_BREAK_SEC = 300;
 
