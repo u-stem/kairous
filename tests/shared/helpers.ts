@@ -59,6 +59,16 @@ export async function getWakefulRestMethodId(): Promise<string> {
   return data.id as string;
 }
 
+export async function getMethodIdBySlug(slug: string): Promise<string> {
+  const { data } = await adminClient
+    .from("learning_methods")
+    .select("id")
+    .eq("slug", slug)
+    .single();
+  if (!data) throw new Error(`learning_methods に slug="${slug}" が見つからない`);
+  return data.id as string;
+}
+
 export async function linkMaterialMethod(materialId: string, methodId: string) {
   const { error } = await adminClient
     .from("material_methods")
