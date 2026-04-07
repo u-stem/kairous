@@ -1,0 +1,56 @@
+title: "vX.Y.Z 振り返り: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        マイルストーン完了後の振り返り。アクションアイテムは全て同セッション内で消化し、消化後に close する。
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: マイルストーンの目標、PBI/PR/テスト数などの基本情報
+      placeholder: |
+        - Epic: #
+        - PBI: #, #
+        - PR: #, #
+        - Small テスト: N件
+    validations:
+      required: true
+  - type: textarea
+    id: good
+    attributes:
+      label: よかったこと
+      description: うまくいった点、再現したいプラクティス
+    validations:
+      required: true
+  - type: textarea
+    id: improve
+    attributes:
+      label: 改善すべきこと
+      description: 問題が起きた点、次回避けたい失敗
+    validations:
+      required: true
+  - type: textarea
+    id: metrics
+    attributes:
+      label: 数値
+      description: PBI数、PR数、コミット数、変更行数、テスト増減、レビュー指摘数など
+      placeholder: |
+        | 指標 | 値 |
+        |------|-----|
+        | PBI 数 | |
+        | PR 数 | |
+        | Small テスト | → (+) |
+    validations:
+      required: false
+  - type: textarea
+    id: actions
+    attributes:
+      label: アクションアイテム
+      description: 具体的な改善行動。ルール追記、Issue 作成、ADR 更新など成果物に落とす。全て消化してから close する
+      placeholder: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true

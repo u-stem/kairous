@@ -1,0 +1,46 @@
+title: "ADR: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        設計判断の記録。Accepted + 実装完了で close、Deferred は open のまま維持。
+  - type: dropdown
+    id: status
+    attributes:
+      label: Status
+      options:
+        - Proposed
+        - Accepted
+        - Deferred
+        - Superseded
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: この判断が必要になった背景。何が問題で、どんな制約があるか
+    validations:
+      required: true
+  - type: textarea
+    id: decision
+    attributes:
+      label: Decision
+      description: 何を決めたか、なぜその選択肢を選んだか
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: 検討したが採用しなかった選択肢とその理由
+    validations:
+      required: false
+  - type: textarea
+    id: consequences
+    attributes:
+      label: Consequences
+      description: この決定によるトレードオフ、影響、制約
+    validations:
+      required: true
