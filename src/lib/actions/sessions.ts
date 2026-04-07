@@ -20,6 +20,17 @@ import { completePomodoroSchema } from "@/lib/validations/pomodoro";
 import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
 import { invokeCompleteSession } from "@/lib/actions/session-compensation";
 import { toJstDateString } from "@/lib/utils/date";
+import type { Database } from "@/lib/types/database";
+
+// RPC 戻り値の行型: IDE の型推論補助のため明示的に定義する
+type DueMaterialRow = Database["public"]["Functions"]["get_due_materials"]["Returns"][number];
+type InterleavingCardRow = Database["public"]["Functions"]["get_interleaving_due_cards"]["Returns"][number];
+
+// Supabase JOIN 結果の型: SDK は joined テーブルを unknown として推論するため名前付き型で上書きする
+type JoinedMethod = { slug: string };
+type JoinedMethodWithName = { slug: string; name: string };
+type JoinedMaterial = { id: string; title: string; subjects: { name: string } };
+type JoinedMaterialTitle = { title: string };
 
 export type SessionInfo = {
   id: string;
@@ -41,7 +52,7 @@ export async function getSessionInfo(sessionId: string): Promise<SessionInfo | n
 
   if (!session) return null;
 
-  const method = session.learning_methods as unknown as { slug: string } | null;
+  const method = session.learning_methods as JoinedMethod | null;
 
   // method が null になるのは learning_methods が削除された孤立データのみ
   // notFound() でハンドルするため、呼び出し元に null を返す
@@ -72,7 +83,7 @@ export async function getDueMaterials(): Promise<DueMaterial[]> {
 
   if (!rows || rows.length === 0) return [];
 
-  return rows.map((row) => ({
+  return rows.map((row: DueMaterialRow) => ({
     id: row.material_id,
     title: row.title,
     subject: {
@@ -254,11 +265,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
 
   // サマリー画面で「続けて学習」の判断材料を表示するため、残りの due 数を算出する
   let remainingDueCount = 0;
-  const mat = session.materials as unknown as {
-    id: string;
-    title: string;
-    subjects: { name: string };
-  } | null;
+  const mat = session.materials as JoinedMaterial | null;
 
   // Interleaving セッションは material_id=NULL のため、session_materials から教材一覧を取得
   let interleavingMaterials: Array<{ id: string; title: string }> | null = null;
@@ -271,7 +278,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
     if (smRows && smRows.length > 0) {
       interleavingMaterials = smRows.map((sm) => ({
         id: sm.material_id,
-        title: (sm.materials as unknown as { title: string })?.title ?? "",
+        title: (sm.materials as JoinedMaterialTitle | null)?.title ?? "",
       }));
     }
   }
@@ -305,7 +312,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
     }
   }
 
-  const method = session.learning_methods as unknown as { slug: string; name: string };
+  const method = session.learning_methods as JoinedMethodWithName;
 
   return {
     id: session.id,
@@ -554,7 +561,7 @@ export async function completeRestSession(
 
   if (!session) return { success: false, error: ACTION_ERRORS.NOT_FOUND("セッション") };
 
-  const method = session.learning_methods as unknown as { slug: string };
+  const method = session.learning_methods as JoinedMethod;
   if (method.slug !== "wakeful_rest") {
     return { success: false, error: "安静セッションではありません" };
   }
@@ -669,7 +676,7 @@ export async function getInterleavingCards(sessionId: string): Promise<Interleav
     return [];
   }
 
-  const allCards: InterleavingCard[] = (rpcCards ?? []).map((c) => ({
+  const allCards: InterleavingCard[] = (rpcCards ?? []).map((c: InterleavingCardRow) => ({
     id: c.card_id,
     front: c.front,
     back: c.back,

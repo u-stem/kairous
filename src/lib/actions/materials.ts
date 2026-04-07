@@ -13,6 +13,12 @@ import { ACTION_ERRORS } from "@/lib/constants";
 import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
 import { toJstDateString } from "@/lib/utils/date";
 
+// Supabase JOIN 結果の型: SDK は joined テーブルを unknown として推論するため名前付き型で上書きする
+type JoinedSubject = { id: string; name: string; color: string };
+type JoinedLearningMethod = { id: string; slug: string; name: string; category: string };
+type JoinedCardMaterialId = { material_id: string };
+type JoinedMethodSlugName = { slug: string; name: string };
+
 export async function createMaterial(
   formData: FormData,
 ): Promise<ActionResult<{ id: string }>> {
@@ -125,8 +131,7 @@ export async function getMaterials(
 
     if (dueCounts) {
       for (const row of dueCounts) {
-        const materialId = (row.cards as unknown as { material_id: string })
-          .material_id;
+        const materialId = (row.cards as JoinedCardMaterialId).material_id;
         dueMap.set(materialId, (dueMap.get(materialId) ?? 0) + 1);
       }
     }
@@ -137,16 +142,11 @@ export async function getMaterials(
     title: m.title,
     description: m.description,
     subject_id: m.subject_id,
-    subject: m.subjects as unknown as { id: string; name: string; color: string },
+    subject: m.subjects as JoinedSubject,
     total_cards: m.total_cards,
     due_count: dueMap.get(m.id) ?? 0,
     methods: (m.material_methods ?? []).map((mm: Record<string, unknown>) => {
-      const lm = mm.learning_methods as {
-        id: string;
-        slug: string;
-        name: string;
-        category: string;
-      };
+      const lm = mm.learning_methods as JoinedLearningMethod;
       return { id: lm.id, slug: lm.slug, name: lm.name, category: lm.category };
     }),
     created_at: m.created_at,
@@ -226,28 +226,19 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
     title: material.title,
     description: material.description,
     subject_id: material.subject_id,
-    subject: material.subjects as unknown as {
-      id: string;
-      name: string;
-      color: string;
-    },
+    subject: material.subjects as JoinedSubject,
     total_cards: material.total_cards,
     due_count: dueCount,
     methods: (material.material_methods ?? []).map(
       (mm: Record<string, unknown>) => {
-        const lm = mm.learning_methods as {
-          id: string;
-          slug: string;
-          name: string;
-          category: string;
-        };
+        const lm = mm.learning_methods as JoinedLearningMethod;
         return { id: lm.id, slug: lm.slug, name: lm.name, category: lm.category };
       },
     ),
     created_at: material.created_at,
     recent_sessions: (sessions ?? []).map((s) => ({
       id: s.id,
-      method: s.learning_methods as unknown as { slug: string; name: string },
+      method: s.learning_methods as JoinedMethodSlugName,
       duration_sec: s.duration_sec,
       self_rating: s.self_rating,
       started_at: s.started_at,

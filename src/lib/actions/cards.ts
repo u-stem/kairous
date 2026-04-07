@@ -8,6 +8,10 @@ import { SRS_DEFAULTS, CARD_BASED_SLUGS, ACTION_ERRORS } from "@/lib/constants";
 import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
 import { toJstDateString } from "@/lib/utils/date";
 
+// Supabase JOIN 結果の型: SDK は joined テーブルを unknown として推論するため名前付き型で上書きする
+type JoinedMaterialOwner = { user_id: string };
+type JoinedMethodConfig = { slug: string; default_config: Record<string, unknown> | null };
+
 export async function createCard(
   materialId: string,
   formData: FormData,
@@ -68,18 +72,12 @@ export async function createCard(
 
   if (boundMethods) {
     const srsMethod = boundMethods.find((mm) => {
-      const lm = mm.learning_methods as unknown as {
-        slug: string;
-        default_config: Record<string, unknown> | null;
-      };
+      const lm = mm.learning_methods as JoinedMethodConfig;
       return (CARD_BASED_SLUGS as readonly string[]).includes(lm.slug);
     });
 
     if (srsMethod) {
-      const lm = srsMethod.learning_methods as unknown as {
-        slug: string;
-        default_config: Record<string, unknown> | null;
-      };
+      const lm = srsMethod.learning_methods as JoinedMethodConfig;
       const config = lm.default_config ?? {};
       const today = toJstDateString(new Date());
 
@@ -126,7 +124,7 @@ export async function getCard(cardId: string): Promise<Card | null> {
   if (!data) return null;
 
   // RLS に加えてアプリレベルでも所有権を確認 (RLS 緩和時の防御)
-  const owner = (data.materials as { user_id: string }).user_id;
+  const owner = (data.materials as JoinedMaterialOwner).user_id;
   if (owner !== user.id) return null;
 
   const { materials: _materials, ...card } = data;
@@ -185,9 +183,7 @@ export async function updateCard(
 
   if (!cardRow) return { success: false, error: ACTION_ERRORS.NOT_FOUND("カード") };
 
-  const materialOwner = (
-    cardRow.materials as unknown as { user_id: string }
-  ).user_id;
+  const materialOwner = (cardRow.materials as JoinedMaterialOwner).user_id;
   if (materialOwner !== user.id) return { success: false, error: ACTION_ERRORS.PERMISSION_DENIED };
 
   const { error } = await supabase
@@ -215,9 +211,7 @@ export async function deleteCard(id: string): Promise<ActionResult<undefined>> {
 
   if (!cardRow) return { success: false, error: ACTION_ERRORS.NOT_FOUND("カード") };
 
-  const mat = cardRow.materials as unknown as {
-    user_id: string;
-  };
+  const mat = cardRow.materials as JoinedMaterialOwner;
   if (mat.user_id !== user.id) return { success: false, error: ACTION_ERRORS.PERMISSION_DENIED };
 
   // srs_statesとcard_reviewsはCASCADEで自動削除される
