@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useRestTimer } from "./use-rest-timer";
-import { completeRestSession } from "@/lib/actions/sessions";
+import { completeRestSession } from "@/lib/actions/session-commands";
 import { REST_DURATION_SEC } from "@/lib/constants";
 import { formatDuration } from "@/lib/session-utils";
 

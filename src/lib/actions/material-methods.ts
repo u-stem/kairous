@@ -5,7 +5,7 @@ import type { ActionResult } from "@/lib/validations/materials";
 import type { LearningMethod } from "@/lib/types/materials";
 import type { Json } from "@/lib/types/database";
 import { MATERIAL_METHOD_SLUGS, ACTION_ERRORS, PG_ERROR_CODES } from "@/lib/constants";
-import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
+import { requireAuth } from "@/lib/actions/auth-utils";
 import { createClient } from "@/lib/supabase/server";
 
 export async function addMaterialMethod(
@@ -13,8 +13,7 @@ export async function addMaterialMethod(
   methodId: string,
   config?: Record<string, unknown>,
 ): Promise<ActionResult<undefined>> {
-  const { user, supabase } = await getAuthenticatedUser();
-  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
+  const { user, supabase } = await requireAuth();
 
   // RLSに加えてuser_idで絞り込み、他ユーザーの教材への追加を防ぐ
   const { data: material } = await supabase
@@ -62,8 +61,7 @@ export async function removeMaterialMethod(
   materialId: string,
   methodId: string,
 ): Promise<ActionResult<undefined>> {
-  const { user, supabase } = await getAuthenticatedUser();
-  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
+  const { user, supabase } = await requireAuth();
 
   // RPC で所有者チェック + 残数チェック + 削除を原子的に実行し TOCTOU を防ぐ
   const { error } = await supabase.rpc("remove_material_method", {

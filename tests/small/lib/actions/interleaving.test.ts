@@ -4,6 +4,13 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+// requireAuth は未認証時に redirect で throw するためモックが必要
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn((url: string) => {
+    throw new Error(`NEXT_REDIRECT:${url}`);
+  }),
+}));
+
 const VALID_UUID_1 = "550e8400-e29b-41d4-a716-446655440001";
 const VALID_UUID_2 = "550e8400-e29b-41d4-a716-446655440002";
 const INTERLEAVING_METHOD_ID = "550e8400-e29b-41d4-a716-000000000099";
@@ -125,19 +132,20 @@ describe("createInterleavingSession", () => {
     vi.resetModules();
   });
 
-  it("returns error when user is not authenticated", async () => {
+  it("redirects to /auth/login when user is not authenticated", async () => {
     mockClient = buildMockClient({ authenticated: false });
 
-    const { createInterleavingSession } = await import("@/lib/actions/sessions");
-    const result = await createInterleavingSession([VALID_UUID_1, VALID_UUID_2]);
+    const { createInterleavingSession } = await import("@/lib/actions/session-commands");
 
-    expect(result.success).toBe(false);
+    await expect(
+      createInterleavingSession([VALID_UUID_1, VALID_UUID_2]),
+    ).rejects.toThrow("NEXT_REDIRECT:/auth/login");
   });
 
   it("returns error when less than 2 material IDs", async () => {
     mockClient = buildMockClient();
 
-    const { createInterleavingSession } = await import("@/lib/actions/sessions");
+    const { createInterleavingSession } = await import("@/lib/actions/session-commands");
     const result = await createInterleavingSession([VALID_UUID_1]);
 
     expect(result.success).toBe(false);
@@ -146,7 +154,7 @@ describe("createInterleavingSession", () => {
   it("returns error when interleaving method not found", async () => {
     mockClient = buildMockClient({ methodData: null as unknown as { id: string } });
 
-    const { createInterleavingSession } = await import("@/lib/actions/sessions");
+    const { createInterleavingSession } = await import("@/lib/actions/session-commands");
     const result = await createInterleavingSession([VALID_UUID_1, VALID_UUID_2]);
 
     expect(result.success).toBe(false);
@@ -155,7 +163,7 @@ describe("createInterleavingSession", () => {
   it("returns session id on success", async () => {
     mockClient = buildMockClient({ insertData: { id: "new-session-id" } });
 
-    const { createInterleavingSession } = await import("@/lib/actions/sessions");
+    const { createInterleavingSession } = await import("@/lib/actions/session-commands");
     const result = await createInterleavingSession([VALID_UUID_1, VALID_UUID_2]);
 
     expect(result.success).toBe(true);
@@ -170,7 +178,7 @@ describe("createInterleavingSession", () => {
       sessionMaterialsError: { message: "insert failed" },
     });
 
-    const { createInterleavingSession } = await import("@/lib/actions/sessions");
+    const { createInterleavingSession } = await import("@/lib/actions/session-commands");
     const result = await createInterleavingSession([VALID_UUID_1, VALID_UUID_2]);
 
     expect(result.success).toBe(false);
@@ -187,19 +195,20 @@ describe("getInterleavingCards", () => {
     vi.resetModules();
   });
 
-  it("returns empty array when user is not authenticated", async () => {
+  it("redirects to /auth/login when user is not authenticated", async () => {
     mockClient = buildMockClient({ authenticated: false });
 
-    const { getInterleavingCards } = await import("@/lib/actions/sessions");
-    const result = await getInterleavingCards("session-1");
+    const { getInterleavingCards } = await import("@/lib/actions/session-queries");
 
-    expect(result).toEqual([]);
+    await expect(getInterleavingCards("session-1")).rejects.toThrow(
+      "NEXT_REDIRECT:/auth/login",
+    );
   });
 
   it("returns empty array when session is not owned by user", async () => {
     mockClient = buildGetInterleavingCardsMockClient({ sessionOwned: false });
 
-    const { getInterleavingCards } = await import("@/lib/actions/sessions");
+    const { getInterleavingCards } = await import("@/lib/actions/session-queries");
     const result = await getInterleavingCards("session-1");
 
     expect(result).toEqual([]);
@@ -218,7 +227,7 @@ describe("getInterleavingCards", () => {
       rpcCards: manyCards,
     });
 
-    const { getInterleavingCards } = await import("@/lib/actions/sessions");
+    const { getInterleavingCards } = await import("@/lib/actions/session-queries");
     const result = await getInterleavingCards("session-1");
 
     expect(result.length).toBeLessThanOrEqual(20);
@@ -227,7 +236,7 @@ describe("getInterleavingCards", () => {
   it("attaches material_title to each card", async () => {
     mockClient = buildGetInterleavingCardsMockClient();
 
-    const { getInterleavingCards } = await import("@/lib/actions/sessions");
+    const { getInterleavingCards } = await import("@/lib/actions/session-queries");
     const result = await getInterleavingCards("session-1");
 
     // 全カードに material_title が付与されていること
@@ -242,7 +251,7 @@ describe("getInterleavingCards", () => {
       ],
     });
 
-    const { getInterleavingCards } = await import("@/lib/actions/sessions");
+    const { getInterleavingCards } = await import("@/lib/actions/session-queries");
     const result = await getInterleavingCards("session-1");
 
     expect(result.length).toBe(2);

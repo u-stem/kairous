@@ -83,29 +83,16 @@ describe("createSubject", () => {
     );
   });
 
-  it("returns UNAUTHENTICATED error when user is not logged in", async () => {
+  it("redirects to /auth/login when user is not logged in", async () => {
     mockClient = buildMockClient({ user: null });
     const formData = new FormData();
     formData.set("name", "英語");
 
     const { createSubject } = await import("@/lib/actions/subjects");
-    const result = await createSubject(formData);
 
-    const { ACTION_ERRORS } = await import("@/lib/constants");
-    expect(result.success === false && result.error).toBe(
-      ACTION_ERRORS.UNAUTHENTICATED,
+    await expect(createSubject(formData)).rejects.toThrow(
+      "NEXT_REDIRECT:/auth/login",
     );
-  });
-
-  it("returns success false when user is not authenticated", async () => {
-    mockClient = buildMockClient({ user: null });
-    const formData = new FormData();
-    formData.set("name", "英語");
-
-    const { createSubject } = await import("@/lib/actions/subjects");
-    const result = await createSubject(formData);
-
-    expect(result.success).toBe(false);
   });
 
   it("returns success true with subject data on valid input", async () => {

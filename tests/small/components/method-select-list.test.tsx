@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 const createSessionMock = vi.fn();
-vi.mock("@/lib/actions/sessions", () => ({
+vi.mock("@/lib/actions/session-commands", () => ({
   createSession: (...args: unknown[]) => createSessionMock(...args) as unknown,
 }));
 

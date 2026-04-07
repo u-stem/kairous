@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getSessionInfo, getSessionCards, getInterleavingCards } from "@/lib/actions/sessions";
+import { getSessionInfo, getSessionCards, getInterleavingCards } from "@/lib/actions/session-queries";
 import { SessionPlayer } from "./session-player";
 import { ElaborationPlayer } from "./elaboration-player";
 import { PomodoroPlayer } from "./pomodoro-player";

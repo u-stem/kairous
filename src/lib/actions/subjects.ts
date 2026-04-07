@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import {
   createSubjectSchema,
   extractFieldErrors,
@@ -9,7 +8,7 @@ import {
 import type { ActionResult } from "@/lib/validations/materials";
 import type { Subject } from "@/lib/types/materials";
 import { ACTION_ERRORS } from "@/lib/constants";
-import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
+import { requireAuth } from "@/lib/actions/auth-utils";
 
 export async function createSubject(
   formData: FormData,
@@ -26,11 +25,7 @@ export async function createSubject(
     };
   }
 
-  const { user, supabase } = await getAuthenticatedUser();
-
-  if (!user) {
-    return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
-  }
+  const { user, supabase } = await requireAuth();
 
   const { data, error } = await supabase
     .from("subjects")
@@ -47,9 +42,7 @@ export async function createSubject(
 }
 
 export async function getSubjects(): Promise<Subject[]> {
-  const { user, supabase } = await getAuthenticatedUser();
-
-  if (!user) redirect("/auth/login");
+  const { user, supabase } = await requireAuth();
 
   const { data, error } = await supabase
     .from("subjects")

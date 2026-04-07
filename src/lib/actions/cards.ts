@@ -5,7 +5,7 @@ import { cardSchema, extractFieldErrors } from "@/lib/validations/materials";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { Card } from "@/lib/types/materials";
 import { SRS_DEFAULTS, CARD_BASED_SLUGS, ACTION_ERRORS } from "@/lib/constants";
-import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
+import { requireAuth } from "@/lib/actions/auth-utils";
 import { toJstDateString } from "@/lib/utils/date";
 
 // Supabase JOIN 結果の型: SDK は joined テーブルを unknown として推論するため名前付き型で上書きする
@@ -29,8 +29,7 @@ export async function createCard(
     };
   }
 
-  const { user, supabase } = await getAuthenticatedUser();
-  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
+  const { user, supabase } = await requireAuth();
 
   // RLSに加えてuser_idで絞り込み、他ユーザーの教材への追加を防ぐ
   const { data: material, error: materialError } = await supabase
@@ -110,8 +109,7 @@ export async function createCard(
 }
 
 export async function getCard(cardId: string): Promise<Card | null> {
-  const { user, supabase } = await getAuthenticatedUser();
-  if (!user) return null;
+  const { user, supabase } = await requireAuth();
 
   // cards に user_id がないため、materials JOIN で所有権を確認する
   // !inner により他ユーザーのカードは RLS + JOIN で除外される
@@ -132,8 +130,7 @@ export async function getCard(cardId: string): Promise<Card | null> {
 }
 
 export async function getCards(materialId: string): Promise<Card[]> {
-  const { user, supabase } = await getAuthenticatedUser();
-  if (!user) return [];
+  const { user, supabase } = await requireAuth();
 
   // 所有権の確認と同時にカード一覧を取得する（2クエリを1クエリに統合できないためJOINで代替）
   const { data: material } = await supabase
@@ -171,8 +168,7 @@ export async function updateCard(
     };
   }
 
-  const { user, supabase } = await getAuthenticatedUser();
-  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
+  const { user, supabase } = await requireAuth();
 
   // cardsにuser_idがないため、materials JOINで所有権を確認する
   const { data: cardRow } = await supabase
@@ -198,8 +194,7 @@ export async function updateCard(
 }
 
 export async function deleteCard(id: string): Promise<ActionResult<undefined>> {
-  const { user, supabase } = await getAuthenticatedUser();
-  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
+  const { user, supabase } = await requireAuth();
 
   // cardsにuser_idがないため、materials JOINで所有権を確認する
   // total_cards は RPC で原子的に更新するため SELECT 不要

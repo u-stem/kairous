@@ -4,6 +4,13 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+// requireAuth は未認証時に redirect で throw するためモックが必要
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn((url: string) => {
+    throw new Error(`NEXT_REDIRECT:${url}`);
+  }),
+}));
+
 const rpcMock = vi.fn();
 const authMock = {
   getUser: vi.fn(),
@@ -31,13 +38,12 @@ beforeEach(() => {
 });
 
 describe("removeMaterialMethod", () => {
-  it("returns auth error when user is not authenticated", async () => {
+  it("redirects to /auth/login when user is not authenticated", async () => {
     authMock.getUser.mockResolvedValue({ data: { user: null } });
 
-    const result = await removeMaterialMethod("mat-1", "method-1");
-
-    assert(!result.success);
-    expect(result.error).toBe("認証が必要です");
+    await expect(removeMaterialMethod("mat-1", "method-1")).rejects.toThrow(
+      "NEXT_REDIRECT:/auth/login",
+    );
   });
 
   it("calls remove_material_method RPC with correct parameters", async () => {

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePomodoroTimer } from "./use-pomodoro-timer";
-import { completePomodoroSession } from "@/lib/actions/sessions";
+import { completePomodoroSession } from "@/lib/actions/session-commands";
 import { POMODORO_FOCUS_SEC, POMODORO_BREAK_SEC, SELF_RATING_LABELS } from "@/lib/constants";
 import { formatDuration } from "@/lib/session-utils";
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createSession } from "@/lib/actions/sessions";
+import { createSession } from "@/lib/actions/session-commands";
 
 type Props = {
   materialId: string;

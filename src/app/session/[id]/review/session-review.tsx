@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { completeSession, completeElaborationSession } from "@/lib/actions/sessions";
+import { completeSession, completeElaborationSession } from "@/lib/actions/session-commands";
 import { SELF_RATING_LABELS } from "@/lib/constants";
 import type { CardReview } from "@/lib/types/sessions";
 import type { ElaborationInput } from "@/lib/validations/elaboration";

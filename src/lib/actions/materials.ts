@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import {
   createMaterialSchema,
   updateMaterialSchema,
@@ -10,7 +9,7 @@ import {
 import type { ActionResult } from "@/lib/validations/materials";
 import type { MaterialWithMethods, MaterialDetail } from "@/lib/types/materials";
 import { ACTION_ERRORS } from "@/lib/constants";
-import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
+import { requireAuth } from "@/lib/actions/auth-utils";
 import { toJstDateString } from "@/lib/utils/date";
 
 // Supabase JOIN 結果の型: SDK は joined テーブルを unknown として推論するため名前付き型で上書きする
@@ -44,8 +43,7 @@ export async function createMaterial(
     };
   }
 
-  const { user, supabase } = await getAuthenticatedUser();
-  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
+  const { user, supabase } = await requireAuth();
 
   // material_methods が material_id FK を必要とするため、教材を先に作成する
   const { data: material, error: materialError } = await supabase
@@ -86,8 +84,7 @@ export async function createMaterial(
 export async function getMaterials(
   options?: { subjectId?: string; search?: string },
 ): Promise<MaterialWithMethods[]> {
-  const { user, supabase } = await getAuthenticatedUser();
-  if (!user) redirect("/auth/login");
+  const { user, supabase } = await requireAuth();
 
   let query = supabase
     .from("materials")
@@ -154,8 +151,7 @@ export async function getMaterials(
 }
 
 export async function getMaterial(id: string): Promise<MaterialDetail | null> {
-  const { user, supabase } = await getAuthenticatedUser();
-  if (!user) redirect("/auth/login");
+  const { user, supabase } = await requireAuth();
 
   const { data: material, error } = await supabase
     .from("materials")
@@ -265,8 +261,7 @@ export async function updateMaterial(
     };
   }
 
-  const { user, supabase } = await getAuthenticatedUser();
-  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
+  const { user, supabase } = await requireAuth();
 
   const { error } = await supabase
     .from("materials")
@@ -287,8 +282,7 @@ export async function updateMaterial(
 }
 
 export async function deleteMaterial(id: string): Promise<ActionResult<undefined>> {
-  const { user, supabase } = await getAuthenticatedUser();
-  if (!user) return { success: false, error: ACTION_ERRORS.UNAUTHENTICATED };
+  const { user, supabase } = await requireAuth();
 
   const { error } = await supabase
     .from("materials")
