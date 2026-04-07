@@ -723,11 +723,16 @@ export async function getInterleavingCards(sessionId: string): Promise<Interleav
 
   // 全教材の due cards を RPC 1 回で取得し、N+1 クエリを回避する
   const today = new Date().toISOString().split("T")[0];
-  const { data: rpcCards } = await supabase.rpc("get_interleaving_due_cards", {
+  const { data: rpcCards, error: rpcError } = await supabase.rpc("get_interleaving_due_cards", {
     p_session_id: sessionId,
     p_user_id: user.id,
     p_today: today,
   });
+
+  if (rpcError) {
+    console.error("getInterleavingCards RPC failed:", rpcError.message);
+    return [];
+  }
 
   const allCards: InterleavingCard[] = (rpcCards ?? []).map((c) => ({
     id: c.card_id,
