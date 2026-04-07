@@ -96,3 +96,73 @@ test.describe.serial("教材 CRUD", () => {
     ).not.toBeVisible();
   });
 });
+
+test.describe("手法紐付け", () => {
+  let userId: string;
+  let subjectName: string;
+
+  test.beforeAll(async () => {
+    const user = getTestUser();
+    userId = user.id;
+    // テストごとに一意な科目名を使い、他のテストデータと衝突しない
+    subjectName = `E2E手法科目-${Date.now()}`;
+    await createTestSubject(userId, subjectName);
+  });
+
+  test.afterAll(async () => {
+    await cleanupTestData(userId);
+  });
+
+  test("教材の手法を追加・削除できる", async ({ page }) => {
+    // 1. ポモドーロのみで教材を作成する
+    await page.goto("/materials/new");
+    await page.locator("#material-title").fill("手法テスト教材");
+    await page.getByRole("combobox").click();
+    await page.getByRole("option", { name: subjectName }).click();
+    await page.getByRole("button", { name: "次へ" }).click();
+    await page.getByText("ポモドーロ").click();
+    await page.getByRole("button", { name: "作成" }).click();
+    await expect(page).toHaveURL(/\/materials\/[0-9a-f-]{36}$/, {
+      timeout: 10_000,
+    });
+
+    // 2. ポモドーロチップが表示されていることを確認する
+    // MethodChip は span でレンダリングされるため span に絞り込む
+    await expect(page.locator("span").filter({ hasText: "ポモドーロ" }).first()).toBeVisible();
+
+    // 3. 手法シートを開いて間隔反復 (FSRS) を追加する
+    // MaterialMethodSheet のトリガーは Plus アイコン + "手法" テキストを持つボタン
+    await page.getByRole("button", { name: "手法" }).click();
+    // シートが表示されるまで待つ
+    await expect(page.getByText("学習手法を管理")).toBeVisible({
+      timeout: 5_000,
+    });
+    // シート内のチェックリストから間隔反復 (FSRS) をクリックして選択する
+    // getByText は詳細ページのチップと被る可能性があるため SheetContent 内に絞り込む
+    await page.locator('[role="dialog"]').getByText("間隔反復 (FSRS)").click();
+    await page.getByRole("button", { name: "保存" }).click();
+    // 非同期保存が完了してシートが閉じるまで待つ (transition の完了を待つため長めに設定)
+    await expect(page.getByText("学習手法を管理")).not.toBeVisible({
+      timeout: 15_000,
+    });
+
+    // 4. 間隔反復 (FSRS) チップが表示されていることを確認する
+    // MethodChip は span でレンダリングされるため span に絞り込む
+    await expect(page.locator("span").filter({ hasText: "間隔反復 (FSRS)" })).toBeVisible();
+
+    // 5. 手法シートを再度開いて間隔反復 (FSRS) を削除する
+    await page.getByRole("button", { name: "手法" }).click();
+    await expect(page.getByText("学習手法を管理")).toBeVisible({
+      timeout: 5_000,
+    });
+    await page.locator('[role="dialog"]').getByText("間隔反復 (FSRS)").click();
+    await page.getByRole("button", { name: "保存" }).click();
+    await expect(page.getByText("学習手法を管理")).not.toBeVisible({
+      timeout: 15_000,
+    });
+
+    // 6. 間隔反復 (FSRS) チップが消え、ポモドーロが残っていることを確認する
+    await expect(page.locator("span").filter({ hasText: "間隔反復 (FSRS)" })).not.toBeVisible();
+    await expect(page.locator("span").filter({ hasText: "ポモドーロ" }).first()).toBeVisible();
+  });
+});
