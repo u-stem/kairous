@@ -49,3 +49,8 @@ next-env.d.ts
 # project-specific
 .superpowers/
 .claude/claude_tmp/
+
+# Playwright
+tests/large/.auth/
+test-results/
+playwright-report/
