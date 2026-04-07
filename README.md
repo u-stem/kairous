@@ -38,6 +38,7 @@ bun lint           # ESLint
 bun typecheck      # TypeScript 型チェック
 bun test:small     # Small テスト (モックのみ、高速)
 bun test:medium    # Medium テスト (Supabase ローカル)
+bun test:large     # Large テスト (Playwright E2E)
 bun check          # lint + typecheck + test:small
 ```
 
@@ -64,6 +65,11 @@ src/
     types/          # 型定義 (database.ts は自動生成)
     validations/    # zod スキーマ
     constants.ts    # 共有定数
+tests/
+  shared/           # Medium/Large 共通ヘルパー
+  small/            # Small テスト (vitest + jsdom)
+  medium/           # Medium テスト (vitest + Supabase ローカル)
+  large/            # Large テスト (Playwright E2E)
 supabase/
   migrations/       # SQL マイグレーション
   functions/        # Edge Functions
@@ -81,7 +87,7 @@ docs/
 |------|------|----------|---------------|
 | Small | tests/small/ | なし (全モック) | pre-commit |
 | Medium | tests/medium/ | Supabase ローカル | CI |
-| Large | tests/large/ | ブラウザ + Supabase | CI post-deploy |
+| Large | tests/large/ | Playwright + Supabase ローカル | CI パイプラ���ン内 |
 
 ## 開発ガイド
 

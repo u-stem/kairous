@@ -79,3 +79,35 @@ jobs:
         run: supabase start -x realtime,storage,imgproxy,inbucket,pgadmin-schema-diff,migra,studio,edge-runtime,logflare,vector,supavisor
       - name: マイグレーション検証
         run: supabase db lint
+
+  test-large:
+    runs-on: ubuntu-latest
+    needs: [test-medium, lint-and-typecheck]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: "1.3.2"
+      - uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
+        with:
+          version: "2.76.7"
+      - run: bun install --frozen-lockfile
+      - name: Playwright ブラウザインストール
+        run: bunx playwright install --with-deps chromium
+      - name: Supabase ローカル起動 (Inbucket 含む)
+        run: supabase start -x realtime,storage,imgproxy,pgadmin-schema-diff,migra,studio,logflare,vector,supavisor
+      - name: 環境変数を設定
+        run: |
+          eval $(supabase status -o env | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY)=')
+          echo "NEXT_PUBLIC_SUPABASE_URL=${API_URL}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> $GITHUB_ENV
+      - run: bun test:large
+      - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
