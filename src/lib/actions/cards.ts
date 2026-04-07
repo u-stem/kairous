@@ -6,6 +6,7 @@ import type { ActionResult } from "@/lib/validations/materials";
 import type { Card } from "@/lib/types/materials";
 import { SRS_DEFAULTS, CARD_BASED_SLUGS, ACTION_ERRORS } from "@/lib/constants";
 import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
+import { toJstDateString } from "@/lib/utils/date";
 
 export async function createCard(
   materialId: string,
@@ -80,7 +81,7 @@ export async function createCard(
         default_config: Record<string, unknown> | null;
       };
       const config = lm.default_config ?? {};
-      const today = new Date().toISOString().split("T")[0];
+      const today = toJstDateString(new Date());
 
       const { error: srsError } = await supabase.from("srs_states").insert({
         card_id: card.id,

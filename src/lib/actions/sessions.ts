@@ -15,9 +15,10 @@ import {
 import { createInterleavingSessionSchema } from "@/lib/validations/interleaving";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { CardReview, DueMaterial, SessionCard, InterleavingCard, SessionDetail } from "@/lib/types/sessions";
-import { SESSION_MAX_CARDS, REST_DURATION_SEC, JST_OFFSET_MS, ACTION_ERRORS } from "@/lib/constants";
+import { SESSION_MAX_CARDS, REST_DURATION_SEC, ACTION_ERRORS } from "@/lib/constants";
 import { completePomodoroSchema } from "@/lib/validations/pomodoro";
 import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
+import { toJstDateString } from "@/lib/utils/date";
 
 export type SessionInfo = {
   id: string;
@@ -57,7 +58,7 @@ export async function getDueMaterials(): Promise<DueMaterial[]> {
   if (!user) return [];
 
   // N+1 回避: materials→cards→srs_states の3クエリを RPC で1クエリに集約
-  const today = new Date().toISOString().split("T")[0];
+  const today = toJstDateString(new Date());
   const { data: rows, error } = await supabase.rpc("get_due_materials", {
     p_user_id: user.id,
     p_today: today,
@@ -139,7 +140,7 @@ export async function getSessionCards(sessionId: string, methodSlug?: string): P
 
   if (!session?.material_id) return [];
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = toJstDateString(new Date());
 
   const { data: allCards } = await supabase
     .from("cards")
@@ -291,7 +292,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
   }
 
   if (mat) {
-    const today = new Date().toISOString().split("T")[0];
+    const today = toJstDateString(new Date());
 
     const { data: allCards } = await supabase
       .from("cards")
@@ -537,7 +538,7 @@ export async function completePomodoroSession(
       .single();
 
     if (material) {
-      const logDate = new Date(Date.now() + JST_OFFSET_MS).toISOString().split("T")[0];
+      const logDate = toJstDateString(new Date());
 
       const { error: logError } = await supabase.rpc("upsert_daily_log", {
         p_user_id: user.id,
@@ -686,7 +687,7 @@ export async function getInterleavingCards(sessionId: string): Promise<Interleav
   if (!session) return [];
 
   // 全教材の due cards を RPC 1 回で取得し、N+1 クエリを回避する
-  const today = new Date().toISOString().split("T")[0];
+  const today = toJstDateString(new Date());
   const { data: rpcCards, error: rpcError } = await supabase.rpc("get_interleaving_due_cards", {
     p_session_id: sessionId,
     p_user_id: user.id,

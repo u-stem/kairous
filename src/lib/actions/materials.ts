@@ -10,6 +10,7 @@ import type { ActionResult } from "@/lib/validations/materials";
 import type { MaterialWithMethods, MaterialDetail } from "@/lib/types/materials";
 import { ACTION_ERRORS } from "@/lib/constants";
 import { getAuthenticatedUser } from "@/lib/actions/auth-utils";
+import { toJstDateString } from "@/lib/utils/date";
 
 export async function createMaterial(
   formData: FormData,
@@ -111,7 +112,7 @@ export async function getMaterials(
 
   // 空配列での .in() は PostgreSQL シンタックスエラーになるためガードする
   if (materialIds.length > 0) {
-    const today = new Date().toISOString().split("T")[0];
+    const today = toJstDateString(new Date());
 
     const { data: dueCounts } = await supabase
       .from("srs_states")
@@ -170,7 +171,7 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
   if (!material) return null;
 
   // 詳細ページで復習が必要なカード数を表示し、セッション開始の判断材料にする
-  const today = new Date().toISOString().split("T")[0];
+  const today = toJstDateString(new Date());
   const cardIds =
     (await supabase.from("cards").select("id").eq("material_id", id)).data?.map(
       (c) => c.id,
