@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import {
-  adminClient,
+  getAdminClient,
   createTestSubject,
   createTestMaterial,
   getMethodIdBySlug,
@@ -26,7 +26,7 @@ test.describe("Stats ページ", () => {
     // daily_log を作成 (Stats ページのデータソース)
     // テスト固有の subject を使うため UNIQUE 制約に衝突しない
     const today = new Date().toISOString().split("T")[0];
-    const { error: logErr } = await adminClient
+    const { error: logErr } = await getAdminClient()
       .from("daily_logs")
       .insert({
         user_id: userId,

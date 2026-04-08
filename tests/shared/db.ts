@@ -25,19 +25,11 @@ export function getAdminClient() {
   return _adminClient;
 }
 
-// 後方互換: Medium テストが adminClient を直接参照している
-// getter で遅延評価するため、import 時点では env 未設定でも問題ない
-export const adminClient = new Proxy({} as ReturnType<typeof createAdminClient>, {
-  get(_target, prop, receiver): unknown {
-    return Reflect.get(getAdminClient(), prop, receiver);
-  },
-});
-
 export async function createTestUser(
   email = `test-${Date.now()}@kairous.local`,
   password = "test-password-12345",
 ): Promise<string> {
-  const { data, error } = await adminClient.auth.admin.createUser({
+  const { data, error } = await getAdminClient().auth.admin.createUser({
     email,
     password,
     email_confirm: true,
@@ -48,7 +40,7 @@ export async function createTestUser(
 }
 
 export async function deleteTestUser(userId: string): Promise<void> {
-  const { error } = await adminClient.auth.admin.deleteUser(userId);
+  const { error } = await getAdminClient().auth.admin.deleteUser(userId);
   if (error) throw new Error(`テストユーザー削除失敗: ${error.message}`);
 }
 
