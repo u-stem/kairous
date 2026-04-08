@@ -46,10 +46,13 @@ test.describe.serial("教材 CRUD", () => {
 
   test("教材を編集して詳細ページに戻る", async ({ page }) => {
     await page.goto("/materials");
+    // CI の production build ではハイドレーション完了前にクリックすると遷移しないため待機する
+    await page.waitForLoadState("networkidle");
 
     // 一覧から教材リンクをクリックして詳細へ遷移する
     await page.getByRole("link", { name: "E2Eテスト教材" }).click();
     await page.waitForURL(/\/materials\/[0-9a-f-]{36}$/, { timeout: 10_000 });
+    await page.waitForLoadState("networkidle");
     await page.getByRole("link", { name: "編集" }).click();
 
     // タイトルを変更して保存する
@@ -66,11 +69,13 @@ test.describe.serial("教材 CRUD", () => {
 
   test("教材を削除して一覧ページに戻る", async ({ page }) => {
     await page.goto("/materials");
+    await page.waitForLoadState("networkidle");
 
     // 編集済みの教材を選択して削除する
     await page.getByRole("link", { name: "E2Eテスト教材（編集済み）" }).click();
     // 詳細ページへの遷移を待つ
     await page.waitForURL(/\/materials\/[0-9a-f-]{36}$/, { timeout: 10_000 });
+    await page.waitForLoadState("networkidle");
     await page.getByRole("link", { name: "編集" }).click();
     // 編集ページへの遷移を待つ
     await page.waitForURL(/\/materials\/[0-9a-f-]{36}\/edit$/, {
