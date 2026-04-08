@@ -40,10 +40,10 @@ export function CardListItem({ card, materialId }: CardListItemProps) {
   }
 
   return (
-    <div className="flex items-start gap-3 rounded-lg border p-3">
+    <div className="flex items-start gap-3 rounded-lg border p-3" data-testid="card-list-item">
       {/* カード内容: 表面・裏面を縦並びで表示 */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{card.front}</p>
+        <p className="truncate text-sm font-medium" data-testid="card-front">{card.front}</p>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">{card.back}</p>
       </div>
 

@@ -41,7 +41,7 @@ test.describe.serial("教材 CRUD", () => {
       timeout: 10_000,
     });
     // サイトタイトル "Kairous" の h1 と教材タイトルの h1 が共存するため truncate クラスで絞り込む
-    await expect(page.locator("h1.truncate")).toHaveText("E2Eテスト教材");
+    await expect(page.getByTestId("material-title")).toHaveText("E2Eテスト教材");
   });
 
   test("教材を編集して詳細ページに戻る", async ({ page }) => {
@@ -64,7 +64,7 @@ test.describe.serial("教材 CRUD", () => {
     await expect(page).toHaveURL(/\/materials\/[0-9a-f-]{36}$/, {
       timeout: 10_000,
     });
-    await expect(page.locator("h1.truncate")).toHaveText("E2Eテスト教材（編集済み）");
+    await expect(page.getByTestId("material-title")).toHaveText("E2Eテスト教材（編集済み）");
   });
 
   test("教材を削除して一覧ページに戻る", async ({ page }) => {
@@ -213,7 +213,7 @@ test.describe("カード管理", () => {
 
     // === カードタブに切り替えて初期カードを確認する ===
     await page.getByRole("tab", { name: /カード/ }).click();
-    await expect(page.locator("p.truncate.text-sm.font-medium").filter({ hasText: "apple" })).toBeVisible();
+    await expect(page.getByTestId("card-front").filter({ hasText: "apple" })).toBeVisible();
 
     // === カード追加ページでカード「banana / バナナ」を追加する ===
     await page.getByRole("link", { name: "カードを追加" }).click();
@@ -238,13 +238,13 @@ test.describe("カード管理", () => {
 
     // カードタブを再度クリックしてリストを表示する（URL にタブ指定がない場合の保険）
     await page.getByRole("tab", { name: /カード/ }).click();
-    await expect(page.locator("p.truncate.text-sm.font-medium").filter({ hasText: "banana" })).toBeVisible();
+    await expect(page.getByTestId("card-front").filter({ hasText: "banana" })).toBeVisible();
 
     // === banana カードを編集する ===
     // banana カードの行を特定して編集リンクをクリックする
     const bananaRow = page
-      .locator("div.flex.items-start.gap-3.rounded-lg")
-      .filter({ has: page.locator("p.truncate.text-sm.font-medium", { hasText: "banana" }) });
+      .getByTestId("card-list-item")
+      .filter({ has: page.getByTestId("card-front").filter({ hasText: "banana" }) });
     await bananaRow.getByRole("link", { name: "カードを編集" }).click();
 
     await expect(page).toHaveURL(/\/materials\/[0-9a-f-]{36}\/cards\/[0-9a-f-]{36}\/edit$/, {
@@ -263,21 +263,21 @@ test.describe("カード管理", () => {
 
     // カードタブを開いて更新後のテキストを確認する
     await page.getByRole("tab", { name: /カード/ }).click();
-    await expect(page.locator("p.truncate.text-sm.font-medium").filter({ hasText: "banana (updated)" })).toBeVisible();
+    await expect(page.getByTestId("card-front").filter({ hasText: "banana (updated)" })).toBeVisible();
 
     // === banana (updated) カードを削除する ===
     const updatedBananaRow = page
-      .locator("div.flex.items-start.gap-3.rounded-lg")
-      .filter({ has: page.locator("p.truncate.text-sm.font-medium", { hasText: "banana (updated)" }) });
+      .getByTestId("card-list-item")
+      .filter({ has: page.getByTestId("card-front").filter({ hasText: "banana (updated)" }) });
     await updatedBananaRow.getByRole("button", { name: "カードを削除" }).click();
 
     // 削除確認ダイアログで「削除する」ボタンをクリックする
     await page.getByRole("button", { name: "削除する" }).click();
 
     // 削除されたカードが消え、apple カードは残っていることを確認する
-    await expect(page.locator("p.truncate.text-sm.font-medium").filter({ hasText: "banana (updated)" })).not.toBeVisible({
+    await expect(page.getByTestId("card-front").filter({ hasText: "banana (updated)" })).not.toBeVisible({
       timeout: 5_000,
     });
-    await expect(page.locator("p.truncate.text-sm.font-medium").filter({ hasText: "apple" })).toBeVisible();
+    await expect(page.getByTestId("card-front").filter({ hasText: "apple" })).toBeVisible();
   });
 });
