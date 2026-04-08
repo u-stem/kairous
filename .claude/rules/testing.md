@@ -20,3 +20,10 @@
 - Large テストは Playwright (`tests/large/*.spec.ts`) で実行する
 - テストデータは `tests/shared/helpers.ts` のファクトリ関数で作成し、テスト後にクリーンアップする
 - ローカル実行時は Supabase ローカルと dev サーバーが起動していること
+
+## Large テスト (E2E) 固有ルール
+
+- セレクタは `data-testid`、`role`、`label` を使う。CSS クラスセレクタ (`p.truncate.text-sm` 等) は禁止 (UIスタイル変更で壊れる)
+- タイマーテスト: `page.clock.install()` はページ読み込み前に実行する
+- `page.clock.runFor()` の前に `page.waitForTimeout(200)` で React useEffect チェーン完了を待つ (fake clock は setInterval を制御するが、React の内部スケジューラは実時間で動く)
+- CI の production build ではハイドレーション完了前のクリック操作が失敗する場合がある。`waitForLoadState("networkidle")` で待機する
