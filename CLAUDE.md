@@ -91,5 +91,6 @@ Follow learning science evidence from `docs/kairous-design.md`. Specifically:
 
 ## Guides
 
+- [Definition of Done](.claude/rules/definition-of-done.md)
 - [PR Review Guide](docs/review-guide.md)
 - [Issue Guide](docs/issue-guide.md)
