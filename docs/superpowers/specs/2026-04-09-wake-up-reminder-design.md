@@ -12,6 +12,7 @@
 - pg_cron 使用不可、Vercel Cron は 1 日 2 回まで
 - MVP ではクライアント側スケジューリング。ブラウザ/PWA が閉じている間は通知しない
 - 将来 Web Push (FCM) へ移行可能な構造にする
+- 対象ユーザーは日本在住（JST 固定）。TIME 型にタイムゾーン情報を持たないため、国際化時には TIME WITH TIME ZONE への変更が必要
 
 ## アーキテクチャ
 
@@ -41,18 +42,29 @@ Supabase
 
 ### useNotificationScheduler hook
 
-ルートレイアウト `(main)/layout.tsx` でマウントし、ページ遷移しても維持する。
+`(main)/layout.tsx` は Server Component のため、hook を直接マウントできない。Client Component のラッパー（例: `notification-provider.tsx`）を `(main)/layout.tsx` 内に配置し、その中で hook を呼び出す。ページ遷移しても維持される。
 
 1. マウント時: DB からスケジュール取得 → 次の通知時刻を計算 → `setTimeout` 設定
-2. 時刻到達時: Server Action で通知データ（due カード数・今日の実績）を取得 → `new Notification()` で表示 → 次のタイマーを設定
-3. `visibilitychange` で復帰時: 経過した通知を確認し、直近 30 分以内のものは遅延表示。タイマーを再計算
-4. スケジュール変更時: 通知設定ページから `postMessage` or state 更新でタイマー再設定
+2. 時刻到達時: Server Action（`getAuthenticatedUser()` で認証済み）で通知データ（due カード数・今日の実績）を取得 → `new Notification()` で表示 → 次のタイマーを設定
+3. `visibilitychange` で復帰時: 経過した通知を確認し、`NOTIFICATION_DELAY_THRESHOLD_MS`（定数、30 分）以内のものは遅延表示。タイマーを再計算
+4. スケジュール変更時: 通知設定ページから state 更新でタイマー再設定
 
 ## データモデル
 
-### notification_schedules テーブル (migration 00015)
+### notification_schedules テーブル
+
+migration 番号は実装時に `supabase/migrations/` の最大番号 + 1 で採番する（設計時の `00015` は仮番号）。
+
+以下の DDL を **1 つの migration** にまとめる:
 
 ```sql
+-- profiles テーブルにマスタートグルを追加
+ALTER TABLE profiles
+  ADD COLUMN notification_enabled BOOLEAN NOT NULL DEFAULT false;
+-- 既存の RLS ポリシー (Users can manage own profile) が
+-- FOR ALL USING + WITH CHECK で定義済みのため、新カラムも自動的にカバーされる
+
+-- 通知スケジュールテーブル
 CREATE TABLE notification_schedules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -76,10 +88,10 @@ CREATE POLICY "Users can manage own schedules"
   WITH CHECK (auth.uid() = user_id);
 ```
 
-マスタートグルの状態は profiles テーブルに `notification_enabled BOOLEAN NOT NULL DEFAULT false` を追加して管理する。個別スケジュールの enabled とは独立。マスターが OFF なら全スケジュールのタイマーを停止する。
+`profiles.notification_enabled` はマスタートグルの状態。個別スケジュールの enabled とは独立。マスターが OFF なら全スケジュールのタイマーを停止する（DB のスケジュールは保持）。
 
 - `label`: 通知の表示名。デフォルトは `'朝の通知'` / `'夜の通知'`。ユーザーが自由に変更可能
-- `time`: 通知時刻（TIME 型）。クライアント側でローカル時刻として解釈する
+- `time`: 通知時刻（TIME 型）。クライアント側で JST ローカル時刻として解釈する（制約セクション参照）
 - `message_type`: 通知内容の種類
   - `due_today`: 今日の due カード数を表示（朝向け）
   - `review_and_preview`: 今日の成果 + 明日の予告を表示（夜向け）
@@ -102,6 +114,12 @@ CREATE POLICY "Users can manage own schedules"
 本文:    {subject1} {count1}枚 / {subject2} {count2}枚
 ```
 
+科目が 3 つ以上ある場合は上位 2 件を表示し、残りをまとめる:
+
+```
+本文:    数学 5枚 / 英語 7枚 ほか1科目
+```
+
 due カードがない場合:
 
 ```
@@ -115,6 +133,8 @@ due カードがない場合:
 タイトル: 今日は {sessions}セッション完了!
 本文:    明日は {subject1} {count1}枚 / {subject2} {count2}枚が待っています
 ```
+
+科目が 3 つ以上ある場合は上位 2 件 + 「ほかN科目」で表示する（due_today と同じルール）。
 
 今日のセッションがない場合:
 
@@ -135,7 +155,7 @@ due カードがない場合:
 
 1. **通知マスタートグル**: 通知機能全体の ON/OFF。ON 時に `Notification.requestPermission()` を実行。OFF にすると全スケジュールのタイマーを停止する（DB のスケジュールは保持）
 2. **スケジュール一覧**: 各スケジュールにラベル・時刻・個別 ON/OFF トグルを表示
-3. **「+ 通知を追加」ボタン**: 新しいスケジュールを追加（上限 10 件）
+3. **「+ 通知を追加」ボタン**: 新しいスケジュールを追加（上限 `MAX_NOTIFICATION_SCHEDULES = 10`、Server Action 側で件数チェック）
 4. **スケジュール編集**: ラベル、時刻、通知タイプ (due_today / review_and_preview) を設定
 
 ## ファイル構成
@@ -146,6 +166,7 @@ src/
     notifications/
       page.tsx                        -- 通知設定ページ
   components/
+    notification-provider.tsx         -- Client Component ラッパー (layout.tsx に配置)
     notification-schedule-list.tsx     -- スケジュール一覧
     notification-schedule-form.tsx     -- 追加/編集フォーム
     notification-toggle.tsx           -- マスタートグル + 権限要求
@@ -153,8 +174,8 @@ src/
     useNotificationScheduler.ts       -- タイマー管理
     useNotificationPermission.ts      -- 権限状態管理
   lib/
-    actions/notifications.ts          -- Server Actions (CRUD + 通知データ取得)
-    notification-messages.ts          -- メッセージ生成ロジック
+    actions/notifications.ts          -- Server Actions (CRUD + 通知データ取得、全て getAuthenticatedUser() で認証)
+    utils/notification-messages.ts    -- メッセージ生成ロジック
 public/
   manifest.webmanifest                -- PWA manifest (最低限)
   sw.js                               -- 空の Service Worker (将来用)
@@ -170,7 +191,7 @@ supabase/
 | 通知権限が拒否された | トグルを OFF に戻し、ブラウザ設定から変更する方法を案内 |
 | 通知権限が default（未回答） | 設定ページで ON 時に再度 requestPermission() |
 | DB 保存失敗 | toast.error で表示、ローカル状態をロールバック |
-| タブ非アクティブで時刻経過 | visibilitychange で復帰時に未発火分を確認し、直近 30 分以内なら遅延表示 |
+| タブ非アクティブで時刻経過 | visibilitychange で復帰時に未発火分を確認し、NOTIFICATION_DELAY_THRESHOLD_MS（30 分）以内なら遅延表示 |
 | ブラウザが閉じている | 何もしない（MVP の制約） |
 | ログアウト状態 | useNotificationScheduler は未認証なら何もしない |
 
@@ -178,7 +199,7 @@ supabase/
 
 ### Small テスト
 
-- `notification-messages.ts`: due カード数 → テキスト変換。0 件・1 科目・複数科目のケース
+- `notification-messages.ts`: due カード数 → テキスト変換。0 件・1 科目・2 科目・3 科目以上（「ほかN科目」）のケース
 - `useNotificationPermission`: granted / denied / default の状態管理
 - `useNotificationScheduler`: タイマー設定・再計算ロジック（Notification API はモック）
 - Server Actions: バリデーション（不正な time、空の label、不正な message_type）
@@ -186,12 +207,14 @@ supabase/
 ### Medium テスト
 
 - Server Actions + Supabase: スケジュールの CRUD が DB に反映されること
-- RLS: 他ユーザーのスケジュールにアクセスできないこと
+- RLS (notification_schedules): 他ユーザーのスケジュールにアクセスできないこと
+- RLS (profiles): 他ユーザーの notification_enabled を更新できないこと
+- 上限チェック: 11 件目の作成がエラーになること
 
 ### Large テスト (E2E)
 
-- 通知設定ページの表示・スケジュール追加・編集・削除
-- トグル ON/OFF
+- 通知設定ページの表示・スケジュール追加・編集・削除（`data-testid` ベースのセレクタを使用）
+- マスタートグル / 個別トグルの ON/OFF
 - Notification API の動作は E2E ではテストしない（Small でカバー）
 
 ## CSP への影響
