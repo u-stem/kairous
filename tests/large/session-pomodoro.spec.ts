@@ -55,12 +55,12 @@ test.describe("Pomodoro セッション", () => {
     // 休憩開始
     await page.getByRole("button", { name: /休憩を開始/ }).click();
     await expect(page.getByText("休憩タイマー")).toBeVisible();
+    // React の useEffect チェーン (phase→restartWith→isRunning→setInterval) が
+    // 完了するのを待つ。waitForTimeout は Playwright 独自タイマーで fake clock の影響を受けない
+    await page.waitForTimeout(200);
 
     // Break 完了まで時間を進める
-    // ボタンクリック後の React 状態更新 → useEffect → setInterval 登録を待つため
-    // 小さなティックを先に実行してからメインの時間を進める
-    await page.clock.runFor(1_000);
-    await page.clock.runFor((POMODORO_BREAK_SEC - 1) * 1000);
+    await page.clock.runFor(POMODORO_BREAK_SEC * 1000);
     await expect(page.getByText("休憩完了")).toBeVisible({ timeout: 10_000 });
 
     // 終了する
