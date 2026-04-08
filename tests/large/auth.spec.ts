@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { adminClient } from "./helpers/db";
+import { getAdminClient } from "./helpers/db";
 import { E2E_PASSWORD, getTestUser } from "./helpers/types";
 import type { TestUserData } from "./helpers/types";
 
@@ -13,10 +13,10 @@ test.describe("サインアップ", () => {
 
   test.afterAll(async () => {
     // サインアップで作成したテストユーザーを削除する
-    const { data } = await adminClient.auth.admin.listUsers();
+    const { data } = await getAdminClient().auth.admin.listUsers();
     const user = data.users.find((u) => u.email === signupEmail);
     if (user) {
-      await adminClient.auth.admin.deleteUser(user.id);
+      await getAdminClient().auth.admin.deleteUser(user.id);
     }
   });
 

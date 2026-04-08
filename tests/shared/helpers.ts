@@ -1,7 +1,7 @@
-import { adminClient } from "./db";
+import { getAdminClient } from "./db";
 
 export async function createTestSubject(userId: string, name = "テスト分野") {
-  const result = await adminClient
+  const result = await getAdminClient()
     .from("subjects")
     .insert({ user_id: userId, name, color: "#6366f1" })
     .select()
@@ -15,7 +15,7 @@ export async function createTestMaterial(
   userId: string,
   title = "テスト教材",
 ) {
-  const result = await adminClient
+  const result = await getAdminClient()
     .from("materials")
     .insert({ subject_id: subjectId, user_id: userId, title })
     .select()
@@ -30,7 +30,7 @@ export async function createTestCard(
   back = "テスト裏面",
   displayOrder = 0,
 ) {
-  const result = await adminClient
+  const result = await getAdminClient()
     .from("cards")
     .insert({ material_id: materialId, front, back, display_order: displayOrder })
     .select()
@@ -40,7 +40,7 @@ export async function createTestCard(
 }
 
 export async function getSrsMethodId(): Promise<string> {
-  const { data } = await adminClient
+  const { data } = await getAdminClient()
     .from("learning_methods")
     .select("id")
     .eq("slug", "srs")
@@ -50,7 +50,7 @@ export async function getSrsMethodId(): Promise<string> {
 }
 
 export async function getWakefulRestMethodId(): Promise<string> {
-  const { data } = await adminClient
+  const { data } = await getAdminClient()
     .from("learning_methods")
     .select("id")
     .eq("slug", "wakeful_rest")
@@ -60,7 +60,7 @@ export async function getWakefulRestMethodId(): Promise<string> {
 }
 
 export async function getMethodIdBySlug(slug: string): Promise<string> {
-  const { data } = await adminClient
+  const { data } = await getAdminClient()
     .from("learning_methods")
     .select("id")
     .eq("slug", slug)
@@ -70,7 +70,7 @@ export async function getMethodIdBySlug(slug: string): Promise<string> {
 }
 
 export async function linkMaterialMethod(materialId: string, methodId: string) {
-  const { error } = await adminClient
+  const { error } = await getAdminClient()
     .from("material_methods")
     .insert({ material_id: materialId, method_id: methodId });
   if (error) throw new Error(`material_methods 紐付け失敗: ${error.message}`);
@@ -82,7 +82,7 @@ export async function createTestSrsState(
   dueDate: string,
   state = "New",
 ) {
-  const { error } = await adminClient
+  const { error } = await getAdminClient()
     .from("srs_states")
     .insert({
       card_id: cardId,
@@ -101,7 +101,7 @@ export async function createTestSession(
   methodId: string,
   status = "in_progress",
 ) {
-  const result = await adminClient
+  const result = await getAdminClient()
     .from("sessions")
     .insert({ user_id: userId, material_id: materialId, method_id: methodId, status })
     .select()
@@ -121,19 +121,19 @@ export async function cleanupTestData(userId: string) {
   ] as const;
 
   for (const table of userOwnedTables) {
-    const { error } = await adminClient.from(table).delete().eq("user_id", userId);
+    const { error } = await getAdminClient().from(table).delete().eq("user_id", userId);
     if (error) throw new Error(`${table} クリーンアップ失敗: ${error.message}`);
   }
 
   // materials 経由で削除（cards, material_methods は CASCADE で連鎖削除）
-  const { error: matErr } = await adminClient
+  const { error: matErr } = await getAdminClient()
     .from("materials")
     .delete()
     .eq("user_id", userId);
   if (matErr) throw new Error(`materials クリーンアップ失敗: ${matErr.message}`);
 
   // subjects 削除（materials は上で削除済み）
-  const { error: subErr } = await adminClient
+  const { error: subErr } = await getAdminClient()
     .from("subjects")
     .delete()
     .eq("user_id", userId);

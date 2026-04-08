@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { adminClient, createTestUser, deleteTestUser } from "../../setup";
+import { getAdminClient, createTestUser, deleteTestUser } from "../../setup";
 import {
   createTestSubject,
   createTestMaterial,
@@ -36,13 +36,13 @@ describe("due card counting (DB integration)", () => {
     await createTestCard(material.id, "Q1", "A1");
 
     const today = new Date().toISOString().split("T")[0];
-    const { data: allCards } = await adminClient
+    const { data: allCards } = await getAdminClient()
       .from("cards")
       .select("id")
       .eq("material_id", material.id);
 
     const cardIds = allCards!.map((c: { id: string }) => c.id);
-    const { data: notDueStates } = await adminClient
+    const { data: notDueStates } = await getAdminClient()
       .from("srs_states")
       .select("card_id")
       .eq("user_id", userId)
@@ -63,13 +63,13 @@ describe("due card counting (DB integration)", () => {
     await createTestSrsState(card.id, userId, "2027-04-05", "Review");
 
     const today = new Date().toISOString().split("T")[0];
-    const { data: allCards } = await adminClient
+    const { data: allCards } = await getAdminClient()
       .from("cards")
       .select("id")
       .eq("material_id", material.id);
 
     const cardIds = allCards!.map((c: { id: string }) => c.id);
-    const { data: notDueStates } = await adminClient
+    const { data: notDueStates } = await getAdminClient()
       .from("srs_states")
       .select("card_id")
       .eq("user_id", userId)
@@ -88,7 +88,7 @@ describe("createSession (DB integration)", () => {
     const subject = await createTestSubject(userId, "物理-session");
     const material = await createTestMaterial(subject.id, userId, "力学-session");
 
-    const result = await adminClient
+    const result = await getAdminClient()
       .from("sessions")
       .insert({
         user_id: userId,
@@ -125,7 +125,7 @@ describe("getSessionCards (DB integration)", () => {
     const today = new Date().toISOString().split("T")[0];
     const cardIds = cards.map((c) => c.id);
 
-    const { data: notDueStates } = await adminClient
+    const { data: notDueStates } = await getAdminClient()
       .from("srs_states")
       .select("card_id")
       .eq("user_id", userId)

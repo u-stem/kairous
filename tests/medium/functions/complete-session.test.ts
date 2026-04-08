@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { adminClient, createTestUser, createUserClient, deleteTestUser } from "../setup";
+import { getAdminClient, createTestUser, createUserClient, deleteTestUser } from "../setup";
 import {
   createTestSubject,
   createTestMaterial,
@@ -70,7 +70,7 @@ describe("complete-session Edge Function (DB integration)", () => {
         srsMethodId,
       );
 
-      await adminClient
+      await getAdminClient()
         .from("sessions")
         .update({ status: "completed", duration_sec: 120 })
         .eq("id", session.id);
@@ -95,7 +95,7 @@ describe("complete-session Edge Function (DB integration)", () => {
       expect(result.error).toBeNull();
 
       // card_reviews が INSERT されている
-      const { data: reviews } = await adminClient
+      const { data: reviews } = await getAdminClient()
         .from("card_reviews")
         .select("rating, response_ms")
         .eq("session_id", session.id);
@@ -106,7 +106,7 @@ describe("complete-session Edge Function (DB integration)", () => {
       expect(review.response_ms).toBe(5000);
 
       // srs_states が新規作成されている
-      const { data: state } = await adminClient
+      const { data: state } = await getAdminClient()
         .from("srs_states")
         .select("reps, state")
         .eq("card_id", card.id)
@@ -119,7 +119,7 @@ describe("complete-session Edge Function (DB integration)", () => {
       expect(srsState.state).not.toBe("New");
 
       // daily_logs が作成されている
-      const { data: log } = await adminClient
+      const { data: log } = await getAdminClient()
         .from("daily_logs")
         .select("cards_reviewed, session_count")
         .eq("user_id", userId)
@@ -161,7 +161,7 @@ describe("complete-session Edge Function (DB integration)", () => {
         material.id,
         srsMethodId,
       );
-      await adminClient
+      await getAdminClient()
         .from("sessions")
         .update({ status: "completed", duration_sec: 60 })
         .eq("id", session.id);
@@ -185,7 +185,7 @@ describe("complete-session Edge Function (DB integration)", () => {
       expect(result.error).toBeNull();
 
       // srs_states が UPDATE されている (rating=1 なので Relearning に遷移)
-      const { data: state } = await adminClient
+      const { data: state } = await getAdminClient()
         .from("srs_states")
         .select("reps, lapses, state, last_reviewed_at")
         .eq("card_id", card.id)
