@@ -292,8 +292,8 @@ export async function getNotificationData(
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .eq("status", "completed")
-      .gte("created_at", `${today}T00:00:00`)
-      .lt("created_at", `${tomorrow}T00:00:00`),
+      .gte("created_at", `${today}T00:00:00+09:00`)
+      .lt("created_at", `${tomorrow}T00:00:00+09:00`),
     getDueBySubject(tomorrow),
   ]);
 

@@ -20,20 +20,23 @@ function subscribe(callback: () => void): () => void {
 }
 
 export function useNotificationPermission() {
-  const browserPermission = useSyncExternalStore(
+  // requestPermission 後に再レンダリングをトリガーするためのカウンター
+  const [, setTick] = useState(0);
+
+  const permission = useSyncExternalStore(
     subscribe,
     getSnapshot,
     getServerSnapshot,
   );
 
-  const [permission, setPermission] = useState<PermissionState>(browserPermission);
   const isSupported = typeof Notification !== "undefined";
 
   const requestPermission = useCallback(async (): Promise<NotificationPermission | null> => {
     if (!isSupported) return null;
 
     const result = await Notification.requestPermission();
-    setPermission(result);
+    // useSyncExternalStore の subscribe は no-op のため、手動で再レンダリングを発火
+    setTick((t) => t + 1);
     return result;
   }, [isSupported]);
 

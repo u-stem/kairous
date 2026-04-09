@@ -56,7 +56,7 @@ export function useNotificationScheduler(params: {
       const ms = calcMsUntilNextFiring(schedule.time, new Date());
       const timer = setTimeout(() => {
         onFireRef.current(schedule);
-        const todayStr = new Date().toISOString().split("T")[0];
+        const todayStr = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
         firedTodayRef.current.set(schedule.id, todayStr);
         // 翌日の同時刻に再スケジュール
         scheduleTimerRef.current(schedule);
@@ -85,7 +85,7 @@ export function useNotificationScheduler(params: {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         const now = new Date();
-        const todayStr = now.toISOString().split("T")[0];
+        const todayStr = new Date(now.getTime() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
         const activeSchedules = schedules.filter((s) => s.enabled);
 
         for (const schedule of activeSchedules) {

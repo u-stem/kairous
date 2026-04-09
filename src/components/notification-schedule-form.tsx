@@ -48,6 +48,11 @@ export function NotificationScheduleForm(props: {
           });
 
       if (result.success) {
+        if (!isEdit) {
+          setLabel("");
+          setTime("08:00");
+          setMessageType("due_today");
+        }
         props.onSaved?.();
       } else {
         setError(result.error);

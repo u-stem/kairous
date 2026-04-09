@@ -30,7 +30,15 @@ describe("useNotificationPermission", () => {
   });
 
   it("requests permission and updates state on grant", async () => {
-    mockRequestPermission.mockResolvedValue("granted");
+    // requestPermission resolve 時に Notification.permission も更新し、
+    // getSnapshot が新しい値を返せるようにする
+    mockRequestPermission.mockImplementation(() => {
+      vi.stubGlobal("Notification", {
+        permission: "granted",
+        requestPermission: mockRequestPermission,
+      });
+      return Promise.resolve("granted");
+    });
 
     const { result } = renderHook(() => useNotificationPermission());
 
@@ -43,7 +51,14 @@ describe("useNotificationPermission", () => {
   });
 
   it("requests permission and updates state on deny", async () => {
-    mockRequestPermission.mockResolvedValue("denied");
+    // requestPermission resolve 時に Notification.permission も更新する
+    mockRequestPermission.mockImplementation(() => {
+      vi.stubGlobal("Notification", {
+        permission: "denied",
+        requestPermission: mockRequestPermission,
+      });
+      return Promise.resolve("denied");
+    });
 
     const { result } = renderHook(() => useNotificationPermission());
 
