@@ -8,4 +8,5 @@ export {
   createTestSrsState,
   createTestSession,
   cleanupTestData,
+  cleanupNotificationSchedules,
 } from "../../shared/helpers";

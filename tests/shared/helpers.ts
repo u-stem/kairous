@@ -139,3 +139,10 @@ export async function cleanupTestData(userId: string) {
     .eq("user_id", userId);
   if (subErr) throw new Error(`subjects クリーンアップ失敗: ${subErr.message}`);
 }
+
+export async function cleanupNotificationSchedules(userId: string) {
+  await getAdminClient()
+    .from("notification_schedules")
+    .delete()
+    .eq("user_id", userId);
+}
