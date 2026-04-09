@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { addDays } from "date-fns";
 import { requireAuth } from "@/lib/actions/auth-utils";
+import { toJstDateString } from "@/lib/utils/date";
 import {
   ACTION_ERRORS,
   MAX_NOTIFICATION_SCHEDULES,
@@ -178,7 +180,7 @@ export async function updateNotificationSchedule(
 
   const { data, error } = await supabase
     .from("notification_schedules")
-    .update({ ...fields, updated_at: new Date().toISOString() })
+    .update(fields)
     .eq("id", id)
     .eq("user_id", user.id)
     .select("id")
@@ -219,6 +221,13 @@ export async function deleteNotificationSchedule(
 // 通知表示時に呼ばれるデータ取得アクション
 // 注: get_due_materials RPC は SRS 手法のみ返す。通知では全手法の due カードを
 // 対象にするため、cards + srs_states を直接クエリする。
+
+// Supabase JOIN 結果の型
+type JoinedCardWithSubject = {
+  id: string;
+  materials: { subject_id: string; subjects: { name: string } };
+};
+
 type DueTodayResult = { subjects: SubjectDueCount[] };
 type ReviewAndPreviewResult = { sessionsToday: number; subjects: SubjectDueCount[] };
 
@@ -232,7 +241,7 @@ export async function getNotificationData(
   messageType: "due_today" | "review_and_preview",
 ): Promise<ActionResult<DueTodayResult | ReviewAndPreviewResult>> {
   const { user, supabase } = await requireAuth();
-  const today = new Date().toISOString().split("T")[0];
+  const today = toJstDateString(new Date());
 
   async function getDueBySubject(targetDate: string) {
     const { data } = await supabase
@@ -245,7 +254,7 @@ export async function getNotificationData(
 
     if (!data) return [];
 
-    const cardIds = data.map((c: { id: string }) => c.id);
+    const cardIds = (data as JoinedCardWithSubject[]).map((c) => c.id);
     const { data: futureStates } = await supabase
       .from("srs_states")
       .select("card_id")
@@ -254,11 +263,11 @@ export async function getNotificationData(
       .in("card_id", cardIds);
 
     const futureIds = new Set((futureStates ?? []).map((s: { card_id: string }) => s.card_id));
-    const dueCards = data.filter((c: { id: string }) => !futureIds.has(c.id));
+    const dueCards = (data as JoinedCardWithSubject[]).filter((c) => !futureIds.has(c.id));
 
     const counts = new Map<string, { subject: string; count: number }>();
     for (const card of dueCards) {
-      const subjectName = (card as { materials: { subjects: { name: string } } }).materials.subjects.name;
+      const subjectName = card.materials.subjects.name;
       const existing = counts.get(subjectName);
       if (existing) {
         existing.count += 1;
@@ -275,7 +284,7 @@ export async function getNotificationData(
   }
 
   // review_and_preview: 今日のセッション数 + 明日の due カード科目一覧
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+  const tomorrow = toJstDateString(addDays(new Date(), 1));
 
   const [sessionsResult, subjects] = await Promise.all([
     supabase
