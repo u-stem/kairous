@@ -90,6 +90,9 @@ export function MaterialMethodSheet({ materialId, currentMethodIds }: MaterialMe
               methods={methods}
               selected={selected}
               onChange={setSelected}
+              onMethodsChange={() => {
+                void getMethods().then(setMethods);
+              }}
             />
           ) : (
             <div className="flex items-center justify-center py-8">

@@ -1,14 +1,23 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+
+// MethodSelector が MethodFormSheet 経由でサーバーアクションをインポートするため、
+// 環境変数なしの small テスト環境でモジュールが壊れないようにモックする
+vi.mock("@/lib/actions/method-commands", () => ({
+  createMethod: vi.fn(),
+  updateMethod: vi.fn(),
+  deleteMethod: vi.fn(),
+}));
+
 import { MethodSelector } from "@/components/method-selector";
 
 const methods = [
-  { id: "1", slug: "srs", name: "SRS", category: "memory" },
-  { id: "3", slug: "elaboration", name: "精緻化", category: "comprehension" },
-  { id: "4", slug: "pomodoro", name: "ポモドーロ", category: "focus" },
-  // MATERIAL_METHOD_SLUGS 外のメソッドはフィルタされる
-  { id: "5", slug: "wakeful_rest", name: "ウェイクフルレスト", category: "consolidation" },
+  { id: "1", slug: "srs", name: "SRS", category: "memory", is_system: true },
+  { id: "3", slug: "elaboration", name: "精緻化", category: "comprehension", is_system: true },
+  { id: "4", slug: "pomodoro", name: "ポモドーロ", category: "focus", is_system: true },
+  // MATERIAL_METHOD_SLUGS 外のシステム手法はフィルタされる
+  { id: "5", slug: "wakeful_rest", name: "ウェイクフルレスト", category: "consolidation", is_system: true },
 ];
 
 describe("MethodSelector", () => {
