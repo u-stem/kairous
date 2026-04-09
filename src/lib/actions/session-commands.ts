@@ -17,6 +17,7 @@ import type { ActionResult } from "@/lib/validations/materials";
 import type { CardReview } from "@/lib/types/sessions";
 import { REST_DURATION_SEC, ACTION_ERRORS } from "@/lib/constants";
 import { completePomodoroSchema } from "@/lib/validations/pomodoro";
+import { completeCustomSessionSchema } from "@/lib/validations/custom-session";
 import { requireAuth } from "@/lib/actions/auth-utils";
 import { invokeCompleteSession } from "@/lib/actions/session-compensation";
 import { toJstDateString } from "@/lib/utils/date";
@@ -348,6 +349,91 @@ export async function completeRestSession(
     .eq("id", parsed.data.sessionId);
 
   if (error) return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("セッション") };
+
+  revalidatePath("/");
+  return { success: true, data: undefined };
+}
+
+export async function completeCustomSession(
+  sessionId: string,
+  selfRating: number,
+  elapsedSec: number,
+  targetDurationSec: number | null,
+): Promise<ActionResult<undefined>> {
+  const parsed = completeCustomSessionSchema.safeParse({
+    sessionId,
+    selfRating,
+    elapsedSec,
+    targetDurationSec,
+  });
+  if (!parsed.success) {
+    return { success: false, error: ACTION_ERRORS.INVALID_INPUT };
+  }
+
+  const { user, supabase } = await requireAuth();
+
+  // RLS に加えてアプリ層でも所有者と status を確認し、二重完了を防ぐ
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id, started_at, status, material_id, method_id")
+    .eq("id", parsed.data.sessionId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!session) return { success: false, error: ACTION_ERRORS.NOT_FOUND("セッション") };
+  if (session.status !== "in_progress") {
+    return { success: false, error: ACTION_ERRORS.SESSION_ALREADY_COMPLETED };
+  }
+
+  // クライアント値は表示用 meta にのみ使用し、duration_sec は改ざん耐性のためサーバー側で計算する
+  const now = new Date();
+  const durationSec = Math.floor(
+    (now.getTime() - new Date(session.started_at).getTime()) / 1000,
+  );
+
+  const { error: updateError } = await supabase
+    .from("sessions")
+    .update({
+      status: "completed",
+      duration_sec: durationSec,
+      self_rating: parsed.data.selfRating,
+      ended_at: now.toISOString(),
+      meta: {
+        actual_duration_sec: parsed.data.elapsedSec,
+        target_duration_sec: parsed.data.targetDurationSec,
+      },
+    })
+    .eq("id", parsed.data.sessionId);
+
+  if (updateError) return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("セッション") };
+
+  // カスタム手法は card_reviews がないため Edge Function を呼ばず、直接 daily_logs を記録する
+  if (session.material_id) {
+    const { data: material } = await supabase
+      .from("materials")
+      .select("subject_id")
+      .eq("id", session.material_id)
+      .single();
+
+    if (material) {
+      const logDate = toJstDateString(new Date());
+
+      const { error: logError } = await supabase.rpc("upsert_daily_log", {
+        p_user_id: user.id,
+        p_subject_id: material.subject_id,
+        p_method_id: session.method_id,
+        p_log_date: logDate,
+        p_duration_sec: durationSec,
+        p_cards_reviewed: 0,
+      });
+      if (logError) {
+        console.error(
+          `completeCustomSession daily_log upsert failed for session ${parsed.data.sessionId}:`,
+          logError,
+        );
+      }
+    }
+  }
 
   revalidatePath("/");
   return { success: true, data: undefined };
