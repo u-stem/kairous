@@ -2,15 +2,7 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { NOTIFICATION_DELAY_THRESHOLD_MS } from "@/lib/constants";
-import type { NotificationMessageType } from "@/lib/constants";
-
-type Schedule = {
-  id: string;
-  enabled: boolean;
-  time: string; // "HH:MM" or "HH:MM:SS"
-  message_type: NotificationMessageType;
-  label: string;
-};
+import type { NotificationSchedule } from "@/lib/types/notification";
 
 // Exported for testing - pure functions
 export function calcMsUntilNextFiring(time: string, now: Date): number {
@@ -31,9 +23,9 @@ export function shouldShowDelayedNotification(scheduledTime: Date): boolean {
 }
 
 export function useNotificationScheduler(params: {
-  schedules: Schedule[];
+  schedules: NotificationSchedule[];
   enabled: boolean;
-  onFire: (schedule: Schedule) => void;
+  onFire: (schedule: NotificationSchedule) => void;
 }) {
   const { schedules, enabled, onFire } = params;
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
@@ -45,6 +37,9 @@ export function useNotificationScheduler(params: {
     onFireRef.current = onFire;
   });
 
+  // 同日の同スケジュールを重複発火しないよう記録する (key: schedule.id, value: "YYYY-MM-DD")
+  const firedTodayRef = useRef<Map<string, string>>(new Map());
+
   const clearAllTimers = useCallback(() => {
     for (const timer of timersRef.current.values()) {
       clearTimeout(timer);
@@ -52,25 +47,32 @@ export function useNotificationScheduler(params: {
     timersRef.current.clear();
   }, []);
 
+  // 再帰呼び出しのため ref で保持する (useCallback だと自己参照で lint エラーになる)
+  const scheduleTimerRef = useRef<(schedule: NotificationSchedule) => void>(
+    () => {},
+  );
+  useEffect(() => {
+    scheduleTimerRef.current = (schedule: NotificationSchedule) => {
+      const ms = calcMsUntilNextFiring(schedule.time, new Date());
+      const timer = setTimeout(() => {
+        onFireRef.current(schedule);
+        const todayStr = new Date().toISOString().split("T")[0];
+        firedTodayRef.current.set(schedule.id, todayStr);
+        // 翌日の同時刻に再スケジュール
+        scheduleTimerRef.current(schedule);
+      }, ms);
+      timersRef.current.set(schedule.id, timer);
+    };
+  });
+
   useEffect(() => {
     clearAllTimers();
 
     if (!enabled) return;
 
-    // 再帰的な再スケジュールのため effect スコープ内でローカル関数を定義する
-    function scheduleTimer(schedule: Schedule) {
-      const ms = calcMsUntilNextFiring(schedule.time, new Date());
-      const timer = setTimeout(() => {
-        onFireRef.current(schedule);
-        // 翌日の同時刻に再スケジュール
-        scheduleTimer(schedule);
-      }, ms);
-      timersRef.current.set(schedule.id, timer);
-    }
-
     const activeSchedules = schedules.filter((s) => s.enabled);
     for (const schedule of activeSchedules) {
-      scheduleTimer(schedule);
+      scheduleTimerRef.current(schedule);
     }
 
     return clearAllTimers;
@@ -83,32 +85,28 @@ export function useNotificationScheduler(params: {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         const now = new Date();
+        const todayStr = now.toISOString().split("T")[0];
         const activeSchedules = schedules.filter((s) => s.enabled);
 
         for (const schedule of activeSchedules) {
+          // 同日の同スケジュールは再発火しない
+          const lastFired = firedTodayRef.current.get(schedule.id);
+          if (lastFired === todayStr) continue;
+
           const [hours, minutes] = schedule.time.split(":").map(Number);
           const scheduledToday = new Date(now);
           scheduledToday.setHours(hours, minutes, 0, 0);
 
           if (shouldShowDelayedNotification(scheduledToday)) {
+            firedTodayRef.current.set(schedule.id, todayStr);
             onFireRef.current(schedule);
           }
         }
 
         // タイマーをリセットして正確な次回発火時刻に合わせる
         clearAllTimers();
-
-        function scheduleTimer(schedule: Schedule) {
-          const ms = calcMsUntilNextFiring(schedule.time, new Date());
-          const timer = setTimeout(() => {
-            onFireRef.current(schedule);
-            scheduleTimer(schedule);
-          }, ms);
-          timersRef.current.set(schedule.id, timer);
-        }
-
         for (const schedule of activeSchedules) {
-          scheduleTimer(schedule);
+          scheduleTimerRef.current(schedule);
         }
       }
     };

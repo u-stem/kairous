@@ -6,22 +6,15 @@ import {
   deleteNotificationSchedule,
 } from "@/lib/actions/notifications";
 import { NotificationScheduleForm } from "./notification-schedule-form";
-
-type Schedule = {
-  id: string;
-  label: string;
-  time: string;
-  message_type: string;
-  enabled: boolean;
-};
+import type { NotificationSchedule } from "@/lib/types/notification";
 
 export function NotificationScheduleList(props: {
-  schedules: Schedule[];
+  schedules: NotificationSchedule[];
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const handleToggle = (schedule: Schedule) => {
+  const handleToggle = (schedule: NotificationSchedule) => {
     startTransition(async () => {
       await updateNotificationSchedule({
         id: schedule.id,

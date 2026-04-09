@@ -88,6 +88,31 @@ describe("notification_schedules RLS", () => {
   });
 });
 
+describe("notification_schedules max count", () => {
+  it("inserts MAX_NOTIFICATION_SCHEDULES (10) schedules successfully", async () => {
+    const inserts = Array.from({ length: 10 }, (_, i) => ({
+      user_id: userId,
+      label: `通知 ${i}`,
+      time: `${String(i).padStart(2, "0")}:00`,
+      message_type: "due_today",
+    }));
+    const { error } = await getAdminClient()
+      .from("notification_schedules")
+      .insert(inserts);
+
+    expect(error).toBeNull();
+
+    // DB レベルでは上限制約がないため、件数の正確性のみ検証する。
+    // 上限チェックはアプリケーション層 (Server Action) で実施される
+    const { count } = await getAdminClient()
+      .from("notification_schedules")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
+
+    expect(count).toBe(10);
+  });
+});
+
 describe("profiles.notification_enabled RLS", () => {
   it("user cannot update other user notification_enabled", async () => {
     const userClient = await createUserClient(TEST_EMAIL, TEST_PASSWORD);

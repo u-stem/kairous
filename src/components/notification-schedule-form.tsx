@@ -6,14 +6,8 @@ import {
   updateNotificationSchedule,
 } from "@/lib/actions/notifications";
 import { NOTIFICATION_MESSAGE_TYPES } from "@/lib/constants";
-
-type Schedule = {
-  id: string;
-  label: string;
-  time: string;
-  message_type: string;
-  enabled: boolean;
-};
+import type { NotificationMessageType } from "@/lib/constants";
+import type { NotificationSchedule } from "@/lib/types/notification";
 
 // DB の enum 値をユーザー向けラベルに変換する。constants に入れるほどではないのでローカル定義
 const MESSAGE_TYPE_LABELS: Record<string, string> = {
@@ -22,7 +16,7 @@ const MESSAGE_TYPE_LABELS: Record<string, string> = {
 };
 
 export function NotificationScheduleForm(props: {
-  schedule?: Schedule;
+  schedule?: NotificationSchedule;
   onSaved?: () => void;
   onCancel?: () => void;
 }) {
@@ -96,7 +90,7 @@ export function NotificationScheduleForm(props: {
         <select
           id="schedule-type"
           value={messageType}
-          onChange={(e) => setMessageType(e.target.value)}
+          onChange={(e) => setMessageType(e.target.value as NotificationMessageType)}
           className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
           data-testid="schedule-type-select"
         >

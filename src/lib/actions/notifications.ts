@@ -14,21 +14,26 @@ import {
   extractFieldErrors,
   type ActionResult,
 } from "@/lib/validations/notifications";
+import type { SubjectDueCount } from "@/lib/utils/notification-messages";
+import type { NotificationSchedule } from "@/lib/types/notification";
 
-export async function getNotificationSchedules() {
+export async function getNotificationSchedules(): Promise<
+  ActionResult<NotificationSchedule[]>
+> {
   const { user, supabase } = await requireAuth();
 
   const { data, error } = await supabase
     .from("notification_schedules")
-    .select("*")
+    .select("id, label, time, message_type, enabled")
     .eq("user_id", user.id)
     .order("time", { ascending: true });
 
   if (error) {
-    return { success: false as const, error: "スケジュールの取得に失敗しました" };
+    return { success: false, error: "スケジュールの取得に失敗しました" };
   }
 
-  return { success: true as const, data: data ?? [] };
+  // DB の message_type は CHECK 制約で NotificationMessageType に限定されている
+  return { success: true, data: (data ?? []) as NotificationSchedule[] };
 }
 
 export async function getNotificationEnabled(): Promise<
@@ -214,9 +219,18 @@ export async function deleteNotificationSchedule(
 // 通知表示時に呼ばれるデータ取得アクション
 // 注: get_due_materials RPC は SRS 手法のみ返す。通知では全手法の due カードを
 // 対象にするため、cards + srs_states を直接クエリする。
+type DueTodayResult = { subjects: SubjectDueCount[] };
+type ReviewAndPreviewResult = { sessionsToday: number; subjects: SubjectDueCount[] };
+
+export async function getNotificationData(
+  messageType: "due_today",
+): Promise<ActionResult<DueTodayResult>>;
+export async function getNotificationData(
+  messageType: "review_and_preview",
+): Promise<ActionResult<ReviewAndPreviewResult>>;
 export async function getNotificationData(
   messageType: "due_today" | "review_and_preview",
-) {
+): Promise<ActionResult<DueTodayResult | ReviewAndPreviewResult>> {
   const { user, supabase } = await requireAuth();
   const today = new Date().toISOString().split("T")[0];
 

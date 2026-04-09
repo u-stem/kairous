@@ -8,45 +8,43 @@ import {
   buildDueTodayMessage,
   buildReviewAndPreviewMessage,
 } from "@/lib/utils/notification-messages";
-import type { NotificationMessageType } from "@/lib/constants";
-
-type Schedule = {
-  id: string;
-  enabled: boolean;
-  time: string;
-  message_type: NotificationMessageType;
-  label: string;
-};
+import type { NotificationSchedule } from "@/lib/types/notification";
 
 export function NotificationProvider(props: {
-  schedules: Schedule[];
+  schedules: NotificationSchedule[];
   enabled: boolean;
 }) {
   const { isGranted } = useNotificationPermission();
 
   const handleFire = useCallback(
-    async (schedule: Schedule) => {
+    async (schedule: NotificationSchedule) => {
       if (!isGranted) return;
 
-      const result = await getNotificationData(schedule.message_type);
-      if (!result.success) return;
-
+      // オーバーロードの型推論を効かせるため、message_type で分岐してから呼び出す
       let message;
       if (schedule.message_type === "due_today") {
+        const result = await getNotificationData("due_today");
+        if (!result.success) return;
         message = buildDueTodayMessage(result.data.subjects);
       } else {
+        const result = await getNotificationData("review_and_preview");
+        if (!result.success) return;
         message = buildReviewAndPreviewMessage({
-          // sessionsToday は due_today タイプでは存在しないので fallback を設定する
-          sessionsToday: result.data.sessionsToday ?? 0,
+          sessionsToday: result.data.sessionsToday,
           dueTomorrow: result.data.subjects,
         });
       }
 
       // tag に schedule.id を設定して、同じスケジュールの重複通知を OS レベルで抑制する
-      new Notification(message.title, {
+      const notification = new Notification(message.title, {
         body: message.body,
         tag: schedule.id,
       });
+      // 通知タップで Today ページに遷移させ、ユーザーを学習開始へ導く
+      notification.onclick = () => {
+        window.focus();
+        window.location.href = "/";
+      };
     },
     [isGranted],
   );
@@ -54,8 +52,8 @@ export function NotificationProvider(props: {
   useNotificationScheduler({
     schedules: props.schedules,
     enabled: props.enabled && isGranted,
-    // async の handleFire を void を返すラッパーで包んで型を合わせる
-    onFire: (schedule) => { void handleFire(schedule); },
+    // async の handleFire を void 型に合わせる
+    onFire: (schedule: NotificationSchedule) => { void handleFire(schedule); },
   });
 
   return null; // UI を持たないプロバイダー
