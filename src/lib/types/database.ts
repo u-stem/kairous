@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       card_reviews: {
@@ -264,21 +289,57 @@ export type Database = {
           },
         ]
       }
+      notification_schedules: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          label: string
+          message_type: string
+          time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label: string
+          message_type: string
+          time: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label?: string
+          message_type?: string
+          time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           display_name: string | null
           id: string
+          notification_enabled: boolean
         }
         Insert: {
           created_at?: string
           display_name?: string | null
           id: string
+          notification_enabled?: boolean
         }
         Update: {
           created_at?: string
           display_name?: string | null
           id?: string
+          notification_enabled?: boolean
         }
         Relationships: []
       }
@@ -521,30 +582,18 @@ export type Database = {
         Args: { p_material_id: string; p_method_id: string; p_user_id: string }
         Returns: undefined
       }
-      upsert_daily_log:
-        | {
-            Args: {
-              p_cards_reviewed: number
-              p_duration_sec: number
-              p_log_date: string
-              p_method_id: string
-              p_subject_id: string
-              p_user_id: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_cards_reviewed: number
-              p_duration_sec: number
-              p_log_date: string
-              p_method_id: string
-              p_session_count?: number
-              p_subject_id: string
-              p_user_id: string
-            }
-            Returns: undefined
-          }
+      upsert_daily_log: {
+        Args: {
+          p_cards_reviewed: number
+          p_duration_sec: number
+          p_log_date: string
+          p_method_id: string
+          p_session_count?: number
+          p_subject_id: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
@@ -673,6 +722,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

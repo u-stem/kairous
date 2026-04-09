@@ -107,33 +107,27 @@ git worktree prune
 
 ## タスク完了チェックリスト
 
-各サブタスクの実装完了後に必ず実行する。指示がなくても自律的にこの流れを取ること。
+各サブタスクの実装完了後に必ず実行する。指示がなくても自律的にこの流れを取ること。完了条件の詳細は [Definition of Done](.claude/rules/definition-of-done.md) を参照。
 
-1. **コミット**: Conventional Commits 形式でコミット (pre-commit hooks が lint + typecheck + test を実行)
+1. **DoD (サブタスク) を満たす**: テスト、pre-commit、コミット、Sub-issue クローズ
 2. **push**: `git push` でリモートに反映 (pre-push hooks が full-check を実行)
-3. **Sub-issue をクローズ**: `gh issue close #N` で完了 + Project Board を "Done" に
-4. **ADR 更新** (該当する場合): 設計判断があれば GitHub Discussions にコメント追加
-5. **次タスクへ**: 進捗を簡潔に報告してから次のタスクに着手
+3. **ADR 更新** (該当する場合): 設計判断があれば GitHub Discussions にコメント追加
+4. **次タスクへ**: 進捗を簡潔に報告してから次のタスクに着手
 
 ## PR 作成前チェックリスト
 
-全サブタスク完了後、**PR 作成前** に必ず実行する。
+全サブタスク完了後、**PR 作成前** に必ず実行する。完了条件の詳細は [Definition of Done](.claude/rules/definition-of-done.md) を参照。
 
-1. **UI 動作確認**: `bun dev` でローカルサーバーを起動し、変更した画面をブラウザで実操作する。表示崩れ、遷移、エラー状態を確認
-2. **ドキュメント整合性チェック**: 今回の変更で影響を受ける md ファイルを確認し、実態と乖離していれば同じブランチ内で更新する
-   - `CLAUDE.md`: Tech Stack, Directory Structure, Design Decisions, Commands
-   - `.claude/rules/`: ワークフロー、テスト、セキュリティ等のルール
-   - `docs/`: 設計書、ガイド
-   - `README.md`: プロジェクト概要
-3. **ローカル code-review ループ**: code-reviewer エージェントで PR 全体をレビューし、指摘を全て修正するまでループする
+1. **DoD (PBI) を全て満たす**: UI 動作確認、ドキュメント整合性、ローカル code-review、受け入れ条件充足
+2. **ローカル code-review の指摘対応**:
    - blocker: 必ず修正
    - suggestion: その場で修正 (後述の「Issue 化の基準」に該当しない限り)
    - nit: その場で修正
    - question: 回答し、必要なら修正
    - note: 確認して必要なら対応
    - **全指摘が解消されてから PR を作成する**
-4. **PR 作成**: `gh pr create` で PR を作成し PBI と紐付け (`closes #N`)
-5. **PR description を最終化**: 全コミットを反映した Summary と Test plan に更新する
+3. **PR 作成**: `gh pr create` で PR を作成し PBI と紐付け (`closes #N`)
+4. **PR description を最終化**: 全コミットを反映した Summary と Test plan に更新する
 
 ## レビュー指摘の対応方針
 
