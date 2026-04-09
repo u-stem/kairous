@@ -3,14 +3,14 @@ import { getAdminClient } from "./helpers/db";
 import { getTestUser } from "./helpers/types";
 import type { TestUserData } from "./helpers/types";
 
+// ヘッドレス Chromium では Notification.permission が "denied" になるため、
+// テスト用に通知権限を付与する
+test.use({
+  permissions: ["notifications"],
+});
+
 test.describe.serial("通知設定", () => {
   let user: TestUserData;
-
-  // ヘッドレス Chromium では Notification.permission が "denied" になるため、
-  // テスト用に通知権限を付与する
-  test.use({
-    permissions: ["notifications"],
-  });
 
   test.beforeAll(async () => {
     user = getTestUser();
