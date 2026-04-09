@@ -156,6 +156,12 @@ export const VALIDATION_LIMITS = {
   ELABORATION_TEXT_MAX: 10000,
   REVIEWS_MAX: 500,
   INTERLEAVING_MATERIALS_MAX: 10,
+  METHOD_NAME_MAX: 50,
+  METHOD_DESCRIPTION_MAX: 500,
+  // 1分未満はタイマーとして意味がないため下限を設定
+  METHOD_DURATION_MIN: 60,
+  // 3時間を超えるセッションは認知負荷が高くなりすぎるため上限を設定
+  METHOD_DURATION_MAX: 10800,
 } as const;
 
 // --- PostgreSQL エラーコード ---
