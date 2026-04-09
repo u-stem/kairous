@@ -174,28 +174,37 @@ export type Database = {
           category: string
           created_at: string
           default_config: Json
+          default_duration_sec: number | null
+          description: string | null
           id: string
           is_system: boolean
           name: string
           slug: string
+          user_id: string | null
         }
         Insert: {
           category: string
           created_at?: string
           default_config?: Json
+          default_duration_sec?: number | null
+          description?: string | null
           id?: string
           is_system?: boolean
           name: string
           slug: string
+          user_id?: string | null
         }
         Update: {
           category?: string
           created_at?: string
           default_config?: Json
+          default_duration_sec?: number | null
+          description?: string | null
           id?: string
           is_system?: boolean
           name?: string
           slug?: string
+          user_id?: string | null
         }
         Relationships: []
       }
