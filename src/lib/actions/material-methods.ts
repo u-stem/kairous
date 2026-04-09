@@ -6,7 +6,6 @@ import type { LearningMethod } from "@/lib/types/materials";
 import type { Json } from "@/lib/types/database";
 import { MATERIAL_METHOD_SLUGS, ACTION_ERRORS, PG_ERROR_CODES } from "@/lib/constants";
 import { requireAuth } from "@/lib/actions/auth-utils";
-import { createClient } from "@/lib/supabase/server";
 
 export async function addMaterialMethod(
   materialId: string,
@@ -26,15 +25,21 @@ export async function addMaterialMethod(
   if (!material) return { success: false, error: ACTION_ERRORS.NOT_FOUND("教材") };
 
   // ウィザード外から不正なスラッグを紐付けられないよう、許可リストで検証する
-  const { data: method } = await supabase
+  const { data: methodRow } = await supabase
     .from("learning_methods")
-    .select("id, slug")
+    .select("id, slug, is_system, user_id")
     .eq("id", methodId)
     .single();
 
-  if (!method) return { success: false, error: ACTION_ERRORS.NOT_FOUND("学習手法") };
+  if (!methodRow) return { success: false, error: ACTION_ERRORS.NOT_FOUND("学習手法") };
 
-  if (!(MATERIAL_METHOD_SLUGS as readonly string[]).includes(method.slug)) {
+  // システム手法はスラッグ許可リスト、ユーザー定義手法はオーナーチェック
+  const isAllowedSystem =
+    methodRow.is_system &&
+    (MATERIAL_METHOD_SLUGS as readonly string[]).includes(methodRow.slug);
+  const isOwnCustom = !methodRow.is_system && methodRow.user_id === user.id;
+
+  if (!isAllowedSystem && !isOwnCustom) {
     return { success: false, error: "この学習手法は紐付けできません" };
   }
 
@@ -88,12 +93,12 @@ export async function removeMaterialMethod(
 }
 
 export async function getMethods(): Promise<LearningMethod[]> {
-  const supabase = await createClient();
-
-  // learning_methodsはシステムデータのため認証不要。全ユーザーが参照可能
+  // RLS がシステム手法 + 自分のカスタム手法のみ返すため、認証コンテキストが必要
+  const { supabase } = await requireAuth();
   const { data } = await supabase
     .from("learning_methods")
     .select("*")
+    .order("is_system", { ascending: false })
     .order("category", { ascending: true });
 
   return data ?? [];
