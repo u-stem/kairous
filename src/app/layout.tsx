@@ -11,6 +11,7 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 export const metadata: Metadata = {
   title: "Kairous",
   description: "Learn smarter with science-backed methods",
+  manifest: "/manifest.webmanifest",
 };
 
 export default async function RootLayout({
@@ -37,6 +38,16 @@ export default async function RootLayout({
           {children}
           <Toaster />
         </ThemeProvider>
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{
+            __html: `
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      }
+    `,
+          }}
+        />
       </body>
     </html>
   );
