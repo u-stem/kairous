@@ -76,6 +76,7 @@ bun test:large     # Large tests (Playwright E2E)
 - **Card+meta-based** (Elaboration): use `card_reviews` table (no FSRS) + `sessions.meta` for elaboration text
 - **Time-based** (Pomodoro, Free Study): use `sessions.meta` JSONB only
 - **Consolidation** (Wakeful Rest): independent session with `meta.parent_session_id`
+- **Custom (User-Defined)**: use `sessions.meta` JSONB for `{ actual_duration_sec, target_duration_sec }`. Timer-based with self-rating (1-4).
 
 ### When in Doubt
 
