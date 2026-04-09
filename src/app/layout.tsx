@@ -43,7 +43,7 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
+        navigator.serviceWorker.register('/sw.js').catch(function(e) { console.warn('SW registration failed:', e); });
       }
     `,
           }}
