@@ -6,6 +6,7 @@ import { useCustomTimer } from "./use-custom-timer";
 import { completeCustomSession } from "@/lib/actions/session-commands";
 import { SELF_RATING_LABELS } from "@/lib/constants";
 import { formatDuration } from "@/lib/session-utils";
+import { Button } from "@/components/ui/button";
 
 const RATINGS = [1, 2, 3, 4] as const;
 
@@ -91,20 +92,17 @@ export function CustomMethodPlayer({ sessionId, methodName, materialTitle, targe
 
           <div className="mt-6 flex gap-3">
             {timer.isRunning ? (
-              <button type="button" onClick={timer.pause}
-                className="rounded-lg bg-muted px-6 py-3 font-medium hover:bg-muted/80">
+              <Button variant="outline" type="button" onClick={timer.pause}>
                 一時停止
-              </button>
+              </Button>
             ) : (
-              <button type="button" onClick={timer.start}
-                className="rounded-lg bg-muted px-6 py-3 font-medium hover:bg-muted/80">
+              <Button variant="outline" type="button" onClick={timer.start}>
                 再開
-              </button>
+              </Button>
             )}
-            <button type="button" onClick={handleFinish}
-              className="rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground">
+            <Button type="button" onClick={handleFinish}>
               完了
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -118,10 +116,9 @@ export function CustomMethodPlayer({ sessionId, methodName, materialTitle, targe
           <p className="text-sm font-medium">今回の学習はどうでしたか?</p>
           <div className="grid grid-cols-2 gap-2">
             {RATINGS.map((r) => (
-              <button key={r} type="button" onClick={() => void handleComplete(r)} disabled={submitting}
-                className="rounded-lg border px-4 py-3 text-sm font-medium hover:bg-muted disabled:opacity-50">
+              <Button key={r} variant="outline" type="button" onClick={() => void handleComplete(r)} disabled={submitting}>
                 {r}. {SELF_RATING_LABELS[r]}
-              </button>
+              </Button>
             ))}
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}

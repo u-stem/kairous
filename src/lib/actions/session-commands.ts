@@ -385,6 +385,17 @@ export async function completeCustomSession(
     return { success: false, error: ACTION_ERRORS.SESSION_ALREADY_COMPLETED };
   }
 
+  // カスタム手法のセッションのみ完了可能。システム手法は専用の completion action を使う
+  const { data: methodRow } = await supabase
+    .from("learning_methods")
+    .select("is_system")
+    .eq("id", session.method_id)
+    .single();
+
+  if (!methodRow || methodRow.is_system) {
+    return { success: false, error: "この完了アクションはカスタム手法セッション専用です" };
+  }
+
   // クライアント値は表示用 meta にのみ使用し、duration_sec は改ざん耐性のためサーバー側で計算する
   const now = new Date();
   const durationSec = Math.floor(

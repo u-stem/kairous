@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -59,6 +59,18 @@ export function MethodFormSheet({
       ? String(method.default_duration_sec / 60)
       : "",
   );
+
+  // Sheet は常にマウント済みのため、method prop 変更時に state をリセットする
+  useEffect(() => {
+    setName(method?.name ?? "");
+    setCategory(method?.category ?? "general");
+    setDescription(method?.description ?? "");
+    setDurationMin(
+      method?.default_duration_sec ? String(method.default_duration_sec / 60) : "",
+    );
+    setError(null);
+    setFieldErrors({});
+  }, [method]);
 
   function resetForm() {
     setName("");

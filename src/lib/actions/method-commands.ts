@@ -124,24 +124,32 @@ export async function deleteMethod(
   }
 
   // 教材の唯一の手法になっていないか確認
+  // material_methods で method_id にマッチする教材のうち、手法が1つしかないものを探す
   const { data: linkedMaterials } = await supabase
     .from("material_methods")
     .select("material_id")
     .eq("method_id", methodId);
 
   if (linkedMaterials && linkedMaterials.length > 0) {
-    for (const link of linkedMaterials) {
-      const { count: methodCount } = await supabase
-        .from("material_methods")
-        .select("id", { count: "exact", head: true })
-        .eq("material_id", link.material_id);
+    const materialIds = linkedMaterials.map((l) => l.material_id);
+    const { data: materialMethodCounts } = await supabase
+      .from("material_methods")
+      .select("material_id")
+      .in("material_id", materialIds);
 
-      if (methodCount && methodCount <= 1) {
-        return {
-          success: false,
-          error:
-            "この手法は教材の唯一の手法であるため削除できません。先に教材から手法を外してください",
-        };
+    if (materialMethodCounts) {
+      const countByMaterial = new Map<string, number>();
+      for (const row of materialMethodCounts) {
+        countByMaterial.set(row.material_id, (countByMaterial.get(row.material_id) ?? 0) + 1);
+      }
+      for (const mid of materialIds) {
+        if ((countByMaterial.get(mid) ?? 0) <= 1) {
+          return {
+            success: false,
+            error:
+              "この手法は教材の唯一の手法であるため削除できません。先に教材から手法を外してください",
+          };
+        }
       }
     }
   }

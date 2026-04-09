@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/actions/session-queries";
-import { RATING_LABELS, RATING_COLORS } from "@/lib/constants";
+import { RATING_LABELS, RATING_COLORS, METHOD_CATEGORIES } from "@/lib/constants";
 import {
   calculateAccuracyRate,
   formatDuration,
@@ -13,6 +13,9 @@ type Props = {
 };
 
 const RATINGS = [1, 2, 3, 4] as const;
+
+// METHOD_CATEGORIES から動的に生成し、手動同期を不要にする
+const SYSTEM_SLUGS = Object.values(METHOD_CATEGORIES).flatMap((c) => c.slugs);
 
 export default async function SummaryPage({ params }: Props) {
   const { id } = await params;
@@ -32,7 +35,6 @@ export default async function SummaryPage({ params }: Props) {
     : null;
 
   // システム組み込みのスラッグに該当しないメソッドをカスタムメソッドとして扱う
-  const SYSTEM_SLUGS = ["srs", "interleaving", "elaboration", "pomodoro", "wakeful_rest", "free_study"];
   const isCustomMethod = !SYSTEM_SLUGS.includes(session.method.slug);
   const customMeta = isCustomMethod
     ? (session.meta as { actual_duration_sec?: number; target_duration_sec?: number | null } | null)

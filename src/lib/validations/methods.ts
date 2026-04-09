@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { VALIDATION_LIMITS } from "@/lib/constants";
+import { VALIDATION_LIMITS, METHOD_CATEGORIES } from "@/lib/constants";
 
-// MethodCategory と同じ値を列挙。constants.ts の union type から z.enum を生成できないため手動同期
-const CATEGORIES = ["memory", "comprehension", "focus", "consolidation", "general"] as const;
+// METHOD_CATEGORIES のキーから動的に生成し、手動同期を不要にする
+const CATEGORIES = Object.keys(METHOD_CATEGORIES) as [string, ...string[]];
 
 export const createMethodSchema = z.object({
   name: z
