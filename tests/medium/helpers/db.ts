@@ -9,4 +9,5 @@ export {
   createTestSession,
   cleanupTestData,
   cleanupNotificationSchedules,
+  cleanupCustomMethods,
 } from "../../shared/helpers";
