@@ -235,7 +235,8 @@ describe("getSessionInfo", () => {
           data: {
             id: "a0000000-0000-4000-a000-000000000001",
             material_id: "mat-1",
-            learning_methods: { slug: "srs" },
+            learning_methods: { slug: "srs", name: "SRS", default_duration_sec: null },
+            materials: { title: "テスト教材" },
           },
           error: null,
         }),
@@ -249,6 +250,9 @@ describe("getSessionInfo", () => {
       id: "a0000000-0000-4000-a000-000000000001",
       methodSlug: "srs",
       materialId: "mat-1",
+      methodName: "SRS",
+      materialTitle: "テスト教材",
+      defaultDurationSec: null,
     });
   });
 });

@@ -146,3 +146,12 @@ export async function cleanupNotificationSchedules(userId: string) {
     .delete()
     .eq("user_id", userId);
 }
+
+export async function cleanupCustomMethods(userId: string) {
+  const { error } = await getAdminClient()
+    .from("learning_methods")
+    .delete()
+    .eq("user_id", userId)
+    .eq("is_system", false);
+  if (error) throw new Error(`カスタム手法クリーンアップ失敗: ${error.message}`);
+}

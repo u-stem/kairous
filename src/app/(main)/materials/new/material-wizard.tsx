@@ -248,6 +248,7 @@ export function MaterialWizard({ subjects: initialSubjects, methods }: Props) {
             methods={methods}
             selected={selectedMethodIds}
             onChange={setSelectedMethodIds}
+            onMethodsChange={() => router.refresh()}
           />
 
           {step2Error && (

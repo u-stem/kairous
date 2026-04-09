@@ -34,7 +34,7 @@ test.describe.serial("教材 CRUD", () => {
 
     // Step 2: 手法を選択する (ポモドーロは time-based なので "作成" ボタンが表示される)
     await page.getByText("ポモドーロ").click();
-    await page.getByRole("button", { name: "作成" }).click();
+    await page.getByRole("button", { name: "作成", exact: true }).click();
 
     // 作成後は /materials/{uuid} にリダイレクトされる
     await expect(page).toHaveURL(/\/materials\/[0-9a-f-]{36}$/, {
@@ -122,7 +122,7 @@ test.describe("手法紐付け", () => {
     await page.getByRole("option", { name: subjectName }).click();
     await page.getByRole("button", { name: "次へ" }).click();
     await page.getByText("ポモドーロ").click();
-    await page.getByRole("button", { name: "作成" }).click();
+    await page.getByRole("button", { name: "作成", exact: true }).click();
     await expect(page).toHaveURL(/\/materials\/[0-9a-f-]{36}$/, {
       timeout: 10_000,
     });

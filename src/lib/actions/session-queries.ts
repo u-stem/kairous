@@ -28,6 +28,7 @@ type InterleavingCardRow = {
 // Supabase JOIN 結果の型: SDK は joined テーブルを unknown として推論するため名前付き型で上書きする
 type JoinedMethod = { slug: string };
 type JoinedMethodWithName = { slug: string; name: string };
+type JoinedMethodWithDetails = { slug: string; name: string; default_duration_sec: number | null };
 type JoinedMaterial = { id: string; title: string; subjects: { name: string } };
 type JoinedMaterialTitle = { title: string };
 
@@ -35,6 +36,9 @@ export type SessionInfo = {
   id: string;
   methodSlug: string;
   materialId: string | null;
+  methodName: string;
+  materialTitle: string | null;
+  defaultDurationSec: number | null;
 };
 
 export async function getSessionInfo(sessionId: string): Promise<SessionInfo | null> {
@@ -42,7 +46,7 @@ export async function getSessionInfo(sessionId: string): Promise<SessionInfo | n
 
   const { data: session } = await supabase
     .from("sessions")
-    .select("id, material_id, learning_methods(slug)")
+    .select("id, material_id, learning_methods(slug, name, default_duration_sec), materials(title)")
     .eq("id", sessionId)
     .eq("user_id", user.id)
     .eq("status", "in_progress")
@@ -50,16 +54,21 @@ export async function getSessionInfo(sessionId: string): Promise<SessionInfo | n
 
   if (!session) return null;
 
-  const method = session.learning_methods as JoinedMethod | null;
+  const method = session.learning_methods as JoinedMethodWithDetails | null;
 
   // method が null になるのは learning_methods が削除された孤立データのみ
   // notFound() でハンドルするため、呼び出し元に null を返す
   if (!method?.slug) return null;
 
+  const materialData = session.materials as { title: string } | null;
+
   return {
     id: session.id,
     methodSlug: method.slug,
     materialId: session.material_id,
+    methodName: method.name,
+    materialTitle: materialData?.title ?? null,
+    defaultDurationSec: method.default_duration_sec ?? null,
   };
 }
 

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/actions/session-queries";
-import { RATING_LABELS, RATING_COLORS } from "@/lib/constants";
+import { RATING_LABELS, RATING_COLORS, METHOD_CATEGORIES } from "@/lib/constants";
 import {
   calculateAccuracyRate,
   formatDuration,
@@ -13,6 +13,9 @@ type Props = {
 };
 
 const RATINGS = [1, 2, 3, 4] as const;
+
+// METHOD_CATEGORIES から動的に生成し、手動同期を不要にする
+const SYSTEM_SLUGS = Object.values(METHOD_CATEGORIES).flatMap((c) => c.slugs);
 
 export default async function SummaryPage({ params }: Props) {
   const { id } = await params;
@@ -29,6 +32,12 @@ export default async function SummaryPage({ params }: Props) {
         total_focus_sec?: number;
         total_break_sec?: number;
       } | null)
+    : null;
+
+  // システム組み込みのスラッグに該当しないメソッドをカスタムメソッドとして扱う
+  const isCustomMethod = !SYSTEM_SLUGS.includes(session.method.slug);
+  const customMeta = isCustomMethod
+    ? (session.meta as { actual_duration_sec?: number; target_duration_sec?: number | null } | null)
     : null;
 
   const accuracy = calculateAccuracyRate(session.card_reviews);
@@ -61,7 +70,25 @@ export default async function SummaryPage({ params }: Props) {
           )}
         </div>
 
-        {isPomodoro ? (
+        {isCustomMethod ? (
+          // カスタムメソッドはカードを使わないため、実績時間と目標時間を表示する
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div>
+              <p className="text-2xl font-bold">
+                {formatDuration(customMeta?.actual_duration_sec ?? session.duration_sec)}
+              </p>
+              <p className="text-sm text-muted-foreground">学習時間</p>
+            </div>
+            {customMeta?.target_duration_sec && (
+              <div>
+                <p className="text-2xl font-bold">
+                  {formatDuration(customMeta.target_duration_sec)}
+                </p>
+                <p className="text-sm text-muted-foreground">目標時間</p>
+              </div>
+            )}
+          </div>
+        ) : isPomodoro ? (
           // Pomodoro はカードを使わないため、サイクル数と集中時間を表示する
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
