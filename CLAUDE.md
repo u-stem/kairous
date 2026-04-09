@@ -20,7 +20,7 @@ src/
       page.tsx      # Today (/)
       materials/    # /materials, /materials/[id]
       stats/        # /stats
-      profile/      # /profile
+      profile/      # /profile, /profile/notifications
     session/        # /session/[id], /session/[id]/review, /session/[id]/summary
     rest/           # /rest/[id] (wakeful rest timer)
   components/       # Shared UI components
@@ -60,6 +60,7 @@ bun test:large     # Large tests (Playwright E2E)
 - **Wakeful Rest** timer is optional, launched from session summary. Independent session at `/rest/[id]`.
 - **RLS** enabled on all tables. Edge Functions use service_role key to bypass.
 - **sessions.status**: 'in_progress' | 'completed' | 'abandoned'.
+- **Notification** uses client-side scheduling (Notification API + setTimeout). No Web Push in MVP. Schedules stored in `notification_schedules` table with master toggle in `profiles.notification_enabled`.
 
 ### Data Model Changes (from docs/kairous-design.md)
 
@@ -88,6 +89,7 @@ Follow learning science evidence from `docs/kairous-design.md`. Specifically:
 
 - [Screen Flow Design](docs/superpowers/specs/2026-04-05-screen-flow-design.md)
 - [Stats Design](docs/superpowers/specs/2026-04-06-stats-design.md)
+- [Wake-up Reminder Design](docs/superpowers/specs/2026-04-09-wake-up-reminder-design.md)
 
 ## Guides
 
