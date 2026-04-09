@@ -6,25 +6,27 @@ import {
 import { NOTIFICATION_DELAY_THRESHOLD_MS } from "@/lib/constants";
 
 describe("calcMsUntilNextFiring", () => {
-  // ISO 8601 offset ensures CI (UTC) and local (JST) produce same result
+  // calcMsUntilNextFiring は setHours でローカル TZ の時刻を設定するため、
+  // テストもローカル TZ 基準の Date を使い TZ 非依存にする
   it("returns positive ms when target time is later today", () => {
-    // now = 08:00 JST, target = 10:00 → 2 hours
-    const now = new Date("2026-04-09T08:00:00+09:00");
+    const now = new Date();
+    now.setHours(8, 0, 0, 0);
     const result = calcMsUntilNextFiring("10:00", now);
     expect(result).toBe(2 * 60 * 60 * 1000);
   });
 
   it("returns ms until next day when target time has passed", () => {
-    // now = 23:00 JST, target = 08:00 → 9 hours
-    const now = new Date("2026-04-09T23:00:00+09:00");
+    const now = new Date();
+    now.setHours(23, 0, 0, 0);
     const result = calcMsUntilNextFiring("08:00", now);
     expect(result).toBe(9 * 60 * 60 * 1000);
   });
 
   it("returns 24 hours when target time is exactly now", () => {
-    const now = new Date("2026-04-09T08:00:00+09:00");
+    const now = new Date();
+    now.setHours(8, 0, 0, 0);
     const result = calcMsUntilNextFiring("08:00", now);
-    // 0ms would cause immediate fire loop, so schedule 24h later
+    // 0ms なら即発火ループになるので、24時間後にスケジュール
     expect(result).toBe(24 * 60 * 60 * 1000);
   });
 });
