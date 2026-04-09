@@ -27,3 +27,10 @@
 - タイマーテスト: `page.clock.install()` はページ読み込み前に実行する
 - `page.clock.runFor()` の前に `page.waitForTimeout(200)` で React useEffect チェーン完了を待つ (fake clock は setInterval を制御するが、React の内部スケジューラは実時間で動く)
 - CI の production build ではハイドレーション完了前のクリック操作が失敗する場合がある。`waitForLoadState("networkidle")` で待機する
+- ヘッドレス Chromium では Notification API の `permission` が `"denied"` 固定になる。`test.use({ permissions: ["notifications"] })` は Chromium の内部状態を変更しない。通知トグル等の UI テストは DB 側で状態を直接設定し、Notification API の動作テストは Small テスト (mock) でカバーする
+
+## タイムゾーン依存テスト
+
+- `setHours()` / `setMinutes()` はローカル TZ で動作する。テストで固定時刻を使う場合は `new Date()` + `setHours()` でローカル TZ 基準の Date を作る (CI の UTC でもローカルの JST でも同じ結果になる)
+- `new Date("2026-04-09T08:00:00+09:00")` は特定の瞬間を表す絶対時刻であり、`setHours(10)` のようなローカル TZ 操作と組み合わせると CI (UTC) で結果がずれる
+- 日付文字列の比較 (`toISOString().split("T")[0]`) は UTC 基準。JST が必要な場合は `toJstDateString()` を使う
