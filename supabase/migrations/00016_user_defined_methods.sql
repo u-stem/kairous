@@ -2,7 +2,7 @@
 -- learning_methods は 00001_core_domain.sql で作成済み。is_system カラムも既存
 
 ALTER TABLE learning_methods
-  ADD COLUMN user_id UUID REFERENCES auth.users(id),
+  ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   ADD COLUMN description TEXT,
   ADD COLUMN default_duration_sec INTEGER CHECK (default_duration_sec >= 60 AND default_duration_sec <= 10800);
 
@@ -46,3 +46,7 @@ ALTER TABLE material_methods
   DROP CONSTRAINT material_methods_method_id_fkey,
   ADD CONSTRAINT material_methods_method_id_fkey
     FOREIGN KEY (method_id) REFERENCES learning_methods(id) ON DELETE CASCADE;
+
+-- RLS クエリ (WHERE user_id = auth.uid()) のパフォーマンス用
+CREATE INDEX idx_learning_methods_user_id ON learning_methods(user_id)
+  WHERE user_id IS NOT NULL;
