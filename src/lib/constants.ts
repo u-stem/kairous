@@ -162,3 +162,19 @@ export const VALIDATION_LIMITS = {
 export const PG_ERROR_CODES = {
   UNIQUE_VIOLATION: "23505",
 } as const;
+
+// --- 通知 ---
+// タブ非アクティブ時に経過した通知を表示する最大遅延。30分を超えた古い通知は破棄する
+export const NOTIFICATION_DELAY_THRESHOLD_MS = 30 * 60 * 1000;
+// 1ユーザーあたりの通知スケジュール上限。過剰なタイマー生成を防ぐ
+export const MAX_NOTIFICATION_SCHEDULES = 10;
+// 通知本文に表示する科目の最大数。超過分は「ほかN科目」で表示
+export const NOTIFICATION_MAX_SUBJECTS = 2;
+
+export const NOTIFICATION_MESSAGE_TYPES = ["due_today", "review_and_preview"] as const;
+export type NotificationMessageType = (typeof NOTIFICATION_MESSAGE_TYPES)[number];
+
+export const NOTIFICATION_DEFAULTS = {
+  morning: { label: "朝の通知", time: "08:00", messageType: "due_today" as const },
+  evening: { label: "夜の通知", time: "22:00", messageType: "review_and_preview" as const },
+} as const;
