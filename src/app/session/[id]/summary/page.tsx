@@ -34,6 +34,8 @@ export default async function SummaryPage({ params }: Props) {
       } | null)
     : null;
 
+  const isFreeStudy = session.method.slug === "free_study";
+
   // システム組み込みのスラッグに該当しないメソッドをカスタムメソッドとして扱う
   const isCustomMethod = !SYSTEM_SLUGS.includes(session.method.slug);
   const customMeta = isCustomMethod
@@ -70,7 +72,15 @@ export default async function SummaryPage({ params }: Props) {
           )}
         </div>
 
-        {isCustomMethod ? (
+        {isFreeStudy ? (
+          // Free Study は評価・目標時間なし。学習時間のみ表示する
+          <div className="text-center">
+            <p className="text-2xl font-bold">
+              {formatDuration(session.duration_sec)}
+            </p>
+            <p className="text-sm text-muted-foreground">学習時間</p>
+          </div>
+        ) : isCustomMethod ? (
           // カスタムメソッドはカードを使わないため、実績時間と目標時間を表示する
           <div className="grid grid-cols-2 gap-4 text-center">
             <div>

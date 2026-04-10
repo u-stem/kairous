@@ -14,8 +14,8 @@ describe("MATERIAL_METHOD_SLUGS", () => {
     expect(MATERIAL_METHOD_SLUGS).toContain("pomodoro");
   });
 
-  it("3つの手法のみ含む", () => {
-    expect(MATERIAL_METHOD_SLUGS).toHaveLength(3);
+  it("4つの手法を含む", () => {
+    expect(MATERIAL_METHOD_SLUGS).toHaveLength(4);
   });
 });
 

@@ -3,6 +3,7 @@ export const MATERIAL_METHOD_SLUGS = [
   "srs",
   "elaboration",
   "pomodoro",
+  "free_study",
 ] as const;
 
 export type MaterialMethodSlug = (typeof MATERIAL_METHOD_SLUGS)[number];
@@ -51,6 +52,7 @@ export const METHOD_DESCRIPTIONS: Record<string, string> = {
   elaboration: "「なぜ?」を問い、自分の言葉で説明する",
   pomodoro: "25分集中 + 5分休憩のサイクルで学習する",
   interleaving: "複数教材のカードを混ぜて復習し、識別力を高める",
+  free_study: "自由な形式で学習を記録する",
 };
 
 // UI コンポーネント間でカテゴリの視覚的一貫性を保つためのカラーマッピング

@@ -4,6 +4,7 @@ import { SessionPlayer } from "./session-player";
 import { ElaborationPlayer } from "./elaboration-player";
 import { PomodoroPlayer } from "./pomodoro-player";
 import { CustomMethodPlayer } from "./custom-method-player";
+import { FreeStudyPlayer } from "./free-study-player";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -38,6 +39,15 @@ export default async function SessionPage({ params }: Props) {
       if (cards.length === 0) notFound();
       return <SessionPlayer sessionId={id} cards={cards} />;
     }
+
+    case "free_study":
+      return (
+        <FreeStudyPlayer
+          sessionId={id}
+          methodName={info.methodName}
+          materialTitle={info.materialTitle}
+        />
+      );
 
     default:
       return (
