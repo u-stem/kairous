@@ -58,6 +58,9 @@ test.describe("Free Study セッション", () => {
     // 完了ボタンをクリック → 評価フェーズなしで直接サマリーへ
     await page.getByRole("button", { name: "完了" }).click();
 
+    // 評価フェーズが表示されないことを確認 (free_study は self_rating なし)
+    await expect(page.getByText("学習の振り返り")).not.toBeVisible();
+
     // サマリー画面: sessions.status = 'completed' の場合のみ表示されるため、
     // この画面が表示されること自体がステータス遷移の検証になる
     await page.waitForURL(/\/session\/[\w-]+\/summary/, { timeout: 10_000 });

@@ -22,7 +22,7 @@ export function FreeStudyPlayer({ sessionId, methodName, materialTitle }: Props)
 
   useEffect(() => {
     timer.start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- timer オブジェクトは再レンダーで新規生成されるため mount 時の1回のみ実行
   }, []);
 
   async function handleComplete() {

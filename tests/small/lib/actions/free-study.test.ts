@@ -44,6 +44,7 @@ describe("completeFreeStudySession", () => {
 
   it("completes session with null self_rating", async () => {
     let fromCallCount = 0;
+    const updateMock = vi.fn();
     mockClient = {
       auth: {
         getUser: vi.fn().mockResolvedValue({
@@ -68,7 +69,13 @@ describe("completeFreeStudySession", () => {
         }
         if (fromCallCount === 2) {
           // session UPDATE → 成功
-          return createChainMock({ data: null, error: null });
+          const chain = createChainMock({ data: null, error: null });
+          const originalUpdate = chain.update as (...args: unknown[]) => unknown;
+          chain.update = vi.fn().mockImplementation((...args: unknown[]) => {
+            updateMock(...args);
+            return originalUpdate(...args);
+          });
+          return chain;
         }
         // material SELECT (daily_log 用)
         return createChainMock({
@@ -84,6 +91,9 @@ describe("completeFreeStudySession", () => {
     const result = await completeFreeStudySession(VALID_SESSION_ID, 120);
 
     expect(result.success).toBe(true);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ self_rating: null }),
+    );
   });
 
   it("rejects non-free_study method sessions", async () => {
