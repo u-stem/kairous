@@ -29,6 +29,11 @@
 - CI の production build ではハイドレーション完了前のクリック操作が失敗する場合がある。`waitForLoadState("networkidle")` で待機する
 - ヘッドレス Chromium では Notification API の `permission` が `"denied"` 固定になる。`test.use({ permissions: ["notifications"] })` は Chromium の内部状態を変更しない。通知トグル等の UI テストは DB 側で状態を直接設定し、Notification API の動作テストは Small テスト (mock) でカバーする
 
+## テストデータ命名
+
+- テストデータの名前にシステム手法名 (自由学習、ポモドーロ等) を含めない。`getByText` の strict mode violation を防ぐため
+- 教材名は手法名と被らない一意な名前にする (例: "E2E-FreeStudy-教材A"、"自由学習テスト教材" は NG)
+
 ## タイムゾーン依存テスト
 
 - `setHours()` / `setMinutes()` はローカル TZ で動作する。テストで固定時刻を使う場合は `new Date()` + `setHours()` でローカル TZ 基準の Date を作る (CI の UTC でもローカルの JST でも同じ結果になる)
