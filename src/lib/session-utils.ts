@@ -10,6 +10,14 @@ export function formatDuration(totalSeconds: number): string {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
+export function formatDurationHuman(totalSeconds: number): string {
+  if (totalSeconds < 60) return `${totalSeconds}秒`;
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  if (hours > 0) return `${hours}時間${minutes > 0 ? `${minutes}分` : ""}`;
+  return `${minutes}分`;
+}
+
 export function calculateResponseMs(startedAt: string, answeredAt: string): number {
   return new Date(answeredAt).getTime() - new Date(startedAt).getTime();
 }

@@ -134,6 +134,26 @@ export async function getMaterials(
     }
   }
 
+  // 一覧カードの副題に最終学習日時を表示するため、各教材の最新セッションを取得する
+  const lastStudiedMap = new Map<string, string>();
+  if (materialIds.length > 0) {
+    const { data: sessions } = await supabase
+      .from("sessions")
+      .select("material_id, started_at")
+      .eq("user_id", user.id)
+      .eq("status", "completed")
+      .in("material_id", materialIds)
+      .order("started_at", { ascending: false });
+
+    if (sessions) {
+      for (const s of sessions) {
+        if (s.material_id && !lastStudiedMap.has(s.material_id)) {
+          lastStudiedMap.set(s.material_id, s.started_at);
+        }
+      }
+    }
+  }
+
   return data.map((m) => ({
     id: m.id,
     title: m.title,
@@ -146,6 +166,7 @@ export async function getMaterials(
       const lm = mm.learning_methods as JoinedLearningMethod;
       return { id: lm.id, slug: lm.slug, name: lm.name, category: lm.category };
     }),
+    last_studied_at: lastStudiedMap.get(m.id) ?? null,
     created_at: m.created_at,
   }));
 }
@@ -231,6 +252,7 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
         return { id: lm.id, slug: lm.slug, name: lm.name, category: lm.category };
       },
     ),
+    last_studied_at: sessions?.[0]?.started_at ?? null,
     created_at: material.created_at,
     recent_sessions: (sessions ?? []).map((s) => ({
       id: s.id,

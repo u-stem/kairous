@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { formatDistanceToNow } from "date-fns";
+import { ja } from "date-fns/locale";
 import type { MaterialWithMethods } from "@/lib/types/materials";
 import { CARD_BASED_SLUGS } from "@/lib/constants";
 import { MethodChip } from "@/components/method-chip";
@@ -36,7 +38,14 @@ export function MaterialCard({ material }: MaterialCardProps) {
       </div>
 
       {!isCardBased && (
-        <p className="text-sm text-muted-foreground">セッション学習</p>
+        <p className="text-sm text-muted-foreground">
+          {material.last_studied_at
+            ? formatDistanceToNow(new Date(material.last_studied_at), {
+                addSuffix: true,
+                locale: ja,
+              })
+            : "未学習"}
+        </p>
       )}
 
       {material.methods.length > 0 && (
