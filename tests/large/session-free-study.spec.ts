@@ -45,8 +45,8 @@ test.describe("Free Study セッション", () => {
     await page.getByRole("button", { name: /自由学習/ }).click();
     await page.waitForURL(/\/session\/[\w-]+$/, { timeout: 10_000 });
 
-    // タイマーフェーズ: 手法名が表示される
-    await expect(page.getByText("自由学習")).toBeVisible();
+    // タイマーフェーズ: 手法名が表示される ("自由学習テスト教材" とも部分一致するため exact 指定)
+    await expect(page.getByText("自由学習", { exact: true })).toBeVisible();
 
     // React useEffect チェーン (マウント → timer.start → setInterval) が
     // 完了するのを待ってから fake clock を進める
