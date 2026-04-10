@@ -72,6 +72,45 @@ export async function getSessionInfo(sessionId: string): Promise<SessionInfo | n
   };
 }
 
+export type TodaySession = {
+  id: string;
+  methodName: string;
+  materialTitle: string | null;
+  durationSec: number;
+  startedAt: string;
+};
+
+type JoinedMethodName = { name: string };
+
+export async function getTodaySessions(): Promise<TodaySession[]> {
+  const { user, supabase } = await requireAuth();
+  const today = toJstDateString(new Date());
+
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("id, duration_sec, started_at, learning_methods(name), materials(title)")
+    .eq("user_id", user.id)
+    .eq("status", "completed")
+    .gte("started_at", `${today}T00:00:00+09:00`)
+    .order("started_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return data.map((s: {
+    id: string;
+    duration_sec: number;
+    started_at: string;
+    learning_methods: unknown;
+    materials: unknown;
+  }) => ({
+    id: s.id,
+    methodName: (s.learning_methods as JoinedMethodName | null)?.name ?? "---",
+    materialTitle: (s.materials as JoinedMaterialTitle | null)?.title ?? null,
+    durationSec: s.duration_sec,
+    startedAt: s.started_at,
+  }));
+}
+
 export async function getDueMaterials(): Promise<DueMaterial[]> {
   const { user, supabase } = await requireAuth();
 
