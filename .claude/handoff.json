@@ -1,40 +1,27 @@
 {
-  "task": "Kairous ハーネスエンジニアリング改善 + 次エピック着手",
-  "status": "in_progress",
+  "task": "Kairous 次エピック着手",
+  "status": "completed",
   "completed": [
-    "v0.11.0 ユーザー定義手法 (Epic #141) 完了・マージ (PR #148)",
-    "振り返り Discussion #149 投稿・アクション消化・クローズ",
-    "マイルストーン v0.11.0 クローズ",
-    "workflow.md に PBI 分解必須ルールを追記",
-    "フレーキーテスト調査 Issue #150 作成",
-    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE: 50 → 70 に変更",
-    "壊れたプラグイン 3 件削除 (frontend-design, code-review, commit-commands)",
-    "ブレインストーミング効率化フィードバック記録",
-    "CLAUDE.md 圧縮 (99行→42行): Directory Structure, Commands, Data Model Changes, Method Classification 削除",
-    "WorktreeCreate フック追加 (.claude/settings.local.json): bun install + .env.local symlink 自動化",
-    "WorktreeRemove フック追加 (.claude/settings.local.json): git worktree prune 自動化",
-    "SubagentStop フック追加 (グローバル): サブエージェント完了ログ",
-    "PreCompact フック追加 (グローバル): メモリ保存リマインダー",
-    "SessionEnd フック追加 (グローバル): セッション終了ログ",
-    "Supabase MCP サーバー見送り (pre-1.0、既存ワークフローで十分)",
-    "claude-settings リポジトリにコミット済み"
+    "v0.11.0 ユーザー定義手法 完了",
+    "ハーネスエンジニアリング改善: CLAUDE.md 圧縮 (99→42行), フック 5件追加, Agent Teams 有効化",
+    "v0.14.0 Free Study モード (Epic #144) 完了・マージ (PR #153)",
+    "振り返り Discussion #154 投稿・アクション消化・クローズ",
+    "マイルストーン v0.14.0 クローズ"
   ],
   "next": [
-    "次エピック選定・着手: #142 連続記録 (Streak) カウンター (中規模), #143 Elaboration 永続化 (中), #144 Free Study モード (小)"
+    "次エピック候補: #142 連続記録 (Streak) カウンター (中), #143 Elaboration 永続化 (中)",
+    "Agent Teams を並列 PBI で実際に試す"
   ],
   "decisions": [
-    "ブレインストーミングは1質問ずつではなく推奨案込みの設計ドラフトを一括提示する: ラウンドトリップ削減のため",
-    "エピック規模でも PBI 分解は必須: v0.11.0 で 1 PR 1,537 行になった反省",
-    "Subagent-Driven Development をデフォルト実行方式にする: plan execution の選択肢提示をスキップ",
-    "autocompact 70%: 50% は積極的すぎてコンテキストが早期に失われていた",
-    "Supabase MCP は v1.0 安定後に再検討: pre-1.0 で RLS バイパスリスクあり",
-    "Claude Code インストーラー切り替えは保留: cmux デスクトップアプリで運用中"
+    "ブレインストーミングは推奨案込みの設計ドラフトを一括提示する",
+    "エピック規模でも PBI 分解は必須",
+    "Subagent-Driven Development をデフォルト実行方式にする",
+    "autocompact 70%",
+    "Supabase MCP は v1.0 安定後に再検討",
+    "確認なしで自律的に進行する (ラウンドトリップ削減)",
+    "E2E テストデータは手法名と被らない名前にする"
   ],
   "blockers": [],
-  "files_modified": [
-    "CLAUDE.md (99行→42行に圧縮)",
-    ".claude/settings.local.json (WorktreeCreate/WorktreeRemove フック)",
-    "~/.claude/settings.json (SubagentStop/PreCompact/SessionEnd フック)"
-  ],
-  "updated_at": "2026-04-10T15:35:00+09:00"
+  "files_modified": [],
+  "updated_at": "2026-04-10T21:10:00+09:00"
 }
