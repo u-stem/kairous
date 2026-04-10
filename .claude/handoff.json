@@ -1,0 +1,33 @@
+{
+  "task": "Kairous ハーネスエンジニアリング改善 + 次エピック着手",
+  "status": "in_progress",
+  "completed": [
+    "v0.11.0 ユーザー定義手法 (Epic #141) 完了・マージ (PR #148)",
+    "振り返り Discussion #149 投稿・アクション消化・クローズ",
+    "マイルストーン v0.11.0 クローズ",
+    "workflow.md に PBI 分解必須ルールを追記",
+    "フレーキーテスト調査 Issue #150 作成",
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE: 50 → 70 に変更",
+    "壊れたプラグイン 3 件削除 (frontend-design, code-review, commit-commands)",
+    "ブレインストーミング効率化フィードバック記録"
+  ],
+  "next": [
+    "Claude Code をネイティブインストーラーに切り替え: brew uninstall claude-code && curl -fsSL https://claude.ai/install.sh | bash",
+    "CLAUDE.md 圧縮 (100行→60行): Commands, Directory Structure など自明な情報を削減",
+    "WorktreeCreate フック追加: bun install + .env.local シンボリックリンクを自動化",
+    "Supabase MCP サーバー追加検討: @supabase/mcp-server でスキーマ管理・型生成を直接実行",
+    "次エピック: #142 連続記録 (Streak) カウンター (中規模), #143 Elaboration 永続化 (中), #144 Free Study モード (小)"
+  ],
+  "decisions": [
+    "ブレインストーミングは1質問ずつではなく推奨案込みの設計ドラフトを一括提示する: ラウンドトリップ削減のため",
+    "エピック規模でも PBI 分解は必須: v0.11.0 で 1 PR 1,537 行になった反省",
+    "Subagent-Driven Development をデフォルト実行方式にする: plan execution の選択肢提示をスキップ",
+    "autocompact 70%: 50% は積極的すぎてコンテキストが早期に失われていた"
+  ],
+  "blockers": [],
+  "files_modified": [
+    ".claude/rules/workflow.md",
+    "~/.claude/settings.json (autocompact 70, 壊れたプラグイン削除)"
+  ],
+  "updated_at": "2026-04-10T00:30:00+09:00"
+}
