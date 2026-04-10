@@ -4,6 +4,7 @@ import {
   calcChangeRate,
   aggregateDaily,
   aggregateByKey,
+  shouldShowReviewCard,
 } from "@/lib/utils/stats";
 
 describe("formatStudyTime", () => {
@@ -92,5 +93,23 @@ describe("aggregateByKey", () => {
     const names = new Map([["s1", "A"], ["s2", "B"]]);
     const result = aggregateByKey(rows, "subject_id", names);
     expect(result[0].id).toBe("s2");
+  });
+});
+
+describe("shouldShowReviewCard", () => {
+  it("returns false when both current and previous are 0", () => {
+    expect(shouldShowReviewCard(0, 0)).toBe(false);
+  });
+
+  it("returns true when current is positive", () => {
+    expect(shouldShowReviewCard(5, 0)).toBe(true);
+  });
+
+  it("returns true when previous is positive", () => {
+    expect(shouldShowReviewCard(0, 3)).toBe(true);
+  });
+
+  it("returns true when both are positive", () => {
+    expect(shouldShowReviewCard(10, 8)).toBe(true);
   });
 });

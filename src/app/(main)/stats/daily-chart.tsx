@@ -71,7 +71,7 @@ export function DailyChart({ daily }: { daily: DailyData[] }) {
           tick={{ fontSize: 11 }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(v: number) => `${v}m`}
+          tickFormatter={(v: number) => `${v}分`}
         />
         <Tooltip content={<CustomTooltip />} />
         <Bar dataKey="minutes" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} />
