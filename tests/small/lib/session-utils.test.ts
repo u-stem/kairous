@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   calculateAccuracyRate,
   formatDuration,
+  formatDurationHuman,
   calculateResponseMs,
   countByRating,
 } from "@/lib/session-utils";
@@ -40,6 +41,32 @@ describe("formatDuration", () => {
 
   it("formats 60 seconds as 1:00", () => {
     expect(formatDuration(60)).toBe("1:00");
+  });
+});
+
+describe("formatDurationHuman", () => {
+  it("returns 0秒 for 0", () => {
+    expect(formatDurationHuman(0)).toBe("0秒");
+  });
+
+  it("returns seconds for under 1 minute", () => {
+    expect(formatDurationHuman(30)).toBe("30秒");
+  });
+
+  it("returns minutes for 60+ seconds", () => {
+    expect(formatDurationHuman(60)).toBe("1分");
+  });
+
+  it("truncates partial minutes", () => {
+    expect(formatDurationHuman(90)).toBe("1分");
+  });
+
+  it("returns hours and minutes for 3600+ seconds", () => {
+    expect(formatDurationHuman(3661)).toBe("1時間1分");
+  });
+
+  it("omits minutes when exactly on the hour", () => {
+    expect(formatDurationHuman(3600)).toBe("1時間");
   });
 });
 

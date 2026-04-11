@@ -12,7 +12,8 @@ import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { SELF_RATING_LABELS } from "@/lib/constants";
+import { hasCardBasedMethod, SELF_RATING_LABELS } from "@/lib/constants";
+import { formatDurationHuman } from "@/lib/session-utils";
 import { CardList } from "./card-list";
 import { MaterialMethodSheet } from "./material-method-sheet";
 import { MethodSelectList } from "@/components/method-select-list";
@@ -36,10 +37,17 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
 
   const srsMethod = material.methods.find((m) => m.slug === "srs");
 
+  const isCardBased = hasCardBasedMethod(material.methods);
+
   const accuracyDisplay =
     material.accuracy_rate !== null
       ? `${Math.round(material.accuracy_rate * 100)}%`
       : "---";
+
+  // カード不要手法のみの場合の代替指標
+  const totalStudySec = material.recent_sessions.reduce((sum, s) => sum + s.duration_sec, 0);
+  const sessionCount = material.recent_sessions.length;
+  const lastStudiedAt = material.recent_sessions[0]?.started_at ?? null;
 
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-6">
@@ -96,40 +104,81 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
             <p className="mb-4 text-sm text-muted-foreground">{material.description}</p>
           )}
 
-          <div className="grid grid-cols-3 gap-3">
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle className="text-xs text-muted-foreground">
-                  期限切れ
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">{material.due_count}</p>
-              </CardContent>
-            </Card>
+          {isCardBased ? (
+            <div className="grid grid-cols-3 gap-3">
+              <Card size="sm">
+                <CardHeader>
+                  <CardTitle className="text-xs text-muted-foreground">
+                    期限切れ
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{material.due_count}</p>
+                </CardContent>
+              </Card>
 
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle className="text-xs text-muted-foreground">
-                  総カード数
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">{material.total_cards}</p>
-              </CardContent>
-            </Card>
+              <Card size="sm">
+                <CardHeader>
+                  <CardTitle className="text-xs text-muted-foreground">
+                    総カード数
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{material.total_cards}</p>
+                </CardContent>
+              </Card>
 
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle className="text-xs text-muted-foreground">
-                  正答率
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">{accuracyDisplay}</p>
-              </CardContent>
-            </Card>
-          </div>
+              <Card size="sm">
+                <CardHeader>
+                  <CardTitle className="text-xs text-muted-foreground">
+                    正答率
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{accuracyDisplay}</p>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              <Card size="sm">
+                <CardHeader>
+                  <CardTitle className="text-xs text-muted-foreground">
+                    学習時間
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{formatDurationHuman(totalStudySec)}</p>
+                </CardContent>
+              </Card>
+
+              <Card size="sm">
+                <CardHeader>
+                  <CardTitle className="text-xs text-muted-foreground">
+                    セッション数
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{sessionCount}</p>
+                </CardContent>
+              </Card>
+
+              <Card size="sm">
+                <CardHeader>
+                  <CardTitle className="text-xs text-muted-foreground">
+                    最終学習日
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">
+                    {lastStudiedAt
+                      ? formatDistanceToNow(new Date(lastStudiedAt), { addSuffix: true, locale: ja })
+                      : "---"}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* 手法が1つなら1タップで開始、複数なら選択リストを表示してユーザーに選ばせる */}
           {material.methods.length > 0 && (
@@ -169,7 +218,7 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
                     <div>
                       <p className="text-sm font-medium">{session.method.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {Math.floor(session.duration_sec / 60)}分
+                        {formatDurationHuman(session.duration_sec)}
                         {session.self_rating !== null && (
                           <span className="ml-2">評価: {SELF_RATING_LABELS[session.self_rating as 1 | 2 | 3 | 4] ?? `${session.self_rating}`}</span>
                         )}

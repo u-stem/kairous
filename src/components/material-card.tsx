@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { formatDistanceToNow } from "date-fns";
+import { ja } from "date-fns/locale";
 import type { MaterialWithMethods } from "@/lib/types/materials";
-import { CARD_BASED_SLUGS } from "@/lib/constants";
+import { hasCardBasedMethod } from "@/lib/constants";
 import { MethodChip } from "@/components/method-chip";
 
 type MaterialCardProps = {
@@ -8,10 +10,7 @@ type MaterialCardProps = {
 };
 
 export function MaterialCard({ material }: MaterialCardProps) {
-  // カードベースの手法が1つでも含まれていればカード枚数を表示する
-  const isCardBased = material.methods.some((m) =>
-    (CARD_BASED_SLUGS as readonly string[]).includes(m.slug)
-  );
+  const isCardBased = hasCardBasedMethod(material.methods);
   const hasDue = material.due_count > 0;
 
   return (
@@ -36,7 +35,14 @@ export function MaterialCard({ material }: MaterialCardProps) {
       </div>
 
       {!isCardBased && (
-        <p className="text-sm text-muted-foreground">セッション学習</p>
+        <p className="text-sm text-muted-foreground">
+          {material.last_studied_at
+            ? formatDistanceToNow(new Date(material.last_studied_at), {
+                addSuffix: true,
+                locale: ja,
+              })
+            : "未学習"}
+        </p>
       )}
 
       {material.methods.length > 0 && (

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Trash2 } from "lucide-react";
 import type { Subject, LearningMethod } from "@/lib/types/materials";
-import { CARD_BASED_SLUGS } from "@/lib/constants";
+import { hasCardBasedMethod } from "@/lib/constants";
 import { createMaterial } from "@/lib/actions/materials";
 import { createCard } from "@/lib/actions/cards";
 import { createSubject } from "@/lib/actions/subjects";
@@ -28,14 +28,13 @@ type CardDraft = {
   back: string;
 };
 
-// カードベース手法が1つでも選択されているかを判定する
-function hasCardBasedMethod(
+// 選択された手法のうちカードベースのものがあるかを判定する
+function hasSelectedCardBasedMethod(
   selectedMethodIds: string[],
   methods: LearningMethod[],
 ): boolean {
-  return methods
-    .filter((m) => selectedMethodIds.includes(m.id))
-    .some((m) => (CARD_BASED_SLUGS as readonly string[]).includes(m.slug));
+  const selectedMethods = methods.filter((m) => selectedMethodIds.includes(m.id));
+  return hasCardBasedMethod(selectedMethods);
 }
 
 // ウィザードのステップ数（カードベース手法なしの場合は2ステップで完了）
@@ -61,7 +60,7 @@ export function MaterialWizard({ subjects: initialSubjects, methods }: Props) {
 
   const [currentStep, setCurrentStep] = useState(1);
 
-  const needsCardStep = hasCardBasedMethod(selectedMethodIds, methods);
+  const needsCardStep = hasSelectedCardBasedMethod(selectedMethodIds, methods);
 
   // 表示上のステップ数（カードベース手法なしの場合は2ステップ）
   const visibleStepCount = needsCardStep ? TOTAL_STEPS : 2;

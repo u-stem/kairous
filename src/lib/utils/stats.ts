@@ -21,6 +21,14 @@ export function calcChangeRate(current: number, previous: number): number {
   return Math.round(((current - previous) / previous) * 100);
 }
 
+// カード不使用の手法のみのユーザーに「レビュー 0」を常時表示しないため
+export function shouldShowReviewCard(
+  cardsReviewed: number,
+  prevCardsReviewed: number,
+): boolean {
+  return cardsReviewed > 0 || prevCardsReviewed > 0;
+}
+
 export function aggregateDaily(rows: DailyLogRow[]): DailyData[] {
   const map = new Map<string, DailyData>();
   for (const row of rows) {

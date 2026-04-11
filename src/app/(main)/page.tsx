@@ -1,15 +1,22 @@
-import { getDueMaterials } from "@/lib/actions/session-queries";
+import Link from "next/link";
+import { getDueMaterials, getTodaySessions } from "@/lib/actions/session-queries";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { TodayMaterialList } from "./today-material-list";
 import { InterleavingButton } from "@/components/interleaving-button";
+import { buttonVariants } from "@/components/ui/button-variants";
+import { formatDurationHuman } from "@/lib/session-utils";
 
 export default async function TodayPage() {
-  const materials = await getDueMaterials();
+  const [materials, todaySessions] = await Promise.all([
+    getDueMaterials(),
+    getTodaySessions(),
+  ]);
   const today = new Date();
   const dateStr = format(today, "M月d日 EEEE", { locale: ja });
 
   const totalCards = materials.reduce((sum, m) => sum + m.due_count, 0);
+  const todayTotalSec = todaySessions.reduce((sum, s) => sum + s.durationSec, 0);
 
   return (
     <div className="mx-auto max-w-2xl p-4">
@@ -43,11 +50,51 @@ export default async function TodayPage() {
           <TodayMaterialList materials={materials} />
         </>
       ) : (
-        <div className="py-12 text-center">
+        <div className="py-8 text-center">
           <p className="text-lg font-medium">復習完了</p>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
             今日の復習カードはすべて完了しました
           </p>
+        </div>
+      )}
+
+      {/* 今日の学習サマリー: 復習カードの有無に関わらず、セッション実績があれば表示する */}
+      {todaySessions.length > 0 && (
+        <div className="mt-6">
+          <h2 className="mb-3 text-sm font-medium text-muted-foreground">完了セッション</h2>
+          <div className="mb-4 grid grid-cols-2 gap-3">
+            <div className="rounded-lg bg-muted p-4 text-center">
+              <div className="text-2xl font-bold text-blue-500">{formatDurationHuman(todayTotalSec)}</div>
+              <div className="text-xs text-muted-foreground">学習時間</div>
+            </div>
+            <div className="rounded-lg bg-muted p-4 text-center">
+              <div className="text-2xl font-bold text-green-500">{todaySessions.length}</div>
+              <div className="text-xs text-muted-foreground">セッション</div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            {todaySessions.map((session) => (
+              <div
+                key={session.id}
+                className="flex items-center justify-between rounded-lg border px-3 py-2.5"
+              >
+                <div>
+                  <p className="text-sm font-medium">{session.methodName}</p>
+                  <p className="text-xs text-muted-foreground">{session.materialTitle ?? "---"}</p>
+                </div>
+                <p className="text-xs text-muted-foreground">{formatDurationHuman(session.durationSec)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* CTA: 復習完了後でも教材一覧へ遷移して学習を開始できるようにする */}
+      {materials.length === 0 && (
+        <div className="mt-6 text-center">
+          <Link href="/materials" className={buttonVariants()}>
+            教材を見る
+          </Link>
         </div>
       )}
     </div>

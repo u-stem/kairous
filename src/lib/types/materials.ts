@@ -35,6 +35,7 @@ export type MaterialWithMethods = {
     name: string;
     category: string;
   }>;
+  last_studied_at: string | null;
   created_at: string;
 };
 

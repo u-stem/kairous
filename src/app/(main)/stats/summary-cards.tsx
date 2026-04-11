@@ -1,5 +1,5 @@
 import type { StatsSummary } from "@/lib/types/stats";
-import { formatStudyTime, calcChangeRate } from "@/lib/utils/stats";
+import { formatStudyTime, calcChangeRate, shouldShowReviewCard } from "@/lib/utils/stats";
 
 function ChangeIndicator({ current, previous }: { current: number; previous: number }) {
   const rate = calcChangeRate(current, previous);
@@ -13,6 +13,11 @@ function ChangeIndicator({ current, previous }: { current: number; previous: num
 }
 
 export function SummaryCards({ summary }: { summary: StatsSummary }) {
+  const showReview = shouldShowReviewCard(
+    summary.cardsReviewed,
+    summary.prevCardsReviewed,
+  );
+
   const cards = [
     {
       label: "学習時間",
@@ -26,16 +31,20 @@ export function SummaryCards({ summary }: { summary: StatsSummary }) {
       current: summary.sessionCount,
       previous: summary.prevSessionCount,
     },
-    {
-      label: "レビュー",
-      value: String(summary.cardsReviewed),
-      current: summary.cardsReviewed,
-      previous: summary.prevCardsReviewed,
-    },
+    ...(showReview
+      ? [
+          {
+            label: "レビュー",
+            value: String(summary.cardsReviewed),
+            current: summary.cardsReviewed,
+            previous: summary.prevCardsReviewed,
+          },
+        ]
+      : []),
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className={`grid gap-3 ${showReview ? "grid-cols-3" : "grid-cols-2"}`}>
       {cards.map((card) => (
         <div key={card.label} className="rounded-lg bg-gray-50 p-3 text-center">
           <p className="text-xs text-gray-500">{card.label}</p>

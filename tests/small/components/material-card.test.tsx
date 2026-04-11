@@ -15,6 +15,7 @@ function makeMaterial(overrides: Partial<MaterialWithMethods> = {}): MaterialWit
     total_cards: 10,
     due_count: 0,
     methods: [],
+    last_studied_at: null,
     created_at: "2026-01-01T00:00:00Z",
     ...overrides,
   };
@@ -48,12 +49,22 @@ describe("MaterialCard", () => {
     expect(screen.getByText(/20枚/)).toBeDefined();
   });
 
-  it("カードベース以外の手法のみの場合は「セッション学習」を表示する", () => {
+  it("カードベース以外の手法のみで未学習の場合は「未学習」を表示する", () => {
     const material = makeMaterial({
       methods: [{ id: "m-1", slug: "pomodoro", name: "ポモドーロ", category: "focus" }],
+      last_studied_at: null,
     });
     render(<MaterialCard material={material} />);
-    expect(screen.getByText("セッション学習")).toBeDefined();
+    expect(screen.getByText("未学習")).toBeDefined();
+  });
+
+  it("カードベース以外の手法のみで学習済みの場合は相対時刻を表示する", () => {
+    const material = makeMaterial({
+      methods: [{ id: "m-1", slug: "pomodoro", name: "ポモドーロ", category: "focus" }],
+      last_studied_at: new Date(Date.now() - 3600 * 1000).toISOString(),
+    });
+    render(<MaterialCard material={material} />);
+    expect(screen.getByText(/1時間前/)).toBeDefined();
   });
 
   it("詳細ページへのリンクを持つ", () => {
