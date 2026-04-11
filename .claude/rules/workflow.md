@@ -27,6 +27,10 @@
 
 メインコンテキストは進行管理に徹し、実作業はサブエージェントに委譲する。
 
+### 単体エージェント (サブエージェント)
+
+独立した小タスクに使用。Agent ツールで直接起動する。
+
 | エージェント | 用途 | 使い方 |
 |-------------|------|--------|
 | general-purpose | 実装 (コード、テスト、コミット) | 計画の該当タスクを渡して実装を委譲 |
@@ -35,7 +39,33 @@
 | test-runner | テスト実行と結果要約 | 実装後の検証 |
 | code-reviewer | PR レビュー | エピック完了時に PR 全体をレビュー |
 
-- 独立したタスクは複数エージェントを並列実行する
+### Agent Teams (並列実装)
+
+独立した PBI が 2つ以上ある場合に使用する。TeamCreate で チームを構成し、各 Teammate が worktree で並列作業する。
+
+**チーム構成**:
+- Lead (自分): 進行管理のみ。実装しない
+- Implementer (Sonnet, `mode: "auto"`, `isolation: "worktree"`): PBI のサブタスク単位で実装
+- Reviewer (Opus): 完了した実装を並列レビュー
+- チームサイズ: 3-5 (Lead + 実装 2-3 + レビュー 1)
+
+**起動手順**:
+1. `TeamCreate` でチームを作成
+2. `TaskCreate` で PBI ごとのタスクを作成 (ファイル所有権を明記)
+3. `Agent` で Teammate を spawn (`team_name`, `name`, `mode: "auto"`, `isolation: "worktree"`)
+4. Lead は TaskList で進捗を監視し、SendMessage で調整
+5. 全タスク完了後、Reviewer を spawn してレビュー
+6. `SendMessage` で `shutdown_request` を送信してチーム解散
+
+**ファイル所有権**: タスク作成時に担当ファイルを明示する。共有ファイル (constants.ts, types/ 等) は Lead が逐次更新する
+
+**使わないケース**:
+- PBI が 1つだけ (サブエージェント直接起動で十分)
+- 同一ファイルの編集が必要 (直列で実装)
+- 強い依存関係がある逐次タスク (Pipeline パターンを検討)
+
+### 共通ルール
+
 - 実装エージェントには計画ドキュメントのパス、対象ファイル、コンテキストを明示的に渡す
 - メインは結果の確認、Issue 管理、次タスクへの橋渡しを行う
 
@@ -84,8 +114,8 @@ git worktree prune
 
 ### worktree の制約
 
-- **サブエージェント worktree は権限を継承しない**: Claude Code の worktree エージェントは親セッションの許可設定を引き継がないため、ツール呼び出しのたびにユーザー許可を求めて停滞する。新規セッションでの worktree 並列開発は使わない
-- **並列開発は直列実装で代替**: 独立した PBI は1つずつブランチを切って直列に実装する。worktree はユーザーが手動で並列セッションを起動する場合のみ使用する
+- **worktree エージェントは `mode: "auto"` 必須**: サブエージェントは親セッションの許可設定を継承しない。`mode: "auto"` を指定しないとツール呼び出しのたびにユーザー許可を求めて停滞する
+- **Agent Teams 経由で使用**: worktree 並列開発は Agent Teams の Teammate として起動する。単体の Agent + worktree は `mode: "auto"` を指定すれば使用可
 - **WorktreeCreate フックにガード必須**: `if [ "$(pwd)" = "/path/to/main-repo" ]; then exit 0; fi` でメインリポ内での実行を防ぐ。シンボリックリンクの循環参照事故を防止する
 
 ### リカバリ時のルール
