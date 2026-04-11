@@ -3,7 +3,8 @@
 import { z } from "zod";
 import { STATS_PERIODS } from "@/lib/constants";
 import { requireAuth } from "@/lib/actions/auth-utils";
-import type { StatsData, StatsPeriod } from "@/lib/types/stats";
+import type { StatsData, StatsPeriod, StreakData } from "@/lib/types/stats";
+import { calculateStreak } from "@/lib/utils/streak";
 import { aggregateDaily, aggregateByKey } from "@/lib/utils/stats";
 import { toJstDateString } from "@/lib/utils/date";
 
@@ -86,4 +87,22 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
     bySubject: aggregateByKey(currentLogs, "subject_id", subjectNames),
     byMethod: aggregateByKey(currentLogs, "method_id", methodNames),
   };
+}
+
+export async function getStreak(): Promise<StreakData> {
+  const { user, supabase } = await requireAuth();
+
+  const { data: logs, error } = await supabase
+    .from("daily_logs")
+    .select("log_date")
+    .eq("user_id", user.id)
+    .order("log_date", { ascending: false });
+
+  if (error) throw new Error(`getStreak failed: ${error.message}`);
+
+  // 同一日に subject/method 別の複数行があるため、アプリ層で重複除去する
+  const uniqueDates = [...new Set((logs ?? []).map((l: { log_date: string }) => l.log_date))];
+
+  const today = toJstDateString(new Date());
+  return calculateStreak(uniqueDates, today);
 }
