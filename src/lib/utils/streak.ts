@@ -52,19 +52,14 @@ export function calculateStreak(dates: string[], today: string): StreakData {
   const yesterdayDate = new Date(todayDate.getTime() - 24 * 60 * 60 * 1000);
   const yesterday = yesterdayDate.toISOString().split("T")[0];
 
-  let startIndex: number;
-  if (isActiveToday) {
-    startIndex = 0;
-  } else if (dates[0] === yesterday) {
-    startIndex = 0;
-  } else {
-    // 今日も昨日も含まれていない → streak 途切れ
+  // 今日も昨日も含まれていない → streak 途切れ
+  if (!isActiveToday && dates[0] !== yesterday) {
     return { currentStreak: 0, longestStreak, isActiveToday: false };
   }
 
-  // 起点から過去に遡り、連続する日付をカウントする
+  // 降順配列の先頭 (今日 or 昨日) から過去に遡り、連続する日付をカウントする
   let currentStreak = 1;
-  for (let i = startIndex; i < dates.length - 1; i++) {
+  for (let i = 0; i < dates.length - 1; i++) {
     if (isConsecutiveDay(dates[i + 1], dates[i])) {
       currentStreak++;
     } else {

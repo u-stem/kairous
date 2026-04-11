@@ -66,6 +66,15 @@ describe("calculateStreak", () => {
     });
   });
 
+  it("returns streak 1 when only yesterday is present", () => {
+    // 昨日のみ学習済み、今日はまだ → streak 維持
+    expect(calculateStreak(["2026-04-10"], "2026-04-11")).toEqual({
+      currentStreak: 1,
+      longestStreak: 1,
+      isActiveToday: false,
+    });
+  });
+
   it("returns streak 0 when neither today nor yesterday is present", () => {
     // 2日以上前に途切れているので currentStreak は 0
     const dates = ["2026-04-09", "2026-04-08"];
