@@ -135,6 +135,7 @@ export async function getMaterials(
   }
 
   // 一覧カードの副題に最終学習日時を表示するため、各教材の最新セッションを取得する
+  // 各教材につき最新1件のみ必要だが、Supabase は DISTINCT ON 未対応のため上限で制御する
   const lastStudiedMap = new Map<string, string>();
   if (materialIds.length > 0) {
     const { data: sessions } = await supabase
@@ -143,7 +144,8 @@ export async function getMaterials(
       .eq("user_id", user.id)
       .eq("status", "completed")
       .in("material_id", materialIds)
-      .order("started_at", { ascending: false });
+      .order("started_at", { ascending: false })
+      .limit(materialIds.length * 5);
 
     if (sessions) {
       for (const s of sessions) {

@@ -12,6 +12,13 @@ export type MaterialMethodSlug = (typeof MATERIAL_METHOD_SLUGS)[number];
 // MATERIAL_METHOD_SLUGS（ウィザード選択可能）とは別概念。interleaving は未実装だがカード手法として定義済み
 export const CARD_BASED_SLUGS = ["srs", "interleaving"] as const;
 
+// 教材がカードレビューを使用する手法を含むかを判定する
+export function hasCardBasedMethod(methods: Array<{ slug: string }>): boolean {
+  return methods.some((m) =>
+    (CARD_BASED_SLUGS as readonly string[]).includes(m.slug)
+  );
+}
+
 export type MethodCategory =
   | "memory"
   | "comprehension"

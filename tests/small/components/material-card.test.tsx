@@ -61,10 +61,10 @@ describe("MaterialCard", () => {
   it("カードベース以外の手法のみで学習済みの場合は相対時刻を表示する", () => {
     const material = makeMaterial({
       methods: [{ id: "m-1", slug: "pomodoro", name: "ポモドーロ", category: "focus" }],
-      last_studied_at: new Date().toISOString(),
+      last_studied_at: new Date(Date.now() - 3600 * 1000).toISOString(),
     });
     render(<MaterialCard material={material} />);
-    expect(screen.getByText(/前$/)).toBeDefined();
+    expect(screen.getByText(/1時間前/)).toBeDefined();
   });
 
   it("詳細ページへのリンクを持つ", () => {

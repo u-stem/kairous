@@ -8,6 +8,7 @@ function createChainMock(resolvedValue: { data: unknown; error: unknown }) {
       select: vi.fn().mockImplementation(() => makeChain()),
       eq: vi.fn().mockImplementation(() => makeChain()),
       gte: vi.fn().mockImplementation(() => makeChain()),
+      lt: vi.fn().mockImplementation(() => makeChain()),
       order: vi.fn().mockImplementation(() => makeChain()),
       single: vi.fn().mockReturnValue(resolved),
       then: resolved.then.bind(resolved),

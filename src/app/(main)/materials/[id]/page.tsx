@@ -12,7 +12,7 @@ import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { CARD_BASED_SLUGS, SELF_RATING_LABELS } from "@/lib/constants";
+import { hasCardBasedMethod, SELF_RATING_LABELS } from "@/lib/constants";
 import { formatDurationHuman } from "@/lib/session-utils";
 import { CardList } from "./card-list";
 import { MaterialMethodSheet } from "./material-method-sheet";
@@ -37,10 +37,7 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
 
   const srsMethod = material.methods.find((m) => m.slug === "srs");
 
-  // カードベースの手法を含むかで概要タブの指標を切替える
-  const isCardBased = material.methods.some((m) =>
-    (CARD_BASED_SLUGS as readonly string[]).includes(m.slug)
-  );
+  const isCardBased = hasCardBasedMethod(material.methods);
 
   const accuracyDisplay =
     material.accuracy_rate !== null

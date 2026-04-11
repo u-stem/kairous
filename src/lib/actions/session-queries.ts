@@ -86,12 +86,16 @@ export async function getTodaySessions(): Promise<TodaySession[]> {
   const { user, supabase } = await requireAuth();
   const today = toJstDateString(new Date());
 
+  // JST の翌日0時を上限にして当日分のみに限定する
+  const tomorrow = toJstDateString(new Date(Date.now() + 24 * 60 * 60 * 1000));
+
   const { data, error } = await supabase
     .from("sessions")
     .select("id, duration_sec, started_at, learning_methods(name), materials(title)")
     .eq("user_id", user.id)
     .eq("status", "completed")
     .gte("started_at", `${today}T00:00:00+09:00`)
+    .lt("started_at", `${tomorrow}T00:00:00+09:00`)
     .order("started_at", { ascending: false });
 
   if (error || !data) return [];
