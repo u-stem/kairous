@@ -75,4 +75,14 @@ describe("getStreak", () => {
 
     await expect(getStreak()).rejects.toThrow("getStreak failed: DB connection failed");
   });
+
+  it("redirects to login when user is not authenticated", async () => {
+    mockSupabase = buildMockSupabase([]);
+    mockSupabase.auth.getUser = vi.fn().mockResolvedValue({
+      data: { user: null },
+    });
+    const { getStreak } = await import("@/lib/actions/stats");
+
+    await expect(getStreak()).rejects.toThrow("NEXT_REDIRECT:/auth/login");
+  });
 });

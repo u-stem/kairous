@@ -92,7 +92,6 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
 export async function getStreak(): Promise<StreakData> {
   const { user, supabase } = await requireAuth();
 
-  // daily_logs から DISTINCT log_date を降順で取得
   const { data: logs, error } = await supabase
     .from("daily_logs")
     .select("log_date")
@@ -101,7 +100,7 @@ export async function getStreak(): Promise<StreakData> {
 
   if (error) throw new Error(`getStreak failed: ${error.message}`);
 
-  // 同一日に複数ログがある場合に備えて重複を除去する
+  // 同一日に subject/method 別の複数行があるため、アプリ層で重複除去する
   const uniqueDates = [...new Set((logs ?? []).map((l: { log_date: string }) => l.log_date))];
 
   const today = toJstDateString(new Date());
