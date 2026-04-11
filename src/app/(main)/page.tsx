@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getDueMaterials, getTodaySessions } from "@/lib/actions/session-queries";
+import { getStreak } from "@/lib/actions/stats";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { TodayMaterialList } from "./today-material-list";
@@ -8,9 +9,10 @@ import { buttonVariants } from "@/components/ui/button-variants";
 import { formatDurationHuman } from "@/lib/session-utils";
 
 export default async function TodayPage() {
-  const [materials, todaySessions] = await Promise.all([
+  const [materials, todaySessions, streak] = await Promise.all([
     getDueMaterials(),
     getTodaySessions(),
+    getStreak(),
   ]);
   const today = new Date();
   const dateStr = format(today, "M月d日 EEEE", { locale: ja });
@@ -23,6 +25,19 @@ export default async function TodayPage() {
       <div className="mb-6">
         <p className="text-sm text-muted-foreground">{dateStr}</p>
         <h1 className="text-2xl font-bold">今日の学習</h1>
+        {/* 継続学習のモチベーション維持のため、streak が 0 より大きい場合のみ表示する */}
+        {streak.currentStreak > 0 && (
+          <div className={`mt-2 inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
+            streak.isActiveToday
+              ? "bg-orange-100 text-orange-700"
+              : "bg-gray-100 text-gray-600"
+          }`}>
+            {streak.currentStreak}日連続
+            {!streak.isActiveToday && (
+              <span className="text-xs"> - 今日はまだ学習していません</span>
+            )}
+          </div>
+        )}
       </div>
 
       {materials.length > 0 ? (
