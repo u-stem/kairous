@@ -33,3 +33,9 @@ export type StatsData = {
   bySubject: BreakdownItem[];
   byMethod: BreakdownItem[];
 };
+
+export type StreakData = {
+  currentStreak: number; // 現在の連続日数
+  longestStreak: number; // 最長記録
+  isActiveToday: boolean; // 今日セッション完了済みか
+};
