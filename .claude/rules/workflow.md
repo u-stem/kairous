@@ -82,6 +82,17 @@ git worktree prune
 - 完了後は速やかに削除する (長期放置しない)
 - `node_modules` はメインリポジトリからシンボリックリンクしない (パス解決が壊れる)。各 worktree で `bun install` を実行すること
 
+### worktree の制約
+
+- **サブエージェント worktree は権限を継承しない**: Claude Code の worktree エージェントは親セッションの許可設定を引き継がないため、ツール呼び出しのたびにユーザー許可を求めて停滞する。新規セッションでの worktree 並列開発は使わない
+- **並列開発は直列実装で代替**: 独立した PBI は1つずつブランチを切って直列に実装する。worktree はユーザーが手動で並列セッションを起動する場合のみ使用する
+- **WorktreeCreate フックにガード必須**: `if [ "$(pwd)" = "/path/to/main-repo" ]; then exit 0; fi` でメインリポ内での実行を防ぐ。シンボリックリンクの循環参照事故を防止する
+
+### リカバリ時のルール
+
+- **worktree/並列開発が失敗した場合も PR 経由必須**: cherry-pick で main に直接取り込まない。必ず feature ブランチ → PR → CI → マージの流れを守る
+- **main に直接コミットしない**: 例外なし
+
 ### 依存関係の管理
 
 - GitHub Issue の **blocked by / blocking** 機能で依存関係を設定する
