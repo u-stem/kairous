@@ -31,9 +31,11 @@ export default async function StatsPage(props: {
           まだ学習記録がありません。セッションを完了すると統計が表示されます。
         </p>
       ) : (
-        <StatsDashboard data={data} period={period} />
+        <>
+          <StatsDashboard data={data} period={period} />
+          <StreakCard streak={streak} />
+        </>
       )}
-      <StreakCard streak={streak} />
     </div>
   );
 }
