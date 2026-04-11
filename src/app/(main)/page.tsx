@@ -33,9 +33,10 @@ export default async function TodayPage() {
               : "bg-gray-100 text-gray-600"
           }`}>
             {streak.currentStreak}日連続
-            {!streak.isActiveToday && (
-              <span className="text-xs"> - 今日はまだ学習していません</span>
-            )}
+            {streak.isActiveToday
+              ? <span className="text-xs"> 継続中</span>
+              : <span className="text-xs"> - 今日はまだ学習していません</span>
+            }
           </div>
         )}
       </div>
