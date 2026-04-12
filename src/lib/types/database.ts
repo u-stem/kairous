@@ -34,6 +34,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      card_elaborations: {
+        Row: {
+          card_id: string
+          created_at: string
+          elaboration_text: string
+          id: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          elaboration_text: string
+          id?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          elaboration_text?: string
+          id?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_elaborations_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_elaborations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       card_reviews: {
         Row: {
           card_id: string
