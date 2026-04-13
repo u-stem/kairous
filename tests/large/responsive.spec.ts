@@ -26,7 +26,8 @@ function listAppRoutes(): string[] {
       if (statSync(full).isDirectory()) {
         walk(full);
       } else if (entry === "page.tsx") {
-        const rel = relative(APP_DIR, full).replace(/\/page\.tsx$/, "");
+        // 先頭アンカーで `page.tsx` 単独 (src/app/page.tsx) もマッチさせる
+        const rel = relative(APP_DIR, full).replace(/(^|\/)page\.tsx$/, "");
         const url = "/" + rel
           // Route Group `(main)` は URL に現れない
           .split("/")
