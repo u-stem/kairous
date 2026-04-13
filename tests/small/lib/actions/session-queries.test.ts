@@ -50,6 +50,7 @@ describe("getSessionElaborations", () => {
         createChainMock({
           data: [
             {
+              id: "elab-1",
               card_id: "card-1",
               elaboration_text: "詳細な説明テキスト",
               created_at: "2026-04-11T09:00:00Z",
@@ -64,11 +65,16 @@ describe("getSessionElaborations", () => {
     const { getSessionElaborations } = await import("@/lib/actions/session-queries");
     const result = await getSessionElaborations("session-1");
 
-    expect(result).toHaveLength(1);
-    expect(result[0].card_id).toBe("card-1");
-    expect(result[0].card_front).toBe("カードの表面");
-    expect(result[0].elaboration_text).toBe("詳細な説明テキスト");
-    expect(result[0].created_at).toBe("2026-04-11T09:00:00Z");
+    // オブジェクト全体を1アサーションで検証し、1テスト1アサーションを保つ
+    expect(result).toEqual([
+      {
+        id: "elab-1",
+        card_id: "card-1",
+        card_front: "カードの表面",
+        elaboration_text: "詳細な説明テキスト",
+        created_at: "2026-04-11T09:00:00Z",
+      },
+    ]);
   });
 
   it("returns empty array when no elaborations exist", async () => {

@@ -169,12 +169,12 @@ export default async function SummaryPage({ params }: Props) {
           </>
         )}
 
-        {session.method.slug === "elaboration" && elaborations.length > 0 && (
+        {elaborations.length > 0 && (
           <div className="space-y-3">
             <p className="text-sm font-medium">記述内容</p>
             <div className="space-y-2">
               {elaborations.map((e) => (
-                <div key={e.card_id} className="rounded-lg border p-3">
+                <div key={e.id} className="rounded-lg border p-3">
                   <p className="text-xs text-muted-foreground mb-1">{e.card_front}</p>
                   <p className="text-sm whitespace-pre-wrap">{e.elaboration_text}</p>
                 </div>
