@@ -48,6 +48,8 @@ const eslintConfig = defineConfig([
     "vitest.workspace.ts",
     // Edge Functions は Deno 環境 (npm: specifier) のため ESLint 対象外
     "supabase/functions/**",
+    // Lighthouse CI の puppeteerScript は CommonJS 専用 (lhci が require する)
+    "scripts/*.cjs",
   ]),
 ]);
 

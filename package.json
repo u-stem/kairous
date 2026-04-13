@@ -13,6 +13,8 @@
     "test:medium": "vitest run --project medium",
     "test:large": "playwright test --config tests/large/playwright.config.ts",
     "test:watch": "vitest",
+    "lhci:setup": "playwright test --config tests/large/playwright.config.ts --project=setup",
+    "lhci": "lhci autorun",
     "check": "bun run lint && bun run typecheck && bun test:small",
     "prepare": "lefthook install"
   },
@@ -37,6 +39,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@lhci/cli": "0.15.1",
     "@playwright/test": "1.59.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
@@ -50,10 +53,12 @@
     "eslint-config-next": "16.2.2",
     "jsdom": "^29.0.1",
     "lefthook": "^2.1.4",
+    "puppeteer": "24.40.0",
     "supabase": "^2.84.10",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.2",
+    "wait-on": "9.0.5"
   },
   "overrides": {
     "hono": "^4.12.12",
