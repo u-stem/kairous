@@ -35,6 +35,7 @@ Follow learning science evidence from `docs/kairous-design.md`. Specifically:
 - [Stats Design](docs/superpowers/specs/2026-04-06-stats-design.md)
 - [Wake-up Reminder Design](docs/superpowers/specs/2026-04-09-wake-up-reminder-design.md)
 - [Streak Counter Design](docs/superpowers/specs/2026-04-11-streak-counter-design.md)
+- [Elaboration Persistence Design](docs/superpowers/specs/2026-04-12-elaboration-persistence-design.md)
 
 ## Guides
 
