@@ -1,0 +1,97 @@
+name: Issue Status Sync
+
+# PR のライフサイクルに応じて linked issue の Project Status を自動遷移させる。
+# built-in workflow の "Pull request linked to issue" は 1 つのステータスにしか
+# マップできないため、draft / ready_for_review で In Progress / In Review を
+# 切り替えるには custom workflow が必要。
+# closed / merged は built-in workflow が Done に遷移させるため対象外。
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, converted_to_draft]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          github-token: ${{ secrets.PROJECT_PAT }}
+          script: |
+            const PROJECT_ID = 'PVT_kwHOBPhgnc4BTvhy';
+            const STATUS_FIELD = 'PVTSSF_lAHOBPhgnc4BTvhyzhA8Y7Q';
+            const OPT = {
+              IN_PROGRESS: '20a38274',
+              IN_REVIEW: 'c67d3a12',
+            };
+
+            const pr = context.payload.pull_request;
+            const targetOpt = pr.draft ? OPT.IN_PROGRESS : OPT.IN_REVIEW;
+            const targetName = pr.draft ? 'In Progress' : 'In Review';
+
+            // PR に linked な "closing" Issue を取得
+            const query = `
+              query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $number) {
+                    closingIssuesReferences(first: 20) {
+                      nodes { id number }
+                    }
+                  }
+                }
+              }
+            `;
+            const { repository } = await github.graphql(query, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              number: pr.number,
+            });
+            const linkedIssues = repository.pullRequest.closingIssuesReferences.nodes;
+            if (linkedIssues.length === 0) {
+              core.info('No linked closing issues; skip');
+              return;
+            }
+
+            // 1件の失敗が他の issue に波及しないよう try-catch で分離
+            for (const issue of linkedIssues) {
+              try {
+                const itemQuery = `
+                  query($id: ID!) {
+                    node(id: $id) {
+                      ... on Issue {
+                        projectItems(first: 10) {
+                          nodes { id project { id } }
+                        }
+                      }
+                    }
+                  }
+                `;
+                const { node } = await github.graphql(itemQuery, { id: issue.id });
+                const item = node.projectItems.nodes.find(n => n.project.id === PROJECT_ID);
+                if (!item) {
+                  core.info(`#${issue.number} not in Project; skip`);
+                  continue;
+                }
+
+                const mutation = `
+                  mutation($project: ID!, $item: ID!, $field: ID!, $opt: String!) {
+                    updateProjectV2ItemFieldValue(input: {
+                      projectId: $project, itemId: $item, fieldId: $field,
+                      value: { singleSelectOptionId: $opt }
+                    }) { projectV2Item { id } }
+                  }
+                `;
+                await github.graphql(mutation, {
+                  project: PROJECT_ID,
+                  item: item.id,
+                  field: STATUS_FIELD,
+                  opt: targetOpt,
+                });
+                core.info(`#${issue.number} → ${targetName}`);
+              } catch (err) {
+                core.warning(`#${issue.number}: failed to update status — ${err.message}`);
+              }
+            }
