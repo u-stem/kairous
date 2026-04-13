@@ -3,6 +3,9 @@
 -- 従来は Edge Function 側で 2 回 INSERT していたため、card_reviews 成功後に
 -- card_elaborations が失敗した場合に partial success が発生する問題があった。
 
+-- 旧 4 引数版が残ると PostgREST が関数解決で曖昧エラーを出すため明示的に DROP する
+DROP FUNCTION IF EXISTS complete_session_reviews(UUID, UUID, JSONB, JSONB);
+
 CREATE OR REPLACE FUNCTION complete_session_reviews(
   p_session_id UUID,
   p_user_id UUID,
