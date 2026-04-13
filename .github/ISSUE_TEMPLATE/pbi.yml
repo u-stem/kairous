@@ -1,0 +1,56 @@
+name: PBI (プロダクトバックログアイテム)
+description: エピック配下の実装単位。1 PBI = 1 PR を想定
+labels: ["PBI"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        PBI ラベルは自動付与されます。**内容ラベル** (機能 / 改善 / バグ / 基盤 / ドキュメント / テスト / 破壊的変更 のいずれか) は作成後に手動で追加してください。
+
+  - type: input
+    id: parent-epic
+    attributes:
+      label: 所属エピック
+      description: 配下に置く親エピック Issue 番号 (例: #196)
+      placeholder: "#"
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: この PBI を実施する理由・解決する課題
+    validations:
+      required: true
+
+  - type: textarea
+    id: touched-files
+    attributes:
+      label: 触るファイル領域
+      description: |
+        実装時に変更する予定のファイル/ディレクトリを列挙する (マルチセッション並行作業時の競合検知用)。
+        - 正確でなくてよいが、実装前に想定を書く
+        - 広い範囲を触る場合は glob 表現可 (src/components/*.tsx 等)
+        - 着手時にコメントで追加・修正してもよい
+      placeholder: |
+        - .github/workflows/add-to-project.yml
+        - docs/issue-guide.md
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 受け入れ条件
+      description: チェックリスト形式で完了条件を記載
+      value: |
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 備考
+      description: 依存関係、設計判断、参考リンク等
