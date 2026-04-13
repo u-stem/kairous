@@ -19,6 +19,32 @@ jobs:
         with:
           fetch-depth: 1
 
+      # 過去のレビュー総評を OUTDATED として折りたたむ。
+      # 新しい総評が投稿されるたびに積み上がるスクロール負荷を軽減する目的。
+      # inline コメントはスレッド resolve で既に折りたたまれるため対象外。
+      # 進捗コメント ("**Claude finished") は誤 minimize を避けるため除外し、
+      # 総評 ("## レビュー総評" で始まる body) のみを対象にする。
+      - name: Minimize prior review summaries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          node_ids=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" --paginate \
+            --jq '.[] | select(.user.login == "claude[bot]") | select(.body | startswith("## レビュー総評")) | .node_id')
+          if [ -z "$node_ids" ]; then
+            echo "No prior review summaries to minimize."
+            exit 0
+          fi
+          for id in $node_ids; do
+            echo "Minimizing $id"
+            # 既に minimize 済みのコメントはエラーになるため握りつぶす
+            gh api graphql \
+              -f query='mutation($id: ID!) { minimizeComment(input: {subjectId: $id, classifier: OUTDATED}) { minimizedComment { isMinimized } } }' \
+              -f id="$id" || echo "  skip (already minimized or failed)"
+          done
+
       - name: Run Claude Code Review
         uses: anthropics/claude-code-action@d3a8d1736a61af74bee88bcac0182c49be969839 # v1
         with:
