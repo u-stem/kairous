@@ -62,12 +62,21 @@ export function SubjectSelector({
     }
   }
 
+  const selectedSubject = subjects.find((s) => s.id === value);
+
   return (
     <div className="flex gap-2">
       {/* onValueChange は null を返す可能性があるが、科目選択解除は想定しないため null を無視する */}
       <Select value={value} onValueChange={(v) => v && onChange(v)}>
-        <SelectTrigger className="flex-1" aria-labelledby={selectAriaLabelledBy}>
-          <SelectValue placeholder="科目を選択" />
+        {/* min-w-0 が無いと flex-1 配下で SelectTrigger の w-fit + whitespace-nowrap
+            が親幅を無視して伸びるため、SP 375px で横あふれする */}
+        <SelectTrigger
+          className="min-w-0 flex-1"
+          aria-labelledby={selectAriaLabelledBy}
+        >
+          <SelectValue placeholder="科目を選択">
+            {selectedSubject?.name ?? "科目を選択"}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {subjects.map((subject) => (
