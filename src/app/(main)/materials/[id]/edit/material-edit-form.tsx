@@ -158,7 +158,7 @@ export function MaterialEditForm({
           >
             {isDeleting ? (
               <>
-                <Loader2 className="animate-spin" />
+                <Loader2 aria-hidden="true" className="animate-spin" />
                 削除中...
               </>
             ) : (
@@ -183,7 +183,7 @@ export function MaterialEditForm({
               >
                 {isDeleting ? (
                   <>
-                    <Loader2 className="animate-spin" />
+                    <Loader2 aria-hidden="true" className="animate-spin" />
                     削除中...
                   </>
                 ) : (
@@ -208,7 +208,7 @@ export function MaterialEditForm({
           >
             {isPending ? (
               <>
-                <Loader2 className="animate-spin" />
+                <Loader2 aria-hidden="true" className="animate-spin" />
                 保存中...
               </>
             ) : (

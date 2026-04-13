@@ -23,7 +23,7 @@ export function EmptyState({
     <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
       {/* アイコンをミュートカラーの円で囲んで視覚的な重心を作る */}
       <div className="flex size-16 items-center justify-center rounded-full bg-muted">
-        <Icon className="size-8 text-muted-foreground" />
+        <Icon aria-hidden="true" className="size-8 text-muted-foreground" />
       </div>
       <div className="flex flex-col gap-1">
         <p className="font-medium">{title}</p>

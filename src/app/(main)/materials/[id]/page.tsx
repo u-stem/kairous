@@ -59,7 +59,7 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
         href="/materials"
         className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "-ml-2 mb-2")}
       >
-        <ChevronLeft />
+        <ChevronLeft aria-hidden="true" />
         教材一覧
       </Link>
 
@@ -264,7 +264,7 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
               href={`/materials/${id}/cards/new`}
               className={cn(buttonVariants({ size: "sm" }))}
             >
-              <Plus />
+              <Plus aria-hidden="true" />
               カードを追加
             </Link>
           </div>

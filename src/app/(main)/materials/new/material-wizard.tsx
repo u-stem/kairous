@@ -259,7 +259,7 @@ export function MaterialWizard({ subjects: initialSubjects, methods }: Props) {
               戻る
             </Button>
             <Button onClick={handleNextFromStep2} disabled={isPending}>
-              {isPending && <Loader2 className="animate-spin" />}
+              {isPending && <Loader2 aria-hidden="true" className="animate-spin" />}
               {needsCardStep ? "次へ" : "作成"}
             </Button>
           </div>
@@ -294,7 +294,7 @@ export function MaterialWizard({ subjects: initialSubjects, methods }: Props) {
                       onClick={() => handleRemoveCard(i)}
                       aria-label={`カード「${card.front}」を削除`}
                     >
-                      <Trash2 />
+                      <Trash2 aria-hidden="true" />
                     </Button>
                   </li>
                 ))}
@@ -307,7 +307,7 @@ export function MaterialWizard({ subjects: initialSubjects, methods }: Props) {
               戻る
             </Button>
             <Button onClick={handleSubmitWithCards} disabled={isPending}>
-              {isPending && <Loader2 className="animate-spin" />}
+              {isPending && <Loader2 aria-hidden="true" className="animate-spin" />}
               完了{cards.length > 0 ? `（${cards.length}枚のカード）` : ""}
             </Button>
           </div>
