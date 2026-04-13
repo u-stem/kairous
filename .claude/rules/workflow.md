@@ -156,13 +156,39 @@ git worktree prune
 
 ### 着手宣言
 
-自分が PBI に着手する際、Issue にコメントを投稿する:
+自分が PBI に着手する際、Issue にコメントを投稿する。セッション識別子は **ブランチ名** (例: `feat/204-multi-session-coord`) または **worktree ディレクトリ名** を使う。
 
-```
-着手: セッション <識別子> / 開始 YYYY-MM-DD HH:MM / 領域: <ファイル/glob>
+**開始時**:
+
+```markdown
+### 着手 (in-progress)
+
+- セッション: `feat/193-responsive-check`
+- 開始: 2026-04-13
+- 領域: `src/app/**`, `src/components/**`, `tests/large/responsive.spec.ts` (新規)
+- 備考: (任意)
 ```
 
-識別子は任意だが、区別できればよい。推奨は **ブランチ名** (例: `feat/204-multi-session-coord`) または **worktree ディレクトリ名**。
+**中断時** (同 Issue にコメント追記):
+
+```markdown
+### 着手取消 (paused)
+
+- セッション: `feat/190-lighthouse-ci`
+- 取消: 2026-04-13
+- 理由: 認証付き Lighthouse CI の実装コストが高く本セッションで完遂不可
+- 次アクション: 次セッションで再開
+```
+
+**再開時**:
+
+```markdown
+### 再開 (resumed)
+
+- セッション: `feat/190-lighthouse-ci`
+- 再開: 2026-04-20
+- 領域: (変更あれば更新)
+```
 
 目的は他セッションへの可視化。PR を開けば Project Status は自動で In Progress に遷移するため、ラベル操作は不要。
 
