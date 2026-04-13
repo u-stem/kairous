@@ -29,6 +29,7 @@ export function SearchBar({ onSearch, placeholder }: SearchBarProps) {
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder}
         className="pl-9"
+        aria-label={placeholder ?? "検索"}
       />
     </div>
   );
