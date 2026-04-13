@@ -197,7 +197,8 @@ export async function completeElaborationSession(
     (now.getTime() - new Date(session.started_at).getTime()) / 1000,
   );
 
-  // elaborations を meta に保存し、セッションを完了する
+  // elaborations は Edge Function 経由で card_elaborations テーブルに保存する。
+  // 以前は sessions.meta に JSONB で保持していたが、PBI #172 以降は正規化テーブルに移行した
   const { error: updateError } = await supabase
     .from("sessions")
     .update({
@@ -205,19 +206,20 @@ export async function completeElaborationSession(
       duration_sec: durationSec,
       self_rating: parsed.data.selfRating,
       ended_at: now.toISOString(),
-      meta: { elaborations: parsed.data.elaborations },
     })
     .eq("id", parsed.data.sessionId);
 
   if (updateError) return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("セッション") };
 
-  // Edge Function で card_reviews + daily_logs を記録 (FSRS はスキップ)
-  // meta: null を extraCompensationFields に渡すのは、失敗時に完了前に保存した elaborations を破棄するため
+  // Edge Function で card_reviews + card_elaborations + daily_logs を記録 (FSRS はスキップ)
   const fnResult = await invokeCompleteSession(
     supabase,
     parsed.data.sessionId,
-    { session_id: parsed.data.sessionId, reviews: parsed.data.reviews },
-    { meta: null },
+    {
+      session_id: parsed.data.sessionId,
+      reviews: parsed.data.reviews,
+      elaborations: parsed.data.elaborations,
+    },
   );
   if (!fnResult.ok) return { success: false, error: fnResult.error };
 

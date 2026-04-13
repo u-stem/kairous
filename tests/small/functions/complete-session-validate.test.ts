@@ -196,4 +196,110 @@ describe("validateRequest", () => {
     assert(result.ok);
     expect(result.reviews).toHaveLength(2);
   });
+
+  it("returns empty elaborations when field is omitted", () => {
+    const result = validateRequest({
+      session_id: VALID_UUID,
+      reviews: [validReview()],
+    });
+    assert(result.ok);
+    expect(result.elaborations).toEqual([]);
+  });
+
+  it("accepts valid elaborations array", () => {
+    const result = validateRequest({
+      session_id: VALID_UUID,
+      reviews: [validReview()],
+      elaborations: [{ card_id: VALID_UUID, text: "関連する知識との結びつき" }],
+    });
+    assert(result.ok);
+    expect(result.elaborations).toEqual([
+      { card_id: VALID_UUID, text: "関連する知識との結びつき" },
+    ]);
+  });
+
+  it("accepts empty elaborations array", () => {
+    const result = validateRequest({
+      session_id: VALID_UUID,
+      reviews: [validReview()],
+      elaborations: [],
+    });
+    assert(result.ok);
+    expect(result.elaborations).toEqual([]);
+  });
+
+  it("rejects elaborations with invalid card_id", () => {
+    const result = validateRequest({
+      session_id: VALID_UUID,
+      reviews: [validReview()],
+      elaborations: [{ card_id: "bad", text: "ok" }],
+    });
+    expect(result).toEqual({
+      ok: false,
+      message: "elaborations[0].card_id must be a valid UUID",
+    });
+  });
+
+  it("rejects elaborations with empty text", () => {
+    const result = validateRequest({
+      session_id: VALID_UUID,
+      reviews: [validReview()],
+      elaborations: [{ card_id: VALID_UUID, text: "" }],
+    });
+    expect(result).toEqual({
+      ok: false,
+      message: "elaborations[0].text must be a non-empty string",
+    });
+  });
+
+  it("rejects elaborations with non-string text", () => {
+    const result = validateRequest({
+      session_id: VALID_UUID,
+      reviews: [validReview()],
+      elaborations: [{ card_id: VALID_UUID, text: 123 }],
+    });
+    expect(result).toEqual({
+      ok: false,
+      message: "elaborations[0].text must be a non-empty string",
+    });
+  });
+
+  it("rejects elaborations text exceeding 10000 characters", () => {
+    const result = validateRequest({
+      session_id: VALID_UUID,
+      reviews: [validReview()],
+      elaborations: [{ card_id: VALID_UUID, text: "a".repeat(10001) }],
+    });
+    expect(result).toEqual({
+      ok: false,
+      message: "elaborations[0].text must be at most 10000 characters",
+    });
+  });
+
+  it("rejects duplicate card_id in elaborations", () => {
+    const result = validateRequest({
+      session_id: VALID_UUID,
+      reviews: [validReview()],
+      elaborations: [
+        { card_id: VALID_UUID, text: "first" },
+        { card_id: VALID_UUID, text: "second" },
+      ],
+    });
+    expect(result).toEqual({
+      ok: false,
+      message: "elaborations[1].card_id is duplicated",
+    });
+  });
+
+  it("rejects non-array elaborations", () => {
+    const result = validateRequest({
+      session_id: VALID_UUID,
+      reviews: [validReview()],
+      elaborations: "not-array",
+    });
+    expect(result).toEqual({
+      ok: false,
+      message: "elaborations must be an array",
+    });
+  });
 });

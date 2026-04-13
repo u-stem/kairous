@@ -10,6 +10,7 @@ import {
   createTestSession,
   cleanupTestData,
 } from "../helpers/db";
+import { getMethodIdBySlug } from "../../shared/helpers";
 
 // supabase functions serve が起動中でなければテストをスキップ
 let functionsAvailable = false;
@@ -203,6 +204,136 @@ describe("complete-session Edge Function (DB integration)", () => {
       expect(srsState.lapses).toBeGreaterThanOrEqual(1);
       expect(srsState.state).toBe("Relearning");
       expect(srsState.last_reviewed_at).not.toBeNull();
+    },
+  );
+
+  it.skipIf(!functionsAvailable)(
+    "inserts card_elaborations when methodSlug is elaboration",
+    async () => {
+      const elaborationMethodId = await getMethodIdBySlug("elaboration");
+      const subject = await createTestSubject(userId, "Elab-insert");
+      const material = await createTestMaterial(
+        subject.id,
+        userId,
+        "Elab-insert-material",
+      );
+      await linkMaterialMethod(material.id, elaborationMethodId);
+      const card = await createTestCard(material.id, "Elab-Q", "Elab-A", 100);
+      const session = await createTestSession(
+        userId,
+        material.id,
+        elaborationMethodId,
+      );
+
+      await getAdminClient()
+        .from("sessions")
+        .update({ status: "completed", duration_sec: 300 })
+        .eq("id", session.id);
+
+      const result = await userClient.functions.invoke<{ success: boolean }>(
+        "complete-session",
+        {
+          body: {
+            session_id: session.id,
+            reviews: [
+              {
+                card_id: card.id,
+                rating: 3,
+                started_at: "2026-04-05T10:00:00.000Z",
+                answered_at: "2026-04-05T10:00:10.000Z",
+              },
+            ],
+            elaborations: [
+              { card_id: card.id, text: "既知の概念との関連を自分の言葉で説明" },
+            ],
+          },
+        },
+      );
+
+      expect(result.error).toBeNull();
+
+      // card_elaborations に行が挿入されている
+      const { data: elabs } = await getAdminClient()
+        .from("card_elaborations")
+        .select("card_id, elaboration_text")
+        .eq("session_id", session.id);
+
+      expect(elabs).toHaveLength(1);
+      const elab = elabs![0] as { card_id: string; elaboration_text: string };
+      expect(elab.card_id).toBe(card.id);
+      expect(elab.elaboration_text).toBe("既知の概念との関連を自分の言葉で説明");
+
+      // card_reviews も同一トランザクションで挿入されていることを検証
+      // (card_reviews と card_elaborations の atomicity を担保する RPC の動作確認)
+      const { data: reviews } = await getAdminClient()
+        .from("card_reviews")
+        .select("card_id, rating")
+        .eq("session_id", session.id);
+
+      expect(reviews).toHaveLength(1);
+      const review = reviews![0] as { card_id: string; rating: number };
+      expect(review.card_id).toBe(card.id);
+      expect(review.rating).toBe(3);
+
+      // sessions.meta に elaborations は保存されない (正規化テーブルへ移行済み)
+      const { data: sess } = await getAdminClient()
+        .from("sessions")
+        .select("meta")
+        .eq("id", session.id)
+        .single();
+      const sessRow = sess as { meta: Record<string, unknown> | null };
+      expect(sessRow.meta?.elaborations).toBeUndefined();
+    },
+  );
+
+  it.skipIf(!functionsAvailable)(
+    "succeeds with empty elaborations array for elaboration method",
+    async () => {
+      const elaborationMethodId = await getMethodIdBySlug("elaboration");
+      const subject = await createTestSubject(userId, "Elab-empty");
+      const material = await createTestMaterial(
+        subject.id,
+        userId,
+        "Elab-empty-material",
+      );
+      await linkMaterialMethod(material.id, elaborationMethodId);
+      const card = await createTestCard(material.id, "Elab-Q2", "Elab-A2", 100);
+      const session = await createTestSession(
+        userId,
+        material.id,
+        elaborationMethodId,
+      );
+
+      await getAdminClient()
+        .from("sessions")
+        .update({ status: "completed", duration_sec: 120 })
+        .eq("id", session.id);
+
+      const result = await userClient.functions.invoke<{ success: boolean }>(
+        "complete-session",
+        {
+          body: {
+            session_id: session.id,
+            reviews: [
+              {
+                card_id: card.id,
+                rating: 3,
+                started_at: "2026-04-05T10:00:00.000Z",
+                answered_at: "2026-04-05T10:00:05.000Z",
+              },
+            ],
+            elaborations: [],
+          },
+        },
+      );
+
+      expect(result.error).toBeNull();
+
+      const { data: elabs } = await getAdminClient()
+        .from("card_elaborations")
+        .select("id")
+        .eq("session_id", session.id);
+      expect(elabs ?? []).toHaveLength(0);
     },
   );
 });

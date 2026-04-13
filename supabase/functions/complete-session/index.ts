@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
     return jsonError(validation.message, 400);
   }
 
-  const { session_id, reviews } = validation;
+  const { session_id, reviews, elaborations } = validation;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -208,12 +208,14 @@ Deno.serve(async (req) => {
       );
     }
   } else if (methodSlug === "elaboration") {
-    // Elaboration は FSRS 計算なし。card_reviews のみ INSERT し daily_logs は後続で記録する
+    // Elaboration は FSRS 計算なし。card_reviews と card_elaborations を
+    // 同一トランザクションで INSERT し partial success を防ぐ
     const { error: completeError } = await supabase.rpc("complete_session_reviews", {
       p_session_id: session_id,
       p_user_id: callerId,
       p_reviews: reviewRows,
       p_srs_states: [],
+      p_elaborations: elaborations,
     });
 
     if (completeError) {
