@@ -42,7 +42,7 @@ export default async function MainLayout({
   return (
     <div className="flex min-h-dvh">
       <Sidebar />
-      <main className="flex-1 pb-16 md:pb-0">{children}</main>
+      <main id="main-content" className="flex-1 pb-16 md:pb-0">{children}</main>
       <BottomNav />
       <NotificationProvider
         schedules={schedules}
