@@ -139,6 +139,8 @@ git worktree prune
 - **レビューも並列実行**: 実装完了した worktree のレビューは同時に起動する
 - **スコープ境界を明示**: 複数 PBI がある場合、担当外の PBI のファイルを列挙して「触らないこと」を指示する (例: 「PBI 3 の src/components/interleaving-button.tsx は変更しない」)
 - **worktree パス確認を指示**: プロンプトに「作業開始前に `pwd` と `git branch --show-current` で自分の worktree とブランチを確認すること」を含める。v0.12.0 で 2 回ブランチ混線が発生した原因は、エージェントが別の worktree で作業してしまったため
+- **コミット前に git diff HEAD で範囲確認を指示**: プロンプトに「コミット前に `git diff HEAD --stat` で担当ファイル以外の変更が混入していないか確認すること」を含める。v0.13.0 でブランチ混線再発。作業開始時の pwd 確認だけでは検知できなかった
+- **PostgreSQL RPC overload 対策**: 既存 RPC に引数を追加する migration は、新シグネチャを `CREATE OR REPLACE` する前に旧シグネチャを `DROP FUNCTION IF EXISTS ...` する。引数数が変わると別関数として共存し、PostgREST が関数解決で曖昧エラーを出す
 
 ## タスク開始チェックリスト
 
