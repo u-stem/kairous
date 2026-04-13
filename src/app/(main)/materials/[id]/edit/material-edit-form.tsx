@@ -137,12 +137,13 @@ export function MaterialEditForm({
 
       {/* 科目 */}
       <div className="flex flex-col gap-1.5">
-        <Label>科目</Label>
+        <Label id="subject-label">科目</Label>
         <SubjectSelector
           subjects={subjects}
           value={subjectId}
           onChange={setSubjectId}
           onCreateSubject={handleCreateSubject}
+          selectAriaLabelledBy="subject-label"
         />
         {errors.subject_id && (
           <p className="text-sm text-destructive">{errors.subject_id}</p>

@@ -26,6 +26,7 @@ type SubjectSelectorProps = {
   value: string;
   onChange: (value: string) => void;
   onCreateSubject: (name: string) => Promise<{ id: string; name: string } | null>;
+  selectAriaLabelledBy?: string;
 };
 
 export function SubjectSelector({
@@ -33,6 +34,7 @@ export function SubjectSelector({
   value,
   onChange,
   onCreateSubject,
+  selectAriaLabelledBy,
 }: SubjectSelectorProps) {
   const [open, setOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -64,7 +66,7 @@ export function SubjectSelector({
     <div className="flex gap-2">
       {/* onValueChange は null を返す可能性があるが、科目選択解除は想定しないため null を無視する */}
       <Select value={value} onValueChange={(v) => v && onChange(v)}>
-        <SelectTrigger className="flex-1">
+        <SelectTrigger className="flex-1" aria-labelledby={selectAriaLabelledBy}>
           <SelectValue placeholder="科目を選択" />
         </SelectTrigger>
         <SelectContent>
