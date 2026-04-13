@@ -174,7 +174,7 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
                 </CardHeader>
                 <CardContent>
                   {/* 「約2ヶ月前」など日本語表現が長いため、SP で折り返しを許容 */}
-                  <p className="text-sm font-bold break-words sm:text-2xl">
+                  <p className="text-base font-bold break-words sm:text-2xl">
                     {lastStudiedAt
                       ? formatDistanceToNow(new Date(lastStudiedAt), { addSuffix: true, locale: ja })
                       : "---"}

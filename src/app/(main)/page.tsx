@@ -21,7 +21,7 @@ export default async function TodayPage() {
   const todayTotalSec = todaySessions.reduce((sum, s) => sum + s.durationSec, 0);
 
   return (
-    <div className="mx-auto max-w-2xl p-4">
+    <div data-testid="today-container" className="mx-auto max-w-2xl p-4">
       <div className="mb-6">
         <p className="text-sm text-muted-foreground">{dateStr}</p>
         <h1 className="text-2xl font-bold">今日の学習</h1>
