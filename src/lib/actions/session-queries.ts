@@ -293,6 +293,38 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
   };
 }
 
+export type SessionElaboration = {
+  card_id: string;
+  card_front: string;
+  elaboration_text: string;
+  created_at: string;
+};
+
+export async function getSessionElaborations(sessionId: string): Promise<SessionElaboration[]> {
+  const { user, supabase } = await requireAuth();
+
+  const { data, error } = await supabase
+    .from("card_elaborations")
+    .select("card_id, elaboration_text, created_at, cards(front)")
+    .eq("session_id", sessionId)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(`getSessionElaborations failed: ${error.message}`);
+
+  return (data ?? []).map((row: {
+    card_id: string;
+    elaboration_text: string;
+    created_at: string;
+    cards: unknown;
+  }) => ({
+    card_id: row.card_id,
+    card_front: (row.cards as { front: string } | null)?.front ?? "",
+    elaboration_text: row.elaboration_text,
+    created_at: row.created_at,
+  }));
+}
+
 export async function getInterleavingCards(sessionId: string): Promise<InterleavingCard[]> {
   const { user, supabase } = await requireAuth();
 
