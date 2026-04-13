@@ -5,7 +5,9 @@
 ## PR 運用
 
 - **PBI 単位で 1 PR**: 1 つの PBI に対して 1 つの feature ブランチと 1 つの PR を作成する
-- PR サイズは 300 行以下を目安にする。超える場合は PBI の分解を検討する
+- PR サイズは **300 行以下を目安** にする。超える場合は PBI の分解を検討する
+  - 計測は **初回 push 時の +追加行のみ**。レビュー指摘対応・CI 失敗修正のフォローアップ commit (典型的には数十行) は 300 行上限の計算から除外してよい (レビューアの負担はレビュー直後に review 済みの差分にのみ集中するため)
+  - 初回時点で 300 行超: PBI を「実装本体」と「付随する検知・ドキュメント」に分割する。たとえば #193 は「SP 横あふれ修正」と「自動検知 E2E」を別 PBI にできた
 - サブタスクごとに PR を分けない (PBI 内のサブタスクは同一 PR に含める)
 - **docs のみの変更**: 設計書、CLAUDE.md、rules/ の更新はコード変更と同じコミットに含めるか、PBI の PR に含める。独立した docs 更新は main 直接 push を許可する (CI スキップ対象のため)
 
@@ -16,13 +18,25 @@
 | 毎コミット | pre-commit hooks (自動) | lint, typecheck, test:small |
 | 毎 push | pre-push hooks (自動) | full-check (lint + typecheck + test:small + test:medium) |
 | PR 作成前 | UI 動作確認 | `bun dev` + ブラウザで変更画面を実操作 |
+| PR 作成前 | E2E ローカル事前実行 | **新規/変更が test:large に影響する場合**、`bun test:large` をローカルで走らせる (CI 5 分待ちを避ける) |
 | PR 作成前 | ドキュメント整合性チェック | CLAUDE.md, .claude/rules/, docs/, README.md が実態と一致しているか |
 | PR 作成前 | ローカル code-review ループ | 指摘を全て解消するまでレビュー→修正を繰り返す |
-| PR push 時 | GitHub Actions CI | lint + typecheck + test:small + test:medium |
+| PR push 時 | GitHub Actions CI | lint + typecheck + test:small + test:medium + test:large + lighthouse |
 | PR push 時 | Claude PR Review (自動) | コメント投稿。返信→resolve のフローで対応 |
 
 - hooks はローカルの即時フィードバック、CI はリモートの権威ある品質ゲート
 - ローカル code-review は **PR 作成前** に全指摘を解消する。PR 作成後の Claude PR Review は追加チェック
+
+### CI infra flake 時の対処
+
+test-large / lighthouse ジョブは Supabase ローカル起動やネットワーク依存でまれに stuck (10 分以上進まない) / transient error で fail することがある。コード変更と無関係な flake と判断した場合:
+
+1. **個別 job 再実行**: `gh run rerun <run-id> --failed --repo u-stem/kairous` で failed のみ再実行
+2. **全体再実行 (rebase が必要な場合)**: main に追従させつつ CI を新しく回したい場合は `git rebase origin/main && git push --force-with-lease`。CI は fresh run として全 job 実行される
+3. **stuck の場合**: `gh run cancel <run-id>` でキャンセル → rebase + force-push で再実行
+4. **flake 頻度が高い場合**: 根本原因調査 (Supabase バージョン、Playwright retry 設定、timeouts) を follow-up Issue に起票
+
+コードに起因する失敗との見分け方: ログ先頭から実行ステップを確認し、「Supabase ローカル起動」「wait-on」「セットアップ」段階での hang/timeout は flake 疑い。テスト本体の assertion error やビルドエラーはコード由来。
 
 ## エージェントチーム
 
