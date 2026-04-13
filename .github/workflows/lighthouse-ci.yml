@@ -58,13 +58,12 @@ jobs:
       - name: 認証 storageState を生成
         # Playwright の setup プロジェクトで /auth/login を突破し
         # tests/large/.auth/user.json に cookies を書き出す。
-        # Playwright config は CI で reuseExistingServer=false となるが、
-        # 既に bun run start で :3000 を占有しているため CI="" で上書きし
-        # 既存サーバを再利用させる (setup 時のみのスコープ)。
+        # LHCI_REUSE_SERVER=1 で playwright.config.ts の reuseExistingServer を
+        # 強制的に true にし、外部で起動済みの bun run start (:3000) を再利用させる。
         # LHCI_SKIP_TEARDOWN=1 で globalTeardown のユーザー削除を抑止し
         # lhci 実行時にセッションを有効に保つ。
         env:
-          CI: ""
+          LHCI_REUSE_SERVER: "1"
           LHCI_SKIP_TEARDOWN: "1"
         run: bun run lhci:setup
 

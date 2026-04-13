@@ -48,6 +48,9 @@ export default defineConfig({
     port: 3000,
     // CI ではビルド時間を含むため余裕を持たせる
     timeout: 120_000,
-    reuseExistingServer: !process.env.CI,
+    // Lighthouse CI の lhci:setup では外部で起動した Next を再利用する必要があるため
+    // 専用の env で明示的にオプトイン (CI env の書き換えという副作用の大きい手段を避ける)
+    reuseExistingServer:
+      !process.env.CI || process.env.LHCI_REUSE_SERVER === "1",
   },
 });
