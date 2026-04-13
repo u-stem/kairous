@@ -1,0 +1,22 @@
+name: Add to Project
+
+# 新規作成された Issue / Pull Request を自動で Project に追加する。
+# built-in workflow "Auto-add sub-issues to project" は親が Project にいる場合のみ連鎖するため、
+# top-level Issue (エピック等) をカバーするためにこの workflow を用意している。
+
+on:
+  issues:
+    types: [opened, reopened]
+  pull_request:
+    types: [opened, reopened]
+
+permissions: {}
+
+jobs:
+  add-to-project:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
+        with:
+          project-url: https://github.com/users/u-stem/projects/5
+          github-token: ${{ secrets.PROJECT_PAT }}
