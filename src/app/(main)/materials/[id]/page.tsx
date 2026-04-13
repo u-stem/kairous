@@ -5,6 +5,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { ja } from "date-fns/locale";
 
 import { getMaterial } from "@/lib/actions/materials";
+import { getMaterialElaborations } from "@/lib/actions/elaborations";
 import { getCards } from "@/lib/actions/cards";
 import { MethodChip } from "@/components/method-chip";
 import { StartSessionButton } from "@/components/start-session-button";
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { hasCardBasedMethod, SELF_RATING_LABELS } from "@/lib/constants";
 import { formatDurationHuman } from "@/lib/session-utils";
 import { CardList } from "./card-list";
+import { CardElaborationHistory } from "./card-elaboration-history";
 import { MaterialMethodSheet } from "./material-method-sheet";
 import { MethodSelectList } from "@/components/method-select-list";
 
@@ -27,10 +29,11 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
   const { id } = await params;
   const { tab } = await searchParams;
 
-  // 教材データとカード一覧を並列フェッチしてレイテンシを最小化する
-  const [material, cards] = await Promise.all([
+  // 教材データ・カード一覧・elaboration 履歴を並列フェッチしてレイテンシを最小化する
+  const [material, cards, elaborations] = await Promise.all([
     getMaterial(id),
     getCards(id),
+    getMaterialElaborations(id),
   ]);
 
   if (!material) notFound();
@@ -241,6 +244,9 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
               まだ学習記録がありません
             </p>
           )}
+
+          {/* elaboration 記述履歴: セッション履歴の下に表示 */}
+          <CardElaborationHistory elaborations={elaborations} />
 
           {/* 作成日: メタ情報として概要タブの最下部に表示 */}
           <p className="mt-6 text-xs text-muted-foreground">
