@@ -176,6 +176,9 @@ export async function getMaterials(
 export async function getMaterial(id: string): Promise<MaterialDetail | null> {
   const { user, supabase } = await requireAuth();
 
+  // .single() は 0 行で例外を投げるため、本関数の null 返却契約に合わせて
+  // .maybeSingle() を使う。CI の E2E テストで production build 環境での遷移タイミングに
+  // より material 取得前に getMaterial が呼ばれるケースがあり、フレーキーの原因となっていた
   const { data: material, error } = await supabase
     .from("materials")
     .select(`
@@ -187,7 +190,7 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
     `)
     .eq("id", id)
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (error) throw new Error(`getMaterial failed: ${error.message}`);
   if (!material) return null;
