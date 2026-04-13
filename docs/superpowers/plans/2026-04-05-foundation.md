@@ -67,7 +67,7 @@ kairous/
 **Files:**
 - Create: `package.json`, `tsconfig.json`, `next.config.ts`, `src/app/layout.tsx`, `src/app/page.tsx`
 
-- [ ] **Step 1: Next.js プ��ジェクトを作成**
+- [ ] **Step 1: Next.js プロジェクトを作成**
 
 ```bash
 cd /Users/mikiya/ws/kairous
@@ -128,7 +128,7 @@ git commit -m "chore: Next.js 16 プロジェクト初期化"
 
 ---
 
-### Task 2: Supabase CLI セッ���アップ
+### Task 2: Supabase CLI セットアップ
 
 **Files:**
 - Create: `supabase/config.toml`
@@ -145,7 +145,7 @@ bun add -D supabase
 bunx supabase init
 ```
 
-Expected: `supabase/config.toml` ��生成される。
+Expected: `supabase/config.toml` が生成される。
 
 - [ ] **Step 3: ローカル Supabase を起動して確認**
 
@@ -157,7 +157,7 @@ Expected: `supabase start` がローカルの Supabase スタック（DB, Auth, 
 
 - [ ] **Step 4: .env.local を作成**
 
-`supabase start` の出力から値を取��して `.env.local` を作成:
+`supabase start` の出力から値を取得して `.env.local` を作成:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
@@ -193,7 +193,7 @@ CREATE TABLE profiles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Subjects (分野: 英語, 数学, プ���グラミング...)
+-- Subjects (分野: 英語, 数学, プログラミング...)
 CREATE TABLE subjects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -256,7 +256,7 @@ CREATE INDEX idx_material_methods_material_id ON material_methods(material_id);
 CREATE INDEX idx_cards_material_id ON cards(material_id);
 ```
 
-- [ ] **Step 2: マイグ���ーションを実行**
+- [ ] **Step 2: マイグレーションを実行**
 
 ```bash
 bunx supabase db reset
@@ -276,17 +276,17 @@ Expected: RLS が未設定のためセキュリティ警告が出る可能性が
 
 ```bash
 git add supabase/migrations/00001_core_domain.sql
-git commit -m "feat: コアド���インテーブルのマイグレーション"
+git commit -m "feat: コアドメインテーブルのマイグレーション"
 ```
 
 ---
 
-### Task 4: セッション・���録系テーブルのマイグレーション
+### Task 4: セッション・記録系テーブルのマイグレーション
 
 **Files:**
 - Create: `supabase/migrations/00002_session_recording.sql`
 
-- [ ] **Step 1: マイグ���ーションファイルを作成**
+- [ ] **Step 1: マイグレーションファイルを作成**
 
 ```sql
 -- supabase/migrations/00002_session_recording.sql
@@ -361,7 +361,7 @@ CREATE INDEX idx_srs_states_user_due ON srs_states(user_id, due_date);
 CREATE INDEX idx_daily_logs_user_date ON daily_logs(user_id, log_date);
 ```
 
-- [ ] **Step 2: マイ���レーションを実行**
+- [ ] **Step 2: マイグレーションを実行**
 
 ```bash
 bunx supabase db reset
@@ -373,7 +373,7 @@ Expected: 2つのマイグレーションが順に適用される。
 
 ```bash
 git add supabase/migrations/00002_session_recording.sql
-git commit -m "feat: セッション・記録系テーブルのマイ���レーション"
+git commit -m "feat: セッション・記録系テーブルのマイグレーション"
 ```
 
 ---
@@ -537,7 +537,7 @@ bunx supabase db lint
 
 Expected: エラーなし。
 
-- [ ] **Step 3: ��ミット**
+- [ ] **Step 3: コミット**
 
 ```bash
 git add supabase/seed.sql
@@ -551,7 +551,7 @@ git commit -m "feat: learning_methods シードデータ（7手法）"
 **Files:**
 - Create: `src/lib/supabase/client.ts`, `src/lib/supabase/server.ts`, `src/lib/supabase/middleware.ts`, `src/lib/types/database.ts`
 
-- [ ] **Step 1: 依存パッケージをイン���トール**
+- [ ] **Step 1: 依存パッケージをインストール**
 
 ```bash
 bun add @supabase/supabase-js @supabase/ssr
@@ -705,7 +705,7 @@ git commit -m "feat: Supabase クライアント・middleware セットアップ
 bun add -D vitest @vitejs/plugin-react-swc jsdom @testing-library/react @testing-library/jest-dom
 ```
 
-`vitest.config.ts` ��作成:
+`vitest.config.ts` を作成:
 
 ```ts
 // vitest.config.ts
@@ -728,7 +728,7 @@ export default defineConfig({
 });
 ```
 
-`tests/setup.ts` ���作成:
+`tests/setup.ts` を作成:
 
 ```ts
 // tests/setup.ts
@@ -769,7 +769,7 @@ describe("LoginPage", () => {
 });
 ```
 
-- [ ] **Step 3: テストが失敗することを確��**
+- [ ] **Step 3: テストが失敗することを確認**
 
 ```bash
 bun test:small -- tests/small/app/auth/login.test.tsx
@@ -878,7 +878,7 @@ export default function LoginPage() {
       <p className="mt-4 text-center text-sm">
         アカウントをお持ちでない方は{" "}
         <Link href="/auth/signup" className="text-indigo-600 hover:underline">
-          サ��ンアップ
+          サインアップ
         </Link>
       </p>
     </div>
@@ -962,7 +962,7 @@ export default function SignupPage() {
         </div>
         <div>
           <label htmlFor="email" className="block text-sm font-medium">
-            メー���アドレス
+            メールアドレス
           </label>
           <input
             id="email"
@@ -1161,7 +1161,7 @@ describe("Sidebar", () => {
 });
 ```
 
-- [ ] **Step 7: テストが失��することを確認**
+- [ ] **Step 7: テストが失敗することを確認**
 
 ```bash
 bun test:small -- tests/small/components/navigation/sidebar.test.tsx
@@ -1169,7 +1169,7 @@ bun test:small -- tests/small/components/navigation/sidebar.test.tsx
 
 Expected: FAIL
 
-- [ ] **Step 8: Sidebar ���ンポーネントを作成**
+- [ ] **Step 8: Sidebar コンポーネントを作成**
 
 ```tsx
 // src/components/navigation/sidebar.tsx
@@ -1314,14 +1314,14 @@ export default function TodayPage() {
 }
 ```
 
-- [ ] **Step 4: 残りのプレースホルダーページを��成**
+- [ ] **Step 4: 残りのプレースホルダーページを作成**
 
 ```tsx
 // src/app/(main)/materials/page.tsx
 export default function MaterialsPage() {
   return (
     <div className="p-4">
-      <h2 className="text-lg font-bold">���材</h2>
+      <h2 className="text-lg font-bold">教材</h2>
       <p className="mt-2 text-gray-500">教材一覧がここに表示されます</p>
     </div>
   );
