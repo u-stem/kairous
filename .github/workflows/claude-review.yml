@@ -32,7 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           node_ids=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" --paginate \
-            --jq '.[] | select(.user.login == "claude[bot]") | select(.body | startswith("## レビュー総評")) | .node_id')
+            --jq '.[] | select(.user.login == "claude[bot]") | select(.body != null and (.body | startswith("## レビュー総評"))) | .node_id')
           if [ -z "$node_ids" ]; then
             echo "No prior review summaries to minimize."
             exit 0
@@ -42,7 +42,7 @@ jobs:
             # 既に minimize 済みのコメントはエラーになるため握りつぶす
             gh api graphql \
               -f query='mutation($id: ID!) { minimizeComment(input: {subjectId: $id, classifier: OUTDATED}) { minimizedComment { isMinimized } } }' \
-              -f id="$id" || echo "  skip (already minimized or failed)"
+              -F id="$id" || echo "  skip (already minimized or failed)"
           done
 
       - name: Run Claude Code Review
@@ -85,5 +85,5 @@ jobs:
 
             ## 出力ルール
             - inline コメントは必ず confirmed: true で投稿すること (バッファリング回避)
-            - 最後に `gh pr comment` で総評 (LGTM の可否と根拠) を投稿すること
+            - 最後に `gh pr comment` で総評 (LGTM の可否と根拠) を投稿すること。**body は必ず `## レビュー総評` (または `## レビュー総評 (Nth review)`) で始めること** (自動 minimize ワークフローが header で識別するため)
             - メッセージとしてレビュー内容を返さないこと (GitHub コメントのみ)
