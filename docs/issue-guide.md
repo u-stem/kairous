@@ -160,7 +160,14 @@ MS 内の Issue は以下の優先度で着手する。
 
 ### Project Status の自動遷移
 
-手動で Project の Status を動かす必要はほぼない (Epic #196 で自動化済み)。PR の open / draft 切替に連動する。手動操作は「ブロッカー発生時の状態巻き戻し」など例外ケースのみ。
+手動で Project の Status を動かす必要はほぼない (Epic #196 で自動化済み)。PR の open / draft 切替に連動する。
+
+手動操作が必要な例外:
+- サブタスク (PBI の子で個別 PR を持たない) は自動遷移対象外のため着手時に手動で In Progress に更新
+- ブロッカー発生時の状態巻き戻し
+- マイルストーン / エピック完了時のクローズ操作
+
+詳細は [`.claude/rules/workflow.md` の「ステータス更新のタイミング」節](../.claude/rules/workflow.md) を参照。
 
 ## Discussions の使い分け
 
