@@ -131,6 +131,37 @@ MS 内の Issue は以下の優先度で着手する。
 
 `.github/ISSUE_TEMPLATE/` に配置済み。新規 Issue は必ずテンプレートを使用する。
 
+| テンプレート | 用途 |
+|---|---|
+| `pbi.yml` | PBI (プロダクトバックログアイテム)。**触るファイル領域** 必須 |
+| `bug.md` | バグ報告 |
+| `feature.md` | 機能リクエスト |
+
+`pbi.yml` のみ [Issue Forms](https://docs.github.com/issues/tracking-your-work-with-issues/using-issue-forms) 形式 (必須項目を強制するため)。bug/feature は Markdown 形式。
+
+## マルチセッション協調
+
+独立した Claude Code セッションが並行稼働する場合、ファイル競合を避けるため以下のルールに従う。詳細は [`.claude/rules/workflow.md` の「マルチセッション協調」節](../.claude/rules/workflow.md) を参照。
+
+### 基本方針
+
+- 通信は GitHub Issue + コメント + Project Status のみを用いる (Claude Code の Agent Teams は同一親セッション内のみサポート)
+- PBI には必ず「触るファイル領域」を記載する (`pbi.yml` テンプレート必須項目)
+- 着手時に Issue コメントで宣言する: `着手: セッション α / 開始 日時 / 領域: ...`
+
+### 着手前の確認フロー
+
+1. `gh issue list --repo u-stem/kairous --state open --json number,title,projectItems` で他セッションの In Progress / In Review Issue を抽出
+2. 自分の PBI のファイル領域と重複しないか目視確認
+3. 重複する場合は:
+   - 先行 Issue の完了を待つ (blocked by で明示)
+   - 自分の範囲を狭める
+   - 領域の切り分けを Issue コメントで合意する
+
+### Project Status の自動遷移
+
+手動で Project の Status を動かす必要はほぼない (Epic #196 で自動化済み)。PR の open / draft 切替に連動する。手動操作は「ブロッカー発生時の状態巻き戻し」など例外ケースのみ。
+
 ## Discussions の使い分け
 
 Issue は具体的なタスク、Discussions はそれ以外の議論・記録に使う。
