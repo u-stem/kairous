@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
     return jsonError(validation.message, 400);
   }
 
-  const { session_id, reviews } = validation;
+  const { session_id, reviews, elaborations } = validation;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -221,6 +221,26 @@ Deno.serve(async (req) => {
         `complete_session_reviews failed: ${completeError.message}`,
         500,
       );
+    }
+
+    // 認知的詳述のテキストを正規化テーブルに保存する。
+    // sessions.meta の JSONB に埋め込むと履歴集計や全文検索が難しいため、専用テーブルに分離する
+    if (elaborations.length > 0) {
+      const elaborationRows = elaborations.map((e) => ({
+        user_id: callerId,
+        session_id,
+        card_id: e.card_id,
+        elaboration_text: e.text,
+      }));
+      const { error: elabError } = await supabase
+        .from("card_elaborations")
+        .insert(elaborationRows);
+      if (elabError) {
+        return jsonError(
+          `card_elaborations INSERT failed: ${elabError.message}`,
+          500,
+        );
+      }
     }
   } else {
     return jsonError(`Unsupported method: ${methodSlug}`, 400);

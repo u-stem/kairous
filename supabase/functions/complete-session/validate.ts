@@ -22,10 +22,20 @@ export type ReviewInput = {
   answered_at: string;
 };
 
+export type ElaborationInput = {
+  card_id: string;
+  text: string;
+};
+
+// 精緻化テキストの DB 負荷を避けるため上限を設ける
+// src/lib/constants.ts の VALIDATION_LIMITS.ELABORATION_TEXT_MAX と同値。Deno 環境のため import 不可
+const ELABORATION_TEXT_MAX = 10000;
+
 type ValidationSuccess = {
   ok: true;
   session_id: string;
   reviews: ReviewInput[];
+  elaborations: ElaborationInput[];
 };
 
 type ValidationFailure = {
@@ -40,7 +50,7 @@ export function validateRequest(body: unknown): ValidationResult {
     return { ok: false, message: "Request body must be a JSON object" };
   }
 
-  const { session_id, reviews } = body as Record<string, unknown>;
+  const { session_id, reviews, elaborations } = body as Record<string, unknown>;
 
   if (!isUUID(session_id)) {
     return { ok: false, message: "session_id must be a valid UUID" };
@@ -76,5 +86,34 @@ export function validateRequest(body: unknown): ValidationResult {
     cardIds.add(r.card_id as string);
   }
 
-  return { ok: true, session_id, reviews: reviews as ReviewInput[] };
+  // elaborations は optional。Elaboration 以外のメソッドは送信しない or 空配列を許容する
+  const validatedElaborations: ElaborationInput[] = [];
+  if (elaborations !== undefined && elaborations !== null) {
+    if (!Array.isArray(elaborations)) {
+      return { ok: false, message: "elaborations must be an array" };
+    }
+    for (let i = 0; i < elaborations.length; i++) {
+      const e = elaborations[i] as Record<string, unknown>;
+      if (!isUUID(e.card_id)) {
+        return { ok: false, message: `elaborations[${i}].card_id must be a valid UUID` };
+      }
+      if (typeof e.text !== "string" || e.text.length === 0) {
+        return { ok: false, message: `elaborations[${i}].text must be a non-empty string` };
+      }
+      if (e.text.length > ELABORATION_TEXT_MAX) {
+        return {
+          ok: false,
+          message: `elaborations[${i}].text must be at most ${ELABORATION_TEXT_MAX} characters`,
+        };
+      }
+      validatedElaborations.push({ card_id: e.card_id as string, text: e.text });
+    }
+  }
+
+  return {
+    ok: true,
+    session_id,
+    reviews: reviews as ReviewInput[],
+    elaborations: validatedElaborations,
+  };
 }
