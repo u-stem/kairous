@@ -208,12 +208,14 @@ Deno.serve(async (req) => {
       );
     }
   } else if (methodSlug === "elaboration") {
-    // Elaboration は FSRS 計算なし。card_reviews のみ INSERT し daily_logs は後続で記録する
+    // Elaboration は FSRS 計算なし。card_reviews と card_elaborations を
+    // 同一トランザクションで INSERT し partial success を防ぐ
     const { error: completeError } = await supabase.rpc("complete_session_reviews", {
       p_session_id: session_id,
       p_user_id: callerId,
       p_reviews: reviewRows,
       p_srs_states: [],
+      p_elaborations: elaborations,
     });
 
     if (completeError) {
@@ -221,26 +223,6 @@ Deno.serve(async (req) => {
         `complete_session_reviews failed: ${completeError.message}`,
         500,
       );
-    }
-
-    // 認知的詳述のテキストを正規化テーブルに保存する。
-    // sessions.meta の JSONB に埋め込むと履歴集計や全文検索が難しいため、専用テーブルに分離する
-    if (elaborations.length > 0) {
-      const elaborationRows = elaborations.map((e) => ({
-        user_id: callerId,
-        session_id,
-        card_id: e.card_id,
-        elaboration_text: e.text,
-      }));
-      const { error: elabError } = await supabase
-        .from("card_elaborations")
-        .insert(elaborationRows);
-      if (elabError) {
-        return jsonError(
-          `card_elaborations INSERT failed: ${elabError.message}`,
-          500,
-        );
-      }
     }
   } else {
     return jsonError(`Unsupported method: ${methodSlug}`, 400);

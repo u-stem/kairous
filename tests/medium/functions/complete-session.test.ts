@@ -263,6 +263,18 @@ describe("complete-session Edge Function (DB integration)", () => {
       expect(elab.card_id).toBe(card.id);
       expect(elab.elaboration_text).toBe("既知の概念との関連を自分の言葉で説明");
 
+      // card_reviews も同一トランザクションで挿入されていることを検証
+      // (card_reviews と card_elaborations の atomicity を担保する RPC の動作確認)
+      const { data: reviews } = await getAdminClient()
+        .from("card_reviews")
+        .select("card_id, rating")
+        .eq("session_id", session.id);
+
+      expect(reviews).toHaveLength(1);
+      const review = reviews![0] as { card_id: string; rating: number };
+      expect(review.card_id).toBe(card.id);
+      expect(review.rating).toBe(3);
+
       // sessions.meta に elaborations は保存されない (正規化テーブルへ移行済み)
       const { data: sess } = await getAdminClient()
         .from("sessions")

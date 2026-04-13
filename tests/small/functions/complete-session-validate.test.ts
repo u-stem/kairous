@@ -276,6 +276,21 @@ describe("validateRequest", () => {
     });
   });
 
+  it("rejects duplicate card_id in elaborations", () => {
+    const result = validateRequest({
+      session_id: VALID_UUID,
+      reviews: [validReview()],
+      elaborations: [
+        { card_id: VALID_UUID, text: "first" },
+        { card_id: VALID_UUID, text: "second" },
+      ],
+    });
+    expect(result).toEqual({
+      ok: false,
+      message: "elaborations[1].card_id is duplicated",
+    });
+  });
+
   it("rejects non-array elaborations", () => {
     const result = validateRequest({
       session_id: VALID_UUID,

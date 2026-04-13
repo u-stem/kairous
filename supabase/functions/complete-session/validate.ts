@@ -86,12 +86,13 @@ export function validateRequest(body: unknown): ValidationResult {
     cardIds.add(r.card_id as string);
   }
 
-  // elaborations は optional。Elaboration 以外のメソッドは送信しない or 空配列を許容する
+  // elaborations は optional。Elaboration 以外のメソッドは空配列を送る (省略可、null も許容)
   const validatedElaborations: ElaborationInput[] = [];
   if (elaborations !== undefined && elaborations !== null) {
     if (!Array.isArray(elaborations)) {
       return { ok: false, message: "elaborations must be an array" };
     }
+    const elaborationCardIds = new Set<string>();
     for (let i = 0; i < elaborations.length; i++) {
       const e = elaborations[i] as Record<string, unknown>;
       if (!isUUID(e.card_id)) {
@@ -106,6 +107,12 @@ export function validateRequest(body: unknown): ValidationResult {
           message: `elaborations[${i}].text must be at most ${ELABORATION_TEXT_MAX} characters`,
         };
       }
+      // 同一カードの elaboration が複数渡されると card_elaborations に重複行が作られ、
+      // 履歴表示で「同じ時刻に同じ内容の記述が 2 件」のような異常表示になる
+      if (elaborationCardIds.has(e.card_id as string)) {
+        return { ok: false, message: `elaborations[${i}].card_id is duplicated` };
+      }
+      elaborationCardIds.add(e.card_id as string);
       validatedElaborations.push({ card_id: e.card_id as string, text: e.text });
     }
   }

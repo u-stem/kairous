@@ -583,15 +583,26 @@ export type Database = {
     }
     Functions: {
       batch_upsert_srs_states: { Args: { p_states: Json }; Returns: undefined }
-      complete_session_reviews: {
-        Args: {
-          p_reviews: Json
-          p_session_id: string
-          p_srs_states: Json
-          p_user_id: string
-        }
-        Returns: undefined
-      }
+      complete_session_reviews:
+        | {
+            Args: {
+              p_reviews: Json
+              p_session_id: string
+              p_srs_states: Json
+              p_user_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_elaborations?: Json
+              p_reviews: Json
+              p_session_id: string
+              p_srs_states: Json
+              p_user_id: string
+            }
+            Returns: undefined
+          }
       create_card_with_order: {
         Args: { p_back: string; p_front: string; p_material_id: string }
         Returns: string

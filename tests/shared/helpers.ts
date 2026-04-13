@@ -116,7 +116,7 @@ export async function cleanupTestData(userId: string) {
   // user_id を直接持つテーブル
   const userOwnedTables = [
     "daily_logs",
-    "sessions",       // card_reviews, session_materials は CASCADE で連鎖削除
+    "sessions",       // card_reviews, card_elaborations, session_materials は CASCADE で連鎖削除
     "srs_states",
   ] as const;
 
