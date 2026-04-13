@@ -133,3 +133,97 @@ describe("profiles.notification_enabled RLS", () => {
     expect(otherProfile?.notification_enabled).toBe(false);
   });
 });
+
+describe("get_due_counts_by_subject RPC", () => {
+  it("returns due counts grouped by subject, including unstudied cards", async () => {
+    const admin = getAdminClient();
+
+    // 2科目・2教材・各2カード。A は SRS state あり (future due で除外されるはず)、
+    // B は SRS state なし (未学習 = due 扱い)
+    const subARes = await admin
+      .from("subjects")
+      .insert({ user_id: userId, name: "数学", color: "#1976d2" })
+      .select("id")
+      .single<{ id: string }>();
+    const subAId = subARes.data!.id;
+    const subBRes = await admin
+      .from("subjects")
+      .insert({ user_id: userId, name: "英語", color: "#388e3c" })
+      .select("id")
+      .single<{ id: string }>();
+    const subBId = subBRes.data!.id;
+
+    const matARes = await admin
+      .from("materials")
+      .insert({ user_id: userId, subject_id: subAId, title: "math-material" })
+      .select("id")
+      .single<{ id: string }>();
+    const matAId = matARes.data!.id;
+    const matBRes = await admin
+      .from("materials")
+      .insert({ user_id: userId, subject_id: subBId, title: "english-material" })
+      .select("id")
+      .single<{ id: string }>();
+    const matBId = matBRes.data!.id;
+
+    const cardsARes = await admin
+      .from("cards")
+      .insert([
+        { material_id: matAId, front: "Q1", back: "A1", display_order: 0 },
+        { material_id: matAId, front: "Q2", back: "A2", display_order: 1 },
+      ])
+      .select("id")
+      .overrideTypes<{ id: string }[], { merge: false }>();
+    const cardAIds = cardsARes.data!.map((c) => c.id);
+    await admin
+      .from("cards")
+      .insert([
+        { material_id: matBId, front: "Q3", back: "A3", display_order: 0 },
+        { material_id: matBId, front: "Q4", back: "A4", display_order: 1 },
+      ]);
+
+    // math のカード 1 件だけ past-due、もう 1 件は future-due にする
+    const target = "2026-04-15";
+    await admin.from("srs_states").insert([
+      {
+        card_id: cardAIds[0],
+        user_id: userId,
+        stability: 1,
+        difficulty: 5,
+        reps: 1,
+        lapses: 0,
+        state: "Review",
+        due_date: "2026-04-10", // past: due 扱い
+        last_reviewed_at: "2026-04-09T00:00:00Z",
+      },
+      {
+        card_id: cardAIds[1],
+        user_id: userId,
+        stability: 1,
+        difficulty: 5,
+        reps: 1,
+        lapses: 0,
+        state: "Review",
+        due_date: "2026-04-20", // future: 除外
+        last_reviewed_at: "2026-04-09T00:00:00Z",
+      },
+    ]);
+
+    const rpcRes = await admin.rpc("get_due_counts_by_subject", {
+      p_user_id: userId,
+      p_target_date: target,
+    });
+
+    expect(rpcRes.error).toBeNull();
+    // 数学: 1 件 (past-due のみ)、英語: 2 件 (未学習 2 件)
+    expect(rpcRes.data).toEqual(
+      expect.arrayContaining([
+        { subject_name: "数学", due_count: 1 },
+        { subject_name: "英語", due_count: 2 },
+      ]),
+    );
+
+    // 後続テストに影響させないため削除
+    await admin.from("subjects").delete().eq("user_id", userId);
+  });
+});

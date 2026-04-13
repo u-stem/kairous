@@ -220,13 +220,8 @@ export async function deleteNotificationSchedule(
 
 // 通知表示時に呼ばれるデータ取得アクション
 // 注: get_due_materials RPC は SRS 手法のみ返す。通知では全手法の due カードを
-// 対象にするため、cards + srs_states を直接クエリする。
-
-// Supabase JOIN 結果の型
-type JoinedCardWithSubject = {
-  id: string;
-  materials: { subject_id: string; subjects: { name: string } };
-};
+// 対象にするため get_due_counts_by_subject RPC で DB 側集計する
+// (従来 JS 側集計では PostgREST の 1000 行上限で static truncation する問題があった)
 
 type DueTodayResult = { subjects: SubjectDueCount[] };
 type ReviewAndPreviewResult = { sessionsToday: number; subjects: SubjectDueCount[] };
@@ -243,39 +238,18 @@ export async function getNotificationData(
   const { user, supabase } = await requireAuth();
   const today = toJstDateString(new Date());
 
-  async function getDueBySubject(targetDate: string) {
-    const { data } = await supabase
-      .from("cards")
-      .select(`
-        id,
-        materials!inner(subject_id, subjects!inner(name))
-      `)
-      .eq("materials.user_id", user.id);
+  async function getDueBySubject(targetDate: string): Promise<SubjectDueCount[]> {
+    const { data, error } = await supabase.rpc("get_due_counts_by_subject", {
+      p_user_id: user.id,
+      p_target_date: targetDate,
+    });
 
-    if (!data) return [];
+    if (error) throw new Error(`get_due_counts_by_subject failed: ${error.message}`);
 
-    const cardIds = (data as JoinedCardWithSubject[]).map((c) => c.id);
-    const { data: futureStates } = await supabase
-      .from("srs_states")
-      .select("card_id")
-      .eq("user_id", user.id)
-      .gt("due_date", targetDate)
-      .in("card_id", cardIds);
-
-    const futureIds = new Set((futureStates ?? []).map((s: { card_id: string }) => s.card_id));
-    const dueCards = (data as JoinedCardWithSubject[]).filter((c) => !futureIds.has(c.id));
-
-    const counts = new Map<string, { subject: string; count: number }>();
-    for (const card of dueCards) {
-      const subjectName = card.materials.subjects.name;
-      const existing = counts.get(subjectName);
-      if (existing) {
-        existing.count += 1;
-      } else {
-        counts.set(subjectName, { subject: subjectName, count: 1 });
-      }
-    }
-    return Array.from(counts.values());
+    return (data ?? []).map((row: { subject_name: string; due_count: number }) => ({
+      subject: row.subject_name,
+      count: Number(row.due_count),
+    }));
   }
 
   if (messageType === "due_today") {
