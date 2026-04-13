@@ -87,7 +87,7 @@ docs/
 |------|------|----------|---------------|
 | Small | tests/small/ | なし (全モック) | pre-commit |
 | Medium | tests/medium/ | Supabase ローカル | CI |
-| Large | tests/large/ | Playwright + Supabase ローカル | CI パイプラ���ン内 |
+| Large | tests/large/ | Playwright + Supabase ローカル | CI パイプライン内 |
 
 ## 開発ガイド
 

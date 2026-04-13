@@ -55,13 +55,10 @@ test.describe.serial("Dialog / Sheet a11y", () => {
     await expect(dialog).toBeVisible();
 
     // 1. 開時に focus が Dialog 内部へ移動していること
+    // dialog locator (accessible な role+name) を evaluate に渡し、
+    // 実装詳細の data-slot 属性に依存しないで判定する
     await expect
-      .poll(() =>
-        page.evaluate(() => {
-          const dlg = document.querySelector('[data-slot="dialog-content"]');
-          return dlg ? dlg.contains(document.activeElement) : false;
-        })
-      )
+      .poll(() => dialog.evaluate((el) => el.contains(document.activeElement)))
       .toBe(true);
 
     // 2. Tab で focus が Dialog 内に trap されること
@@ -71,12 +68,7 @@ test.describe.serial("Dialog / Sheet a11y", () => {
     for (let i = 0; i < 5; i++) {
       await page.keyboard.press("Tab");
       await expect
-        .poll(() =>
-          page.evaluate(() => {
-            const dlg = document.querySelector('[data-slot="dialog-content"]');
-            return dlg ? dlg.contains(document.activeElement) : false;
-          })
-        )
+        .poll(() => dialog.evaluate((el) => el.contains(document.activeElement)))
         .toBe(true);
     }
 
@@ -108,24 +100,14 @@ test.describe.serial("Dialog / Sheet a11y", () => {
 
     // 1. 開時に focus が Sheet 内部へ移動していること
     await expect
-      .poll(() =>
-        page.evaluate(() => {
-          const dlg = document.querySelector('[data-slot="sheet-content"]');
-          return dlg ? dlg.contains(document.activeElement) : false;
-        })
-      )
+      .poll(() => sheet.evaluate((el) => el.contains(document.activeElement)))
       .toBe(true);
 
     // 2. Tab で focus が Sheet 内に trap されること (Dialog と同じく FocusGuard 考慮)
     for (let i = 0; i < 5; i++) {
       await page.keyboard.press("Tab");
       await expect
-        .poll(() =>
-          page.evaluate(() => {
-            const dlg = document.querySelector('[data-slot="sheet-content"]');
-            return dlg ? dlg.contains(document.activeElement) : false;
-          })
-        )
+        .poll(() => sheet.evaluate((el) => el.contains(document.activeElement)))
         .toBe(true);
     }
 
