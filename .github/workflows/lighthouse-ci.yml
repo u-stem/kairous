@@ -1,0 +1,96 @@
+name: Lighthouse CI
+
+# PR で主要 3 画面 (Today / Materials / Stats) の Lighthouse Accessibility スコアを
+# 測定し、95 未満なら fail させる (PBI #190)。認証は既存 Playwright storageState
+# を puppeteer script に注入して突破する。
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".claude/**"
+      - "LICENSE"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: "1.3.2"
+      - uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
+        with:
+          version: "2.76.7"
+      - run: bun install --frozen-lockfile
+
+      - name: Playwright ブラウザインストール
+        run: bunx playwright install --with-deps chromium
+
+      - name: Supabase ローカル起動
+        run: supabase start -x realtime,storage,imgproxy,pgadmin-schema-diff,migra,studio,logflare,vector,supavisor
+
+      - name: 環境変数を設定
+        run: |
+          eval $(supabase status -o env | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY)=')
+          echo "NEXT_PUBLIC_SUPABASE_URL=${API_URL}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> $GITHUB_ENV
+
+      - name: Next.js 本番ビルド
+        # dev サーバは HMR/overlay スクリプトで a11y スコアが歪むため production build を計測する
+        run: bun run build
+
+      - name: Next.js サーバ起動 (バックグラウンド)
+        run: |
+          bun run start &
+          bunx wait-on http://localhost:3000 --timeout 60000
+
+      - name: 認証 storageState を生成
+        # Playwright の setup プロジェクトで /auth/login を突破し
+        # tests/large/.auth/user.json に cookies を書き出す。
+        # LHCI_REUSE_SERVER=1 で playwright.config.ts の reuseExistingServer を
+        # 強制的に true にし、外部で起動済みの bun run start (:3000) を再利用させる。
+        # LHCI_SKIP_TEARDOWN=1 で globalTeardown のユーザー削除を抑止し
+        # lhci 実行時にセッションを有効に保つ。
+        env:
+          LHCI_REUSE_SERVER: "1"
+          LHCI_SKIP_TEARDOWN: "1"
+        run: bun run lhci:setup
+
+      - name: Lighthouse 計測用の Chrome パスを明示
+        # puppeteer postinstall は trustedDependencies 外のためスキップされ、
+        # 独自 Chromium はダウンロードされない。ubuntu-latest runner に
+        # プリインストール済みの google-chrome-stable を CHROME_PATH で明示指定し、
+        # 暗黙のシステム Chrome 依存を顕在化させる。
+        run: |
+          CHROME_PATH=$(which google-chrome-stable)
+          if [ -z "$CHROME_PATH" ]; then
+            echo "google-chrome-stable が見つからない" >&2
+            exit 1
+          fi
+          echo "CHROME_PATH=${CHROME_PATH}" >> $GITHUB_ENV
+
+      - name: Lighthouse CI 実行
+        env:
+          # puppeteer は trustedDependencies 外で Chromium 未ダウンロード。
+          # puppeteerScript 内の browser.newPage() 等のため system Chrome を明示。
+          PUPPETEER_EXECUTABLE_PATH: ${{ env.CHROME_PATH }}
+        run: bun run lhci
+
+      - name: Lighthouse レポートを artifact に保存
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        with:
+          name: lighthouse-report
+          path: .lighthouseci/
+          retention-days: 7

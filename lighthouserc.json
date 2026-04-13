@@ -1,0 +1,29 @@
+{
+  "ci": {
+    "collect": {
+      "url": [
+        "http://localhost:3000/",
+        "http://localhost:3000/materials",
+        "http://localhost:3000/stats"
+      ],
+      "numberOfRuns": 1,
+      "puppeteerScript": "./scripts/lighthouse-auth.cjs",
+      "puppeteerLaunchOptions": {
+        "args": ["--no-sandbox", "--disable-dev-shm-usage"]
+      },
+      "settings": {
+        "preset": "desktop",
+        "onlyCategories": ["accessibility"]
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:accessibility": ["error", { "minScore": 0.95 }]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": ".lighthouseci"
+    }
+  }
+}

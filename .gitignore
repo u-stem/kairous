@@ -54,3 +54,6 @@ next-env.d.ts
 tests/large/.auth/
 test-results/
 playwright-report/
+
+# Lighthouse CI
+.lighthouseci/
