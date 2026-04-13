@@ -4,10 +4,11 @@ name: Issue Status Sync
 # built-in workflow の "Pull request linked to issue" は 1 つのステータスにしか
 # マップできないため、draft / ready_for_review で In Progress / In Review を
 # 切り替えるには custom workflow が必要。
+# closed / merged は built-in workflow が Done に遷移させるため対象外。
 
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review, converted_to_draft, closed]
+    types: [opened, reopened, ready_for_review, converted_to_draft]
 
 permissions:
   pull-requests: read
@@ -15,11 +16,8 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.state == 'open' || github.event.action == 'closed'
     steps:
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
-        env:
-          PROJECT_PAT: ${{ secrets.PROJECT_PAT }}
         with:
           github-token: ${{ secrets.PROJECT_PAT }}
           script: |
@@ -30,13 +28,7 @@ jobs:
               IN_REVIEW: 'c67d3a12',
             };
 
-            // PR merged / closed は built-in workflow が Done に遷移させるため対象外
             const pr = context.payload.pull_request;
-            if (pr.state === 'closed') {
-              core.info('PR closed; leaving status to built-in workflow');
-              return;
-            }
-
             const targetOpt = pr.draft ? OPT.IN_PROGRESS : OPT.IN_REVIEW;
             const targetName = pr.draft ? 'In Progress' : 'In Review';
 
@@ -63,39 +55,43 @@ jobs:
               return;
             }
 
+            // 1件の失敗が他の issue に波及しないよう try-catch で分離
             for (const issue of linkedIssues) {
-              // Issue の Project item を取得
-              const itemQuery = `
-                query($id: ID!) {
-                  node(id: $id) {
-                    ... on Issue {
-                      projectItems(first: 10) {
-                        nodes { id project { id } }
+              try {
+                const itemQuery = `
+                  query($id: ID!) {
+                    node(id: $id) {
+                      ... on Issue {
+                        projectItems(first: 10) {
+                          nodes { id project { id } }
+                        }
                       }
                     }
                   }
+                `;
+                const { node } = await github.graphql(itemQuery, { id: issue.id });
+                const item = node.projectItems.nodes.find(n => n.project.id === PROJECT_ID);
+                if (!item) {
+                  core.info(`#${issue.number} not in Project; skip`);
+                  continue;
                 }
-              `;
-              const { node } = await github.graphql(itemQuery, { id: issue.id });
-              const item = node.projectItems.nodes.find(n => n.project.id === PROJECT_ID);
-              if (!item) {
-                core.info(`#${issue.number} not in Project; skip`);
-                continue;
-              }
 
-              const mutation = `
-                mutation($project: ID!, $item: ID!, $field: ID!, $opt: String!) {
-                  updateProjectV2ItemFieldValue(input: {
-                    projectId: $project, itemId: $item, fieldId: $field,
-                    value: { singleSelectOptionId: $opt }
-                  }) { projectV2Item { id } }
-                }
-              `;
-              await github.graphql(mutation, {
-                project: PROJECT_ID,
-                item: item.id,
-                field: STATUS_FIELD,
-                opt: targetOpt,
-              });
-              core.info(`#${issue.number} → ${targetName}`);
+                const mutation = `
+                  mutation($project: ID!, $item: ID!, $field: ID!, $opt: String!) {
+                    updateProjectV2ItemFieldValue(input: {
+                      projectId: $project, itemId: $item, fieldId: $field,
+                      value: { singleSelectOptionId: $opt }
+                    }) { projectV2Item { id } }
+                  }
+                `;
+                await github.graphql(mutation, {
+                  project: PROJECT_ID,
+                  item: item.id,
+                  field: STATUS_FIELD,
+                  opt: targetOpt,
+                });
+                core.info(`#${issue.number} → ${targetName}`);
+              } catch (err) {
+                core.warning(`#${issue.number}: failed to update status — ${err.message}`);
+              }
             }
