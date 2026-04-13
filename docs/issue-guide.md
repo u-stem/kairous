@@ -141,7 +141,7 @@ MS 内の Issue は以下の優先度で着手する。
 
 ## マルチセッション協調
 
-独立した Claude Code セッションが並行稼働する場合、ファイル競合を避けるため以下のルールに従う。詳細は [`.claude/rules/workflow.md` の「マルチセッション協調」節](.claude/rules/workflow.md) を参照。
+独立した Claude Code セッションが並行稼働する場合、ファイル競合を避けるため以下のルールに従う。詳細は [`.claude/rules/workflow.md` の「マルチセッション協調」節](../.claude/rules/workflow.md) を参照。
 
 ### 基本方針
 
