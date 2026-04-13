@@ -1,27 +1,23 @@
 {
-  "task": "Kairous 次エピック着手",
+  "task": "Kairous v0.12.0 Streak カウンター完了",
   "status": "completed",
   "completed": [
-    "v0.11.0 ユーザー定義手法 完了",
-    "ハーネスエンジニアリング改善: CLAUDE.md 圧縮 (99→42行), フック 5件追加, Agent Teams 有効化",
-    "v0.14.0 Free Study モード (Epic #144) 完了・マージ (PR #153)",
-    "振り返り Discussion #154 投稿・アクション消化・クローズ",
-    "マイルストーン v0.14.0 クローズ"
+    "v0.14.0 Free Study モード完了",
+    "v0.14.1 UX 改善完了 (PR #160)",
+    "v0.12.0 Streak カウンター (Epic #142) 完了",
+    "Phase 1: #162 計算ロジック (PR #166) + #163 Server Action (PR #167) Agent Teams 並列実装",
+    "Phase 2: #164 Today表示 (PR #168) + #165 Stats表示 (PR #169) Agent Teams 並列実装",
+    "振り返り Discussion #170 投稿・アクション消化・クローズ"
   ],
   "next": [
-    "次エピック候補: #142 連続記録 (Streak) カウンター (中), #143 Elaboration 永続化 (中)",
-    "Agent Teams を並列 PBI で実際に試す"
+    "次エピック候補: #143 Elaboration 永続化 (中)"
   ],
   "decisions": [
-    "ブレインストーミングは推奨案込みの設計ドラフトを一括提示する",
-    "エピック規模でも PBI 分解は必須",
-    "Subagent-Driven Development をデフォルト実行方式にする",
-    "autocompact 70%",
-    "Supabase MCP は v1.0 安定後に再検討",
-    "確認なしで自律的に進行する (ラウンドトリップ削減)",
-    "E2E テストデータは手法名と被らない名前にする"
+    "Streak はアプリ層計算 (daily_logs → TypeScript 純粋関数)",
+    "Agent Teams 初回試行: worktree ブランチ混線が2回発生、pwd+branch確認指示で対策",
+    "docs のみの変更は main 直接 push 許可"
   ],
   "blockers": [],
   "files_modified": [],
-  "updated_at": "2026-04-10T21:10:00+09:00"
+  "updated_at": "2026-04-12T00:30:00+09:00"
 }
