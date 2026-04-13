@@ -19,12 +19,16 @@ jobs:
         with:
           fetch-depth: 1
 
-      # 過去のレビュー総評を OUTDATED として折りたたむ。
-      # 新しい総評が投稿されるたびに積み上がるスクロール負荷を軽減する目的。
+      # 過去のレビュー総評と進捗コメントを OUTDATED として折りたたむ。
+      # 新しいレビューが走るたびに積み上がるスクロール負荷を軽減する目的。
       # inline コメントはスレッド resolve で既に折りたたまれるため対象外。
-      # 進捗コメント ("**Claude finished") は誤 minimize を避けるため除外し、
-      # 総評 ("## レビュー総評" で始まる body) のみを対象にする。
-      - name: Minimize prior review summaries
+      # 対象:
+      #   - 総評 ("## レビュー総評" で始まる body)
+      #   - 進捗コメント ("**Claude finished" で始まる body)
+      # このステップは Claude review 本体より前に動くため、存在する
+      # "Claude finished" は必ず過去 run のもので、当 run のコメントを誤って
+      # minimize する心配はない。
+      - name: Minimize prior review comments
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -32,9 +36,9 @@ jobs:
         run: |
           set -euo pipefail
           node_ids=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" --paginate \
-            --jq '.[] | select(.user.login == "claude[bot]") | select(.body != null and (.body | startswith("## レビュー総評"))) | .node_id')
+            --jq '.[] | select(.user.login == "claude[bot]") | select(.body != null and ((.body | startswith("## レビュー総評")) or (.body | startswith("**Claude finished")))) | .node_id')
           if [ -z "$node_ids" ]; then
-            echo "No prior review summaries to minimize."
+            echo "No prior review comments to minimize."
             exit 0
           fi
           for id in $node_ids; do
