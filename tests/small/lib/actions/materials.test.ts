@@ -191,6 +191,7 @@ describe("getMaterial", () => {
         delete: vi.fn().mockImplementation(() => makeChain(resolvedValue)),
         eq: vi.fn().mockImplementation(() => makeChain(resolvedValue)),
         single: vi.fn().mockReturnValue(resolved),
+        maybeSingle: vi.fn().mockReturnValue(resolved),
         order: vi.fn().mockImplementation(() => makeChain(resolvedValue)),
         ilike: vi.fn().mockImplementation(() => makeChain(resolvedValue)),
         lte: vi.fn().mockImplementation(() => makeChain(resolvedValue)),
