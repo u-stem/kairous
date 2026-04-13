@@ -21,3 +21,5 @@ Claude Code 設定・運用ルールの変更履歴。コード側の変更は G
 ### Notes
 - Claude Code v2.1.104 時点のベストプラクティスに追従
 - 個人の allow リスト整理 (`settings.local.json`) は各自の裁量で実施
+- Issue/Project 連携自動化 (Epic #196) 完了。`docs/issue-guide.md` を自動遷移前提に更新し、サブタスク手動更新など残る例外ケースのみ記載する形に整理 (#200)
+- `.github/workflows/claude-review.yml` に古い総評の自動 minimize ステップを追加 (#211)
