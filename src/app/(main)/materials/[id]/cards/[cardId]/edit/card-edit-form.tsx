@@ -86,7 +86,7 @@ export function CardEditForm({ card, materialId }: CardEditFormProps) {
                 disabled={isDeleting}
               >
                 {isDeleting && (
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  <Loader2 aria-hidden="true" className="mr-1.5 h-4 w-4 animate-spin" />
                 )}
                 削除
               </Button>

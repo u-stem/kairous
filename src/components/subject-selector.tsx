@@ -83,7 +83,7 @@ export function SubjectSelector({
         onClick={() => setOpen(true)}
         aria-label="科目を追加"
       >
-        <Plus />
+        <Plus aria-hidden="true" />
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>

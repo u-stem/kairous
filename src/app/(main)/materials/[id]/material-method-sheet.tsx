@@ -71,7 +71,7 @@ export function MaterialMethodSheet({ materialId, currentMethodIds }: MaterialMe
     <Sheet open={isOpen} onOpenChange={(open) => void handleOpenChange(open)}>
       <SheetTrigger render={
         <Button variant="outline" size="sm">
-          <Plus />
+          <Plus aria-hidden="true" />
           手法
         </Button>
       } />
@@ -96,7 +96,7 @@ export function MaterialMethodSheet({ materialId, currentMethodIds }: MaterialMe
             />
           ) : (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="animate-spin text-muted-foreground" />
+              <Loader2 aria-hidden="true" className="animate-spin text-muted-foreground" />
             </div>
           )}
         </div>
@@ -110,7 +110,7 @@ export function MaterialMethodSheet({ materialId, currentMethodIds }: MaterialMe
             キャンセル
           </SheetClose>
           <Button onClick={handleSave} disabled={isPending}>
-            {isPending && <Loader2 className="animate-spin" />}
+            {isPending && <Loader2 aria-hidden="true" className="animate-spin" />}
             保存
           </Button>
         </SheetFooter>

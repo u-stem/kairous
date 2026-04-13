@@ -49,7 +49,7 @@ export default async function MaterialsPage({
           href="/materials/new"
           className={cn(buttonVariants(), "hidden md:inline-flex")}
         >
-          <Plus className="mr-1.5 h-4 w-4" />
+          <Plus aria-hidden="true" className="mr-1.5 h-4 w-4" />
           新規教材
         </Link>
       </div>
@@ -83,7 +83,7 @@ export default async function MaterialsPage({
             "size-14 rounded-full shadow-lg",
           )}
         >
-          <Plus className="h-6 w-6" />
+          <Plus aria-hidden="true" className="h-6 w-6" />
         </Link>
       </div>
     </div>

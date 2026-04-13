@@ -54,7 +54,7 @@ export function CardListItem({ card, materialId }: CardListItemProps) {
           className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }))}
           aria-label="カードを編集"
         >
-          <Pencil />
+          <Pencil aria-hidden="true" />
         </Link>
 
         <Button
@@ -63,7 +63,7 @@ export function CardListItem({ card, materialId }: CardListItemProps) {
           onClick={() => setIsDialogOpen(true)}
           aria-label="カードを削除"
         >
-          <Trash2 className="text-destructive" />
+          <Trash2 aria-hidden="true" className="text-destructive" />
         </Button>
       </div>
 
@@ -85,7 +85,7 @@ export function CardListItem({ card, materialId }: CardListItemProps) {
               onClick={() => void handleDelete()}
               disabled={isPending}
             >
-              {isPending && <Loader2 className="animate-spin" />}
+              {isPending && <Loader2 aria-hidden="true" className="animate-spin" />}
               削除する
             </Button>
           </DialogFooter>

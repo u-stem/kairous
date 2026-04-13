@@ -15,19 +15,19 @@ const themeOptions: ThemeOption[] = [
   {
     value: "system",
     label: "システム",
-    icon: <Monitor className="h-4 w-4" />,
+    icon: <Monitor aria-hidden="true" className="h-4 w-4" />,
     ariaLabel: "システムテーマに切り替え",
   },
   {
     value: "light",
     label: "ライト",
-    icon: <Sun className="h-4 w-4" />,
+    icon: <Sun aria-hidden="true" className="h-4 w-4" />,
     ariaLabel: "ライトテーマに切り替え",
   },
   {
     value: "dark",
     label: "ダーク",
-    icon: <Moon className="h-4 w-4" />,
+    icon: <Moon aria-hidden="true" className="h-4 w-4" />,
     ariaLabel: "ダークテーマに切り替え",
   },
 ];

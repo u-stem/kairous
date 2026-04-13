@@ -123,7 +123,7 @@ export function MethodSelector({
                           className="shrink-0 p-1 text-muted-foreground hover:text-foreground"
                           aria-label={`${method.name}を編集`}
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
                         </button>
                       )}
                     </label>
@@ -142,7 +142,7 @@ export function MethodSelector({
           }}
           className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-muted-foreground/30 p-3 text-sm text-muted-foreground hover:bg-muted/50"
         >
-          <Plus className="h-4 w-4" />
+          <Plus aria-hidden="true" className="h-4 w-4" />
           手法を作成
         </button>
       </div>
