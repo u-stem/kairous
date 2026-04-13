@@ -1,3 +1,5 @@
+import { readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 import { test, expect, devices, type Page } from "@playwright/test";
 import {
   createTestSubject,
@@ -8,19 +10,73 @@ import {
 } from "./helpers/db";
 import { getTestUser } from "./helpers/types";
 
-// 375x667 (iPhone SE) で主要画面に横スクロールが発生しないことを保証する。
-// grid-cols-3/4 + 長い日本語値 (例: "約2ヶ月前", "1時間20分") を text-2xl のまま
-// SP に配信すると横あふれするため、回帰検出として常設する。
-async function assertNoHorizontalScroll(page: Page) {
+// 主要画面で横スクロールが発生しないことを自動検知する。
+// src/app/**/page.tsx を起動時に走査して静的ルートを自動列挙するため、
+// 新しい画面を追加しても手動で検証対象に追加する必要がない。
+// 動的ルート (`[id]` 等) は固定 ID への置換を DYNAMIC_ROUTES で明示し、
+// 認証不要な (auth)/auth/* はルート外として扱う。
+
+const APP_DIR = join(process.cwd(), "src/app");
+
+function listAppRoutes(): string[] {
+  const routes: string[] = [];
+  function walk(dir: string) {
+    for (const entry of readdirSync(dir)) {
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) {
+        walk(full);
+      } else if (entry === "page.tsx") {
+        const rel = relative(APP_DIR, full).replace(/\/page\.tsx$/, "");
+        const url = "/" + rel
+          // Route Group `(main)` は URL に現れない
+          .split("/")
+          .filter((seg) => !seg.startsWith("(") || !seg.endsWith(")"))
+          .join("/");
+        routes.push(url === "/" ? "/" : url.replace(/\/$/, ""));
+      }
+    }
+  }
+  walk(APP_DIR);
+  return routes;
+}
+
+// 認証導線・セッション進行中前提のルートは存在条件が異なるためクロールから除外する。
+// 動的ルート (`[id]`) は後段で個別に ID 置換してテストする。
+const EXCLUDED_PATTERNS: RegExp[] = [
+  /^\/auth\//, // 認証前のページ (ログイン/サインアップ)
+  /\[.+?\]/, // 動的ルートはまとめて除外し、個別テストでカバー
+];
+
+function isStaticAuthenticatedRoute(url: string): boolean {
+  return !EXCLUDED_PATTERNS.some((p) => p.test(url));
+}
+
+async function assertNoHorizontalScroll(page: Page, label: string) {
   const { scrollWidth, clientWidth } = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth,
   }));
   // サブピクセル丸め誤差を 1px まで許容する
-  expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 1);
+  expect(scrollWidth, `${label} で横スクロールが発生`).toBeLessThanOrEqual(
+    clientWidth + 1,
+  );
 }
 
-test.describe.serial("レスポンシブ: iPhone SE (375x667) で横スクロールなし", () => {
+const STATIC_ROUTES = listAppRoutes().filter(isStaticAuthenticatedRoute);
+
+test.describe("レスポンシブ自動検知: iPhone SE (375x667) 静的ルート", () => {
+  test.use({ ...devices["iPhone SE"] });
+
+  for (const route of STATIC_ROUTES) {
+    test(`${route} で横スクロールなし`, async ({ page }) => {
+      await page.goto(route);
+      await page.waitForLoadState("networkidle");
+      await assertNoHorizontalScroll(page, route);
+    });
+  }
+});
+
+test.describe.serial("レスポンシブ: iPhone SE で動的ルート (教材詳細)", () => {
   test.use({ ...devices["iPhone SE"] });
 
   let userId: string;
@@ -43,36 +99,16 @@ test.describe.serial("レスポンシブ: iPhone SE (375x667) で横スクロー
     await cleanupTestData(userId);
   });
 
-  test("Today 画面で横スクロールが発生しない", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForLoadState("networkidle");
-    await assertNoHorizontalScroll(page);
-  });
-
-  test("Materials 一覧で横スクロールが発生しない", async ({ page }) => {
-    await page.goto("/materials");
-    await page.waitForLoadState("networkidle");
-    await assertNoHorizontalScroll(page);
-  });
-
-  test("Materials 詳細 (grid-cols-3 stats) で横スクロールが発生しない", async ({
-    page,
-  }) => {
+  test("教材詳細 (grid-cols-3 stats) で横スクロールなし", async ({ page }) => {
     await page.goto(`/materials/${materialId}`);
     await page.waitForLoadState("networkidle");
-    await assertNoHorizontalScroll(page);
+    await assertNoHorizontalScroll(page, `/materials/${materialId}`);
   });
 
-  test("Stats 画面で横スクロールが発生しない", async ({ page }) => {
-    await page.goto("/stats");
+  test("教材編集ページで横スクロールなし", async ({ page }) => {
+    await page.goto(`/materials/${materialId}/edit`);
     await page.waitForLoadState("networkidle");
-    await assertNoHorizontalScroll(page);
-  });
-
-  test("Profile 画面で横スクロールが発生しない", async ({ page }) => {
-    await page.goto("/profile");
-    await page.waitForLoadState("networkidle");
-    await assertNoHorizontalScroll(page);
+    await assertNoHorizontalScroll(page, `/materials/${materialId}/edit`);
   });
 });
 
