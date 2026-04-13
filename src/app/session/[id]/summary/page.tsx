@@ -81,7 +81,7 @@ export default async function SummaryPage({ params }: Props) {
         {isFreeStudy ? (
           // Free Study は評価・目標時間なし。学習時間のみ表示する
           <div className="text-center">
-            <p className="text-2xl font-bold">
+            <p className="text-xl font-bold sm:text-2xl">
               {formatDuration(session.duration_sec)}
             </p>
             <p className="text-sm text-muted-foreground">学習時間</p>
@@ -90,14 +90,14 @@ export default async function SummaryPage({ params }: Props) {
           // カスタムメソッドはカードを使わないため、実績時間と目標時間を表示する
           <div className="grid grid-cols-2 gap-4 text-center">
             <div>
-              <p className="text-2xl font-bold">
+              <p className="text-xl font-bold sm:text-2xl">
                 {formatDuration(customMeta?.actual_duration_sec ?? session.duration_sec)}
               </p>
               <p className="text-sm text-muted-foreground">学習時間</p>
             </div>
             {customMeta?.target_duration_sec && (
               <div>
-                <p className="text-2xl font-bold">
+                <p className="text-xl font-bold sm:text-2xl">
                   {formatDuration(customMeta.target_duration_sec)}
                 </p>
                 <p className="text-sm text-muted-foreground">目標時間</p>
@@ -108,19 +108,19 @@ export default async function SummaryPage({ params }: Props) {
           // Pomodoro はカードを使わないため、サイクル数と集中時間を表示する
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-2xl font-bold">
+              <p className="text-xl font-bold sm:text-2xl">
                 {pomodoroMeta?.pomodoros_completed ?? 0}
               </p>
               <p className="text-sm text-muted-foreground">サイクル数</p>
             </div>
             <div>
-              <p className="text-2xl font-bold">
+              <p className="text-xl font-bold sm:text-2xl">
                 {formatDuration(pomodoroMeta?.total_focus_sec ?? 0)}
               </p>
               <p className="text-sm text-muted-foreground">集中時間</p>
             </div>
             <div>
-              <p className="text-2xl font-bold">
+              <p className="text-xl font-bold sm:text-2xl">
                 {formatDuration(session.duration_sec)}
               </p>
               <p className="text-sm text-muted-foreground">学習時間</p>
@@ -130,17 +130,17 @@ export default async function SummaryPage({ params }: Props) {
           <>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-2xl font-bold">{session.card_reviews.length}</p>
+                <p className="text-xl font-bold sm:text-2xl">{session.card_reviews.length}</p>
                 <p className="text-sm text-muted-foreground">カード数</p>
               </div>
               <div>
-                <p className="text-2xl font-bold">
+                <p className="text-xl font-bold sm:text-2xl">
                   {Math.round(accuracy * 100)}%
                 </p>
                 <p className="text-sm text-muted-foreground">正答率</p>
               </div>
               <div>
-                <p className="text-2xl font-bold">
+                <p className="text-xl font-bold sm:text-2xl">
                   {formatDuration(session.duration_sec)}
                 </p>
                 <p className="text-sm text-muted-foreground">学習時間</p>

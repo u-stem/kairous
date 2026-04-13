@@ -116,7 +116,7 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">{material.due_count}</p>
+                  <p className="text-xl font-bold sm:text-2xl">{material.due_count}</p>
                 </CardContent>
               </Card>
 
@@ -127,7 +127,7 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">{material.total_cards}</p>
+                  <p className="text-xl font-bold sm:text-2xl">{material.total_cards}</p>
                 </CardContent>
               </Card>
 
@@ -138,7 +138,7 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">{accuracyDisplay}</p>
+                  <p className="text-xl font-bold sm:text-2xl">{accuracyDisplay}</p>
                 </CardContent>
               </Card>
             </div>
@@ -151,7 +151,7 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">{formatDurationHuman(totalStudySec)}</p>
+                  <p className="text-xl font-bold sm:text-2xl">{formatDurationHuman(totalStudySec)}</p>
                 </CardContent>
               </Card>
 
@@ -162,7 +162,7 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">{sessionCount}</p>
+                  <p className="text-xl font-bold sm:text-2xl">{sessionCount}</p>
                 </CardContent>
               </Card>
 
@@ -173,7 +173,8 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">
+                  {/* 「約2ヶ月前」など日本語表現が長いため、SP で折り返しを許容 */}
+                  <p className="text-sm font-bold break-words sm:text-2xl">
                     {lastStudiedAt
                       ? formatDistanceToNow(new Date(lastStudiedAt), { addSuffix: true, locale: ja })
                       : "---"}
