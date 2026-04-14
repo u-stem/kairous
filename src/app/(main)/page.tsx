@@ -14,6 +14,7 @@ export default async function TodayPage() {
     getTodaySessions(),
     getStreak(),
   ]);
+  // 検証用の一時的な差分 (#222: CI トリガ目的、マージしない)
   const today = new Date();
   const dateStr = format(today, "M月d日 EEEE", { locale: ja });
 
