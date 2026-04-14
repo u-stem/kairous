@@ -4,7 +4,9 @@
       "url": [
         "http://localhost:3000/",
         "http://localhost:3000/materials",
-        "http://localhost:3000/stats"
+        "http://localhost:3000/stats",
+        "http://localhost:3000/auth/login",
+        "http://localhost:3000/auth/signup"
       ],
       "numberOfRuns": 1,
       "puppeteerScript": "./scripts/lighthouse-auth.cjs",

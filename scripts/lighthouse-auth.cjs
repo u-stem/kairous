@@ -1,11 +1,11 @@
 // @ts-check
 /**
  * Lighthouse CI が各 URL navigate 前に呼び出す puppeteer script。
- * Playwright で生成済みの storageState (tests/large/.auth/user.json) から
- * Supabase 認証 cookie を取り出し、Puppeteer の Browser コンテキストに注入する。
+ * 認証必須ルートでは Playwright の storageState から Supabase 認証 cookie を
+ * 取り出して Puppeteer に注入する。未認証ルート (/auth/*) では逆に cookie を
+ * クリアし、middleware の「認証済みユーザーを / へリダイレクト」を回避する。
  *
- * auth.setup.ts を lhci 実行前に `playwright test --project=setup` として
- * 別途走らせておく前提。
+ * auth.setup.ts を lhci 実行前に `bun run lhci:setup` として別途走らせておく前提。
  */
 const fs = require("node:fs");
 const path = require("node:path");
@@ -17,11 +17,29 @@ const STORAGE_STATE_PATH = path.resolve(
 );
 
 /**
- * @typedef {(browser: import('puppeteer').Browser) => Promise<void>} PuppeteerScript
+ * @typedef {(
+ *   browser: import('puppeteer').Browser,
+ *   context: {url: string},
+ * ) => Promise<void>} PuppeteerScript
  */
 
 /** @type {PuppeteerScript} */
-module.exports = async (browser) => {
+module.exports = async (browser, { url }) => {
+  const context = browser.defaultBrowserContext();
+  const { pathname } = new URL(url);
+
+  // /auth/* は未認証ユーザーが訪れる画面。既存 cookie が残っていると
+  // middleware が / へリダイレクトしてしまうため、計測前にクリアする。
+  // deleteCookie は内部で CDP の Storage.setCookies (expires:0) を使うことがあり、
+  // name/domain だけ渡すと value 欠落でエラーになるため cookie オブジェクト全体を渡す
+  if (pathname.startsWith("/auth/")) {
+    const existing = await context.cookies();
+    if (existing.length > 0) {
+      await context.deleteCookie(...existing);
+    }
+    return;
+  }
+
   if (!fs.existsSync(STORAGE_STATE_PATH)) {
     throw new Error(
       `storageState が見つからない: ${STORAGE_STATE_PATH}\n先に 'bun run lhci:setup' で auth.setup.ts を実行すること`,
@@ -43,8 +61,6 @@ module.exports = async (browser) => {
     sameSite: normalizeSameSite(c.sameSite),
   }));
 
-  // BrowserContext 単位で cookie を設定しておくと、以降の全ページで有効になる
-  const context = browser.defaultBrowserContext();
   await context.setCookie(...cookies);
 };
 
