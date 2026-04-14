@@ -22,6 +22,10 @@ export default async function TodayPage() {
 
   return (
     <div data-testid="today-container" className="mx-auto max-w-2xl p-4">
+      {/* 検証用 a11y 違反注入 (#222 検証後に revert)。img の alt 欠落 + button の accessible name 欠落 */}
+      {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
+      <img src="/favicon.ico" width={16} height={16} />
+      <button type="button" className="ml-1" />
       <div className="mb-6">
         <p className="text-sm text-muted-foreground">{dateStr}</p>
         <h1 className="text-2xl font-bold">今日の学習</h1>
