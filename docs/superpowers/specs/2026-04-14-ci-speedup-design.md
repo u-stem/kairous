@@ -11,7 +11,6 @@
 ## Goals
 
 - Next.js production build を CI 実行あたり 1 回に正規化する (現状 2 ジョブで重複)
-- Playwright E2E (`test-large`) を shard 並列化し、追加 spec を入れても E2E 所要時間が線形に伸びない状態にする
 - baseline / post-change の所要時間を PR description に表で提示し、改善幅を定量化する
 
 ## Non-Goals
@@ -19,12 +18,13 @@
 - Supabase ローカル起動の共通化 (docker image cache / volume snapshot)。GitHub Actions における確立されたパターンが存在せず、flake リスクが効果を上回ると判断。後続 PBI 候補として切り出す
 - Lighthouse URL の matrix 並列化。URL 数 5〜15 に対し matrix job の起動オーバーヘッド (Bun/Supabase/Playwright setup 各〜30 秒) が優位にならない
 - Supabase hosted preview project 化 (Issue 備考の長期案)
+- Playwright `--shard` による test-large の並列化。実装の結果 Playwright project 依存 (`auth-tests.dependencies: [chromium]`) により chromium 33 tests が全 shard でフル実行され、wall-clock 改善ゼロ + compute minutes 4 倍化となったため revert。根本対処には auth-tests / chromium の project 構造見直しが必要で、別 PBI として切り出す
 
 ## 方針
 
 GitHub Actions と Next.js / Playwright 各公式が推奨する標準パターンで統一する:
 
-- **`actions/cache` による `.next/cache` 永続化** — Next.js 公式ドキュメント記載の incremental build key (`${{ hashFiles('**/bun.lockb', '**/*.[jt]s', '**/*.[jt]sx', '!**/.next/**') }}`) を使用
+- **`actions/cache` による `.next/cache` 永続化** — Next.js 公式ドキュメント記載の incremental build key (`${{ hashFiles('**/bun.lock', '**/*.[jt]s', '**/*.[jt]sx', '!**/.next/**') }}`) を使用
 - **`actions/upload-artifact` / `actions/download-artifact` による build 成果物の job 間共有** — Next.js を含む多数の Node.js プロジェクトで定着
 - **Playwright `--shard=i/N` + GitHub Actions matrix** — Playwright 公式ドキュメント「Sharding」の標準構成
 - **Composite action による共通 setup の DRY 化** — GitHub 公式推奨
@@ -70,9 +70,9 @@ build:
     - uses: actions/cache@<sha> # .next/cache の incremental key
       with:
         path: .next/cache
-        key: nextjs-${{ hashFiles('bun.lockb') }}-${{ hashFiles('src/**', 'public/**', 'next.config.ts', 'tsconfig.json') }}
+        key: nextjs-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'public/**', 'next.config.ts', 'tsconfig.json') }}
         restore-keys: |
-          nextjs-${{ hashFiles('bun.lockb') }}-
+          nextjs-${{ hashFiles('bun.lock') }}-
     - run: bun run build
     - uses: actions/upload-artifact@<sha>
       with:

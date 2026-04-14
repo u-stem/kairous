@@ -95,9 +95,9 @@ jobs:
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: .next/cache
-          key: nextjs-${{ hashFiles('bun.lockb', 'package.json') }}-${{ hashFiles('src/**', 'public/**', 'next.config.ts', 'tsconfig.json') }}
+          key: nextjs-${{ hashFiles('bun.lock', 'package.json') }}-${{ hashFiles('src/**', 'public/**', 'next.config.ts', 'tsconfig.json') }}
           restore-keys: |
-            nextjs-${{ hashFiles('bun.lockb', 'package.json') }}-
+            nextjs-${{ hashFiles('bun.lock', 'package.json') }}-
       - name: Next.js 本番ビルド
         run: bun run build
       - name: ビルド成果物を artifact にアップロード
