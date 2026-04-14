@@ -82,7 +82,8 @@ jobs:
           version: "2.76.7"
       - name: Supabase ローカル起動
         # build 時に NEXT_PUBLIC_SUPABASE_ANON_KEY がクライアントバンドルに焼き込まれるため、
-        # lighthouse / test-large と同一バージョンの Supabase CLI で起動し JWT を一致させる
+        # lighthouse / test-large と同一バージョンの Supabase CLI で起動し JWT を一致させる。
+        # edge-runtime は build (静的解析のみ) で不要のため除外
         run: supabase start -x realtime,storage,imgproxy,inbucket,pgadmin-schema-diff,migra,studio,edge-runtime,logflare,vector,supavisor
       - name: 環境変数を設定
         run: |
@@ -94,9 +95,9 @@ jobs:
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: .next/cache
-          key: nextjs-${{ hashFiles('bun.lockb') }}-${{ hashFiles('src/**', 'public/**', 'next.config.ts', 'tsconfig.json') }}
+          key: nextjs-${{ hashFiles('bun.lockb', 'package.json') }}-${{ hashFiles('src/**', 'public/**', 'next.config.ts', 'tsconfig.json') }}
           restore-keys: |
-            nextjs-${{ hashFiles('bun.lockb') }}-
+            nextjs-${{ hashFiles('bun.lockb', 'package.json') }}-
       - name: Next.js 本番ビルド
         run: bun run build
       - name: ビルド成果物を artifact にアップロード
