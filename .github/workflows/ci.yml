@@ -207,3 +207,6 @@ jobs:
           name: lighthouse-report
           path: .lighthouseci/
           retention-days: 7
+          # .lighthouseci はドット始まりで隠しディレクトリ扱いになるため明示指定
+          include-hidden-files: true
+          if-no-files-found: error
