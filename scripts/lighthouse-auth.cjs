@@ -29,13 +29,13 @@ module.exports = async (browser, { url }) => {
   const { pathname } = new URL(url);
 
   // /auth/* は未認証ユーザーが訪れる画面。既存 cookie が残っていると
-  // middleware が / へリダイレクトしてしまうため、計測前にクリアする
+  // middleware が / へリダイレクトしてしまうため、計測前にクリアする。
+  // deleteCookie は内部で CDP の Storage.setCookies (expires:0) を使うことがあり、
+  // name/domain だけ渡すと value 欠落でエラーになるため cookie オブジェクト全体を渡す
   if (pathname.startsWith("/auth/")) {
     const existing = await context.cookies();
     if (existing.length > 0) {
-      await context.deleteCookie(
-        ...existing.map((c) => ({ name: c.name, domain: c.domain })),
-      );
+      await context.deleteCookie(...existing);
     }
     return;
   }
