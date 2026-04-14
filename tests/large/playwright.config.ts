@@ -44,13 +44,23 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: process.env.CI ? "bun run build && bun run start" : "bun run dev",
+    // CI_REUSE_SERVER=1: build artifact を利用するジョブ (test-large matrix, lighthouse) が
+    // 外部で起動済みの `bun run start` を再利用するためのオプトイン。
+    // ビルド不要なので `bun run build && bun run start` を避け `bun run start` のみにする。
+    command:
+      process.env.CI_REUSE_SERVER === "1"
+        ? "bun run start"
+        : process.env.CI
+          ? "bun run build && bun run start"
+          : "bun run dev",
     port: 3000,
     // CI ではビルド時間を含むため余裕を持たせる
     timeout: 120_000,
     // Lighthouse CI の lhci:setup では外部で起動した Next を再利用する必要があるため
     // 専用の env で明示的にオプトイン (CI env の書き換えという副作用の大きい手段を避ける)
     reuseExistingServer:
-      !process.env.CI || process.env.LHCI_REUSE_SERVER === "1",
+      !process.env.CI ||
+      process.env.LHCI_REUSE_SERVER === "1" ||
+      process.env.CI_REUSE_SERVER === "1",
   },
 });
