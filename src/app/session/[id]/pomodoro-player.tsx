@@ -4,10 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePomodoroTimer } from "./use-pomodoro-timer";
 import { completePomodoroSession } from "@/lib/actions/session-commands";
-import { POMODORO_FOCUS_SEC, POMODORO_BREAK_SEC, SELF_RATING_LABELS } from "@/lib/constants";
+import { POMODORO_FOCUS_SEC, POMODORO_BREAK_SEC, SELF_RATING_LABELS, SELF_RATINGS } from "@/lib/constants";
 import { formatDuration } from "@/lib/session-utils";
-
-const RATINGS = [1, 2, 3, 4] as const;
 
 export function PomodoroPlayer({ sessionId }: { sessionId: string }) {
   const router = useRouter();
@@ -108,7 +106,7 @@ export function PomodoroPlayer({ sessionId }: { sessionId: string }) {
           </p>
           <p className="text-sm font-medium">今回の学習はどうでしたか?</p>
           <div className="grid grid-cols-2 gap-2">
-            {RATINGS.map((r) => (
+            {SELF_RATINGS.map((r) => (
               <button key={r} type="button" onClick={() => void handleComplete(r)} disabled={submitting}
                 className="rounded-lg border px-4 py-3 text-sm font-medium hover:bg-muted disabled:opacity-50">
                 {r}. {SELF_RATING_LABELS[r]}

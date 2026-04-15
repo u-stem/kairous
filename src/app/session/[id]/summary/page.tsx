@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getSession, getSessionElaborations } from "@/lib/actions/session-queries";
-import { RATING_LABELS, RATING_COLORS, METHOD_CATEGORIES } from "@/lib/constants";
+import { RATING_LABELS, RATING_COLORS, METHOD_CATEGORIES, SELF_RATINGS } from "@/lib/constants";
 import {
   calculateAccuracyRate,
   formatDuration,
@@ -11,8 +11,6 @@ import { SummaryActions } from "./summary-actions";
 type Props = {
   params: Promise<{ id: string }>;
 };
-
-const RATINGS = [1, 2, 3, 4] as const;
 
 // METHOD_CATEGORIES から動的に生成し、手動同期を不要にする
 const SYSTEM_SLUGS = Object.values(METHOD_CATEGORIES).flatMap((c) => c.slugs);
@@ -151,7 +149,7 @@ export default async function SummaryPage({ params }: Props) {
               <div className="space-y-2">
                 <p className="text-sm font-medium">評価分布</p>
                 <div className="grid grid-cols-4 gap-2">
-                  {RATINGS.map((r) => (
+                  {SELF_RATINGS.map((r) => (
                     <div key={r} className="text-center">
                       <div
                         className={`${RATING_COLORS[r]} mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-lg text-white font-bold`}

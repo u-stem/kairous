@@ -4,11 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCustomTimer } from "./use-custom-timer";
 import { completeCustomSession } from "@/lib/actions/session-commands";
-import { SELF_RATING_LABELS } from "@/lib/constants";
+import { SELF_RATING_LABELS, SELF_RATINGS } from "@/lib/constants";
 import { formatDuration } from "@/lib/session-utils";
 import { Button } from "@/components/ui/button";
-
-const RATINGS = [1, 2, 3, 4] as const;
 
 type Props = {
   sessionId: string;
@@ -115,7 +113,7 @@ export function CustomMethodPlayer({ sessionId, methodName, materialTitle, targe
           </p>
           <p className="text-sm font-medium">今回の学習はどうでしたか?</p>
           <div className="grid grid-cols-2 gap-2">
-            {RATINGS.map((r) => (
+            {SELF_RATINGS.map((r) => (
               <Button key={r} variant="outline" type="button" onClick={() => void handleComplete(r)} disabled={submitting}>
                 {r}. {SELF_RATING_LABELS[r]}
               </Button>
