@@ -10,7 +10,7 @@ function makeMaterial(overrides: Partial<MaterialWithMethods> = {}): MaterialWit
     id: "mat-1",
     title: "微分積分",
     description: null,
-    subject_id: "subj-1",
+    category_id: "subj-1",
     subject: baseSubject,
     total_cards: 10,
     due_count: 0,

@@ -3,7 +3,9 @@ import type { Database } from "./database";
 type Tables<T extends keyof Database["public"]["Tables"]> =
   Database["public"]["Tables"][T]["Row"];
 
-export type Subject = Tables<"subjects">;
+export type Category = Tables<"categories">;
+// 後方互換エイリアス。PBI-3 で削除予定
+export type Subject = Category;
 export type Material = Tables<"materials">;
 export type Card = Tables<"cards">;
 export type LearningMethod = Tables<"learning_methods">;
@@ -16,12 +18,12 @@ export type MethodItem = {
   name: string;
 };
 
-// 一覧表示に必要な関連データを結合した型（subjects・learning_methodsをJOINしたクエリ結果）
+// 一覧表示に必要な関連データを結合した型（categories・learning_methodsをJOINしたクエリ結果）
 export type MaterialWithMethods = {
   id: string;
   title: string;
   description: string | null;
-  subject_id: string;
+  category_id: string;
   subject: {
     id: string;
     name: string;

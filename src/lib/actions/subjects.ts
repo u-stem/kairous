@@ -28,7 +28,7 @@ export async function createSubject(
   const { user, supabase } = await requireAuth();
 
   const { data, error } = await supabase
-    .from("subjects")
+    .from("categories")
     .insert({ name: parsed.data.name, user_id: user.id })
     .select("id, name")
     .single();
@@ -45,7 +45,7 @@ export async function getSubjects(): Promise<Subject[]> {
   const { user, supabase } = await requireAuth();
 
   const { data, error } = await supabase
-    .from("subjects")
+    .from("categories")
     .select("*")
     .eq("user_id", user.id)
     .order("display_order");

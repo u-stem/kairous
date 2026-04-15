@@ -26,6 +26,7 @@ export const createMaterialSchema = z.object({
     .min(1, "タイトルを入力してください")
     .max(VALIDATION_LIMITS.MATERIAL_TITLE_MAX, "タイトルは200文字以内で入力してください"),
   description: z.string().max(VALIDATION_LIMITS.MATERIAL_DESCRIPTION_MAX, "説明は2000文字以内で入力してください").optional(),
+  // UI 上のキー名は subject_id のまま。PBI-3 で category_id にリネーム予定
   subject_id: z.uuid("有効な科目を選択してください"),
   // 学習手法は1つ以上必須（material_methodsテーブルの整合性を保つため）
   method_ids: z
@@ -40,6 +41,7 @@ export const updateMaterialSchema = z.object({
     .min(1, "タイトルを入力してください")
     .max(VALIDATION_LIMITS.MATERIAL_TITLE_MAX, "タイトルは200文字以内で入力してください"),
   description: z.string().max(VALIDATION_LIMITS.MATERIAL_DESCRIPTION_MAX, "説明は2000文字以内で入力してください").optional(),
+  // UI 上のキー名は subject_id のまま。PBI-3 で category_id にリネーム予定
   subject_id: z.uuid("有効な科目を選択してください"),
 });
 

@@ -141,13 +141,13 @@ describe("get_due_counts_by_subject RPC", () => {
     // 2科目・2教材・各2カード。A は SRS state あり (future due で除外されるはず)、
     // B は SRS state なし (未学習 = due 扱い)
     const subARes = await admin
-      .from("subjects")
+      .from("categories")
       .insert({ user_id: userId, name: "数学", color: "#1976d2" })
       .select("id")
       .single<{ id: string }>();
     const subAId = subARes.data!.id;
     const subBRes = await admin
-      .from("subjects")
+      .from("categories")
       .insert({ user_id: userId, name: "英語", color: "#388e3c" })
       .select("id")
       .single<{ id: string }>();
@@ -155,13 +155,13 @@ describe("get_due_counts_by_subject RPC", () => {
 
     const matARes = await admin
       .from("materials")
-      .insert({ user_id: userId, subject_id: subAId, title: "math-material" })
+      .insert({ user_id: userId, category_id: subAId, title: "math-material" })
       .select("id")
       .single<{ id: string }>();
     const matAId = matARes.data!.id;
     const matBRes = await admin
       .from("materials")
-      .insert({ user_id: userId, subject_id: subBId, title: "english-material" })
+      .insert({ user_id: userId, category_id: subBId, title: "english-material" })
       .select("id")
       .single<{ id: string }>();
     const matBId = matBRes.data!.id;
@@ -224,6 +224,6 @@ describe("get_due_counts_by_subject RPC", () => {
     );
 
     // 後続テストに影響させないため削除
-    await admin.from("subjects").delete().eq("user_id", userId);
+    await admin.from("categories").delete().eq("user_id", userId);
   });
 });

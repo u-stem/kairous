@@ -44,8 +44,8 @@ INSERT INTO auth.identities (
   now(), now(), now()
 ) ON CONFLICT (id) DO NOTHING;
 
--- Subjects
-INSERT INTO subjects (id, user_id, name, color, display_order) VALUES
+-- Categories (migration 00020 で subjects → categories にリネーム済み)
+INSERT INTO categories (id, user_id, name, color, display_order) VALUES
   ('a0000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', '英語', '#6366f1', 1),
   ('a0000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', '数学', '#f43f5e', 2),
   ('a0000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', '物理', '#22c55e', 3)

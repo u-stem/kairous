@@ -45,7 +45,7 @@ function buildMockClient(overrides: {
       chain.lt = vi.fn().mockReturnValue(chain);
       chain.order = vi.fn().mockImplementation(() => {
         if (table === "daily_logs") return Promise.resolve(overrides.dailyLogs ?? defaultLogs);
-        if (table === "subjects") return Promise.resolve(overrides.subjects ?? defaultSubjects);
+        if (table === "categories") return Promise.resolve(overrides.subjects ?? defaultSubjects);
         if (table === "learning_methods") return Promise.resolve(overrides.methods ?? defaultMethods);
         return Promise.resolve(defaultLogs);
       });

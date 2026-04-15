@@ -79,7 +79,7 @@ describe("completeFreeStudySession", () => {
         }
         // material SELECT (daily_log 用)
         return createChainMock({
-          data: { subject_id: "subj-1" },
+          data: { category_id: "subj-1" },
           error: null,
         });
       }),
@@ -157,7 +157,7 @@ describe("completeFreeStudySession", () => {
           return createChainMock({ data: null, error: null });
         }
         return createChainMock({
-          data: { subject_id: "subj-1" },
+          data: { category_id: "subj-1" },
           error: null,
         });
       }),

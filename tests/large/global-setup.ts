@@ -6,8 +6,10 @@ import {
   createTestMaterial,
   createTestCard,
   createTestSession,
+  createTestSrsState,
   linkMaterialMethod,
   getSrsMethodId,
+  getMethodIdBySlug,
 } from "./helpers/db";
 import { E2E_PASSWORD } from "./helpers/types";
 
@@ -44,20 +46,27 @@ async function globalSetup() {
     0,
     LIGHTHOUSE_CARD_ID,
   );
+  // Lighthouse seed カードは interleaving テストに混入しないよう、
+  // 遠い未来を due_date に設定して「まだ due でない」状態にする
+  const farFuture = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+  await createTestSrsState(LIGHTHOUSE_CARD_ID, userId, farFuture, "Review");
 
   // セッション系動的ルート計測用に in_progress / completed の 2 セッションを seed。
+  // free_study を使う: srs は due カードがないと page.tsx が notFound() を返すため。
   // /rest/[id] は DB lookup なしのため in_progress session の UUID を流用する
+  const freeStudyMethodId = await getMethodIdBySlug("free_study");
+  await linkMaterialMethod(LIGHTHOUSE_MATERIAL_ID, freeStudyMethodId);
   await createTestSession(
     userId,
     LIGHTHOUSE_MATERIAL_ID,
-    srsMethodId,
+    freeStudyMethodId,
     "in_progress",
     LIGHTHOUSE_SESSION_IN_PROGRESS_ID,
   );
   await createTestSession(
     userId,
     LIGHTHOUSE_MATERIAL_ID,
-    srsMethodId,
+    freeStudyMethodId,
     "completed",
     LIGHTHOUSE_SESSION_COMPLETED_ID,
     { ended_at: new Date().toISOString(), duration_sec: 300 },
