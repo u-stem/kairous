@@ -151,6 +151,7 @@ export async function cleanupTestData(userId: string) {
     "daily_logs",
     "sessions",       // card_reviews, card_elaborations, session_materials は CASCADE で連鎖削除
     "srs_states",
+    "tags",           // material_tags は materials CASCADE で消えるが tags 自体は独立削除が必要
   ] as const;
 
   for (const table of userOwnedTables) {

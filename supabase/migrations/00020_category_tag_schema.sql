@@ -167,6 +167,8 @@ CREATE OR REPLACE FUNCTION upsert_daily_log(
 )
 RETURNS void
 LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
 AS $$
 BEGIN
   -- category の所有者チェック (categories.user_id = p_user_id)
