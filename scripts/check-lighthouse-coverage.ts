@@ -136,9 +136,8 @@ function main() {
   process.exit(1);
 }
 
-// CLI として実行された場合のみ main を呼ぶ (test import では実行しない)
-// fileURLToPath で import.meta.url をパスに変換し、実行ファイルと照合する
-const thisFile = new URL(import.meta.url).pathname;
-if (process.argv[1] === thisFile) {
+// CLI として実行された場合のみ main を呼ぶ (test import では実行しない)。
+// Bun 独自の import.meta.main を使う。TS 標準型には未定義なのでアサーションで参照
+if ((import.meta as { main?: boolean }).main) {
   main();
 }
