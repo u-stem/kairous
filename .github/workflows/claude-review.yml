@@ -2,50 +2,86 @@ name: Claude PR Review
 
 # CI が成功した PR のみをレビュー対象にする。CI 失敗中のコードに
 # レビューを走らせても無意味なうえ Opus トークンを浪費するため、
-# workflow_run で CI 完走・成功をゲート条件にしている。
+# job の先頭で CI の完走・成功を待ってから review を実行する。
+#
+# セキュリティ posture:
+# - pull_request トリガーは fork PR では secrets を渡さず GITHUB_TOKEN が
+#   read-only になるため、pwn request 攻撃経路は成立しない
+# - 同一リポ branch からの PR は push 権限を既に持つ信頼済み作業者のみ
+# - workflow_run トリガーは default branch の workflow を privileged に
+#   実行するため、PR head を checkout すると pwn request パターンを
+#   踏む (CodeQL: actions/untrusted-checkout)。本 workflow は採用しない
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# 同一 PR への連続 push で古い waiting job を即座にキャンセルする
+concurrency:
+  group: claude-review-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   review:
     runs-on: ubuntu-latest
-    # pull_request 起点で回った CI が成功した場合にのみレビューする。
-    # - event が push の CI (main への merge 直後) や schedule は対象外
-    # - conclusion が failure / cancelled / skipped は対象外
-    # - pull_requests が空配列 (fork PR など) も対象外 (secrets も渡せないため)
-    #   toJSON 比較で確実に空配列を判定する (配列要素アクセスの null 判定は信頼性が低い)
-    if: >-
-      github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.conclusion == 'success' &&
-      toJSON(github.event.workflow_run.pull_requests) != '[]'
+    # fork PR は secrets にアクセスできず Claude action が早期 fail するため skip
+    if: github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
       pull-requests: write
       issues: write
       id-token: write
       actions: read
-    env:
-      PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
-      PR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
-      # workflow_run は default branch のファイル内容で起動するため、
-      # レビュー対象の差分を読むには PR head SHA を明示的に checkout する。
-      #
-      # セキュリティ posture (actions/untrusted-checkout 対策):
-      # - permissions は contents: read のみ (リポジトリへの書き込み不可)
-      # - PR のコード由来のスクリプト (package.json scripts / bun install /
-      #   postinstall 等) は**一切実行しない**。本 job では gh CLI と
-      #   claude-code-action (SHA ピン留め) のみ実行する
-      # - persist-credentials: false で git 認証情報をディスクに残さない
-      #   (仮に後続で意図せず untrusted code が実行されても credential 漏洩を防ぐ)
-      - name: Checkout PR head (read-only, no script execution)
+      # Claude の Read / Glob / Grep tool がファイル参照するためのワークツリー。
+      # scripts の実行はしない (PR コード由来の package.json / bun install 等は走らせない)。
+      # persist-credentials: false で git 認証情報をディスクに残さず、仮に
+      # 後続で意図せず untrusted code が実行されても credential 漏洩を防ぐ。
+      - name: Checkout PR head (files only, no script execution)
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ env.PR_HEAD_SHA }}
           fetch-depth: 1
           persist-credentials: false
+
+      # CI workflow の成功を待機してからレビュー本体を走らせる。
+      # CI が失敗した場合はこの step で exit 1 し、Claude の run を回避する
+      # (= Opus トークン節約)。polling 間隔は 30 秒、最大 30 分。
+      # gh CLI のみ使用 (新規 action 依存を増やさない)。
+      #
+      # 初期 race condition: 本 job が CI run の登録より先に起動した場合、
+      # workflow_runs が空で jq の last が null を返し status/conclusion が
+      # 空文字列になる。case の `*)` 分岐で sleep 30 して retry するため機能
+      # 的には問題ない (not_started 相当として polling を継続する)。
+      - name: Wait for CI to succeed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          deadline=$((SECONDS + 1800))
+          while [ $SECONDS -lt $deadline ]; do
+            # pull_request イベント由来の最新 CI run を head SHA で検索
+            read -r status conclusion <<EOF
+          $(gh api "repos/${REPO}/actions/runs?head_sha=${PR_HEAD_SHA}&event=pull_request" \
+              --jq '[.workflow_runs[] | select(.name == "CI")] | sort_by(.created_at) | last | "\(.status // "not_started") \(.conclusion // "-")"')
+          EOF
+            echo "CI status: ${status}/${conclusion}"
+            case "${status}/${conclusion}" in
+              completed/success)
+                echo "CI passed; proceeding to review."
+                exit 0
+                ;;
+              completed/*)
+                echo "CI concluded as '${conclusion}'; skipping review."
+                exit 1
+                ;;
+              *)
+                sleep 30
+                ;;
+            esac
+          done
+          echo "Timed out waiting for CI after 30 minutes."
+          exit 1
 
       # 過去のレビュー総評と進捗コメントを OUTDATED として折りたたむ。
       # 新しいレビューが走るたびに積み上がるスクロール負荷を軽減する目的。
@@ -59,9 +95,8 @@ jobs:
       - name: Minimize prior review comments
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
-          # PR_NUMBER は job レベル env から継承されるが、step 内で明示して可読性を確保
-          PR_NUMBER: ${{ env.PR_NUMBER }}
         run: |
           set -euo pipefail
           node_ids=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" --paginate \
@@ -85,25 +120,22 @@ jobs:
           track_progress: true
           classify_inline_comments: 'false'
           show_full_output: true
-          # workflow_run コンテキストでは github.event.pull_request が空のため、
-          # action 側が PR を特定できるよう PR 番号と head SHA を明示的に渡す
-          github_token: ${{ secrets.GITHUB_TOKEN }}
           claude_args: |
             --model claude-opus-4-6
             --max-turns 30
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment *),Bash(gh pr diff *),Bash(gh pr view *),Read,Glob,Grep"
           prompt: |
             REPO: ${{ github.repository }}
-            PR NUMBER: ${{ env.PR_NUMBER }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
 
             この PR のコードレビューを実施してください。CI (lint / typecheck / test:small / test:medium / test:large / lighthouse / build) はすべて成功済みです。
 
             ## 手順
-            1. `gh pr diff ${{ env.PR_NUMBER }}` で差分を確認
+            1. `gh pr diff ${{ github.event.pull_request.number }}` で差分を確認
             2. 既存の PR コメントを確認し、過去のレビューで指摘済み・resolve 済みの内容を把握する
             3. 変更されたファイルを Read で読み、コンテキストを理解
             4. **新規の問題のみ** inline コメントを投稿 (confirmed: true を必ず指定)。過去のレビューで既に指摘した内容は繰り返さない
-            5. 最後に `gh pr comment ${{ env.PR_NUMBER }}` で総評を投稿
+            5. 最後に `gh pr comment ${{ github.event.pull_request.number }}` で総評を投稿
 
             ## コメントプレフィックス
             - blocker: マージをブロックする問題 (修正必須)
