@@ -31,12 +31,21 @@ jobs:
       PR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
       # workflow_run は default branch のファイル内容で起動するため、
-      # レビュー対象の差分を読むには PR head SHA を明示的に checkout する
-      - name: Checkout PR head
+      # レビュー対象の差分を読むには PR head SHA を明示的に checkout する。
+      #
+      # セキュリティ posture (actions/untrusted-checkout 対策):
+      # - permissions は contents: read のみ (リポジトリへの書き込み不可)
+      # - PR のコード由来のスクリプト (package.json scripts / bun install /
+      #   postinstall 等) は**一切実行しない**。本 job では gh CLI と
+      #   claude-code-action (SHA ピン留め) のみ実行する
+      # - persist-credentials: false で git 認証情報をディスクに残さない
+      #   (仮に後続で意図せず untrusted code が実行されても credential 漏洩を防ぐ)
+      - name: Checkout PR head (read-only, no script execution)
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ env.PR_HEAD_SHA }}
           fetch-depth: 1
+          persist-credentials: false
 
       # 過去のレビュー総評と進捗コメントを OUTDATED として折りたたむ。
       # 新しいレビューが走るたびに積み上がるスクロール負荷を軽減する目的。
