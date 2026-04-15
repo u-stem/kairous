@@ -4,7 +4,10 @@
       "url": [
         "http://localhost:3000/",
         "http://localhost:3000/materials",
+        "http://localhost:3000/materials/new",
         "http://localhost:3000/stats",
+        "http://localhost:3000/profile",
+        "http://localhost:3000/profile/notifications",
         "http://localhost:3000/auth/login",
         "http://localhost:3000/auth/signup"
       ],

@@ -54,6 +54,7 @@ export function NotificationToggle(props: {
         type="button"
         role="switch"
         aria-checked={enabled}
+        aria-label="通知を有効化"
         disabled={isPending || isDenied}
         onClick={() => { void handleToggle(); }}
         data-testid="notification-master-toggle"
