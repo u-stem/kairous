@@ -350,8 +350,8 @@ export async function getInterleavingCards(
     p_session_id: sessionId,
     p_user_id: user.id,
     p_today: today,
-    p_category_id: options?.categoryId ?? undefined,
-    p_tag_ids: options?.tagIds ?? undefined,
+    p_category_id: options?.categoryId,
+    p_tag_ids: options?.tagIds,
   });
 
   if (rpcError) {

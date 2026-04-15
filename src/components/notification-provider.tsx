@@ -25,13 +25,13 @@ export function NotificationProvider(props: {
       if (schedule.message_type === "due_today") {
         const result = await getNotificationData("due_today");
         if (!result.success) return;
-        message = buildDueTodayMessage(result.data.subjects);
+        message = buildDueTodayMessage(result.data.categories);
       } else {
         const result = await getNotificationData("review_and_preview");
         if (!result.success) return;
         message = buildReviewAndPreviewMessage({
           sessionsToday: result.data.sessionsToday,
-          dueTomorrow: result.data.subjects,
+          dueTomorrow: result.data.categories,
         });
       }
 

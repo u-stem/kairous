@@ -223,8 +223,8 @@ export async function deleteNotificationSchedule(
 // 対象にするため get_due_counts_by_category RPC で DB 側集計する
 // (従来 JS 側集計では PostgREST の 1000 行上限で static truncation する問題があった)
 
-type DueTodayResult = { subjects: CategoryDueCount[] };
-type ReviewAndPreviewResult = { sessionsToday: number; subjects: CategoryDueCount[] };
+type DueTodayResult = { categories: CategoryDueCount[] };
+type ReviewAndPreviewResult = { sessionsToday: number; categories: CategoryDueCount[] };
 
 export async function getNotificationData(
   messageType: "due_today",
@@ -253,14 +253,14 @@ export async function getNotificationData(
   }
 
   if (messageType === "due_today") {
-    const subjects = await getDueByCategory(today);
-    return { success: true as const, data: { subjects } };
+    const categories = await getDueByCategory(today);
+    return { success: true as const, data: { categories } };
   }
 
   // review_and_preview: 今日のセッション数 + 明日の due カードカテゴリ一覧
   const tomorrow = toJstDateString(addDays(new Date(), 1));
 
-  const [sessionsResult, subjects] = await Promise.all([
+  const [sessionsResult, categories] = await Promise.all([
     supabase
       .from("sessions")
       .select("id", { count: "exact", head: true })
@@ -275,7 +275,7 @@ export async function getNotificationData(
     success: true as const,
     data: {
       sessionsToday: sessionsResult.count ?? 0,
-      subjects,
+      categories,
     },
   };
 }

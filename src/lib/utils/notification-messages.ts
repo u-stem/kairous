@@ -1,4 +1,4 @@
-import { NOTIFICATION_MAX_SUBJECTS } from "@/lib/constants";
+import { NOTIFICATION_MAX_CATEGORIES } from "@/lib/constants";
 
 export type CategoryDueCount = {
   category: string;
@@ -11,11 +11,11 @@ export type NotificationMessage = {
 };
 
 // カテゴリリストを「数学 5枚 / 英語 7枚 ほかN科目」形式に整形する
-function formatSubjectList(subjects: CategoryDueCount[]): string {
-  if (subjects.length === 0) return "";
+function formatCategoryList(categories: CategoryDueCount[]): string {
+  if (categories.length === 0) return "";
 
-  const shown = subjects.slice(0, NOTIFICATION_MAX_SUBJECTS);
-  const remaining = subjects.length - NOTIFICATION_MAX_SUBJECTS;
+  const shown = categories.slice(0, NOTIFICATION_MAX_CATEGORIES);
+  const remaining = categories.length - NOTIFICATION_MAX_CATEGORIES;
   const parts = shown.map((s) => `${s.category} ${s.count}枚`);
   const joined = parts.join(" / ");
 
@@ -38,7 +38,7 @@ export function buildDueTodayMessage(
   const total = subjects.reduce((sum, s) => sum + s.count, 0);
   return {
     title: `今日の復習: ${total}枚`,
-    body: formatSubjectList(subjects),
+    body: formatCategoryList(subjects),
   };
 }
 
@@ -55,7 +55,7 @@ export function buildReviewAndPreviewMessage(params: {
     const total = dueTomorrow.reduce((sum, s) => sum + s.count, 0);
     return {
       title: `明日の復習: ${total}枚`,
-      body: formatSubjectList(dueTomorrow),
+      body: formatCategoryList(dueTomorrow),
     };
   }
 
@@ -64,7 +64,7 @@ export function buildReviewAndPreviewMessage(params: {
     : "今日はまだセッションがありません";
 
   const body = hasDue
-    ? `明日は ${formatSubjectList(dueTomorrow)} が待っています`
+    ? `明日は ${formatCategoryList(dueTomorrow)} が待っています`
     : "明日の復習はありません";
 
   return { title, body };
