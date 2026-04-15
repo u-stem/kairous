@@ -22,31 +22,32 @@ CREATE OR REPLACE FUNCTION get_due_counts_by_category(
   p_user_id UUID,
   p_target_date DATE
 )
-RETURNS TABLE(category_name TEXT, due_count BIGINT)
+RETURNS TABLE(category_id UUID, category_name TEXT, due_count BIGINT)
 LANGUAGE sql
 SECURITY INVOKER
 SET search_path = public
 AS $$
   SELECT
+    cat.id AS category_id,
     cat.name AS category_name,
     COUNT(cd.id) AS due_count
   FROM cards cd
   INNER JOIN materials m ON cd.material_id = m.id
-  -- 親カテゴリ集約: 対象カテゴリ自身 + 子カテゴリを一括集計する
-  -- 親カテゴリ (parent_id IS NULL) → 自分 + 全子を UNION して due 合算
-  -- 子カテゴリ (parent_id IS NOT NULL) → 自分のみ
+  -- 親カテゴリ集約: 各教材を「ルートカテゴリ (parent_id IS NULL の祖先)」に紐付ける。
+  -- 親カテゴリ選択時は自身 + 全子カテゴリの due を合算する。
+  -- 子カテゴリ選択時は自身のみ (子カテゴリには親がいないため COALESCE で自分を返す)
   INNER JOIN categories cat ON cat.id = (
     SELECT COALESCE(c2.parent_id, c2.id)
     FROM categories c2
     WHERE c2.id = m.category_id
+      AND c2.user_id = p_user_id
   )
   LEFT JOIN srs_states st
     ON st.card_id = cd.id AND st.user_id = p_user_id
   WHERE m.user_id = p_user_id
-    AND (cat.id = m.category_id
-         OR cat.id = (SELECT parent_id FROM categories WHERE id = m.category_id))
     AND (st.due_date IS NULL OR st.due_date <= p_target_date)
-  GROUP BY cat.name
+  -- 同名カテゴリでの誤集計を防ぐため id + name の複合キーで集計する
+  GROUP BY cat.id, cat.name
   HAVING COUNT(cd.id) > 0
   ORDER BY cat.name;
 $$;
