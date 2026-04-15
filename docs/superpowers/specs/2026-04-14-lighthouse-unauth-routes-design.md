@@ -65,9 +65,8 @@ module.exports = async (browser, { url }) => {
     // 未認証ルート。既存 cookie をクリアして middleware リダイレクトを回避
     const existing = await context.cookies();
     if (existing.length > 0) {
-      await context.deleteCookie(
-        ...existing.map((c) => ({ name: c.name, domain: c.domain })),
-      );
+      // cookie オブジェクト全体を渡す (deleteCookie は内部で setCookie expires:0 を使い value を要求する)
+      await context.deleteCookie(...existing);
     }
     return;
   }
@@ -95,7 +94,7 @@ module.exports = async (browser, { url }) => {
 |--------|------|
 | cookie クリア後に次 URL で再注入されないと 401 等で失敗 | LHCI は各 URL 前に script を呼ぶため、認証必須ルートでは script 内で再注入される |
 | `/auth/login` か `/auth/signup` が現状で a11y ≥ 0.95 を満たさない | 本 PBI では検出が目的、修正は #229 で追跡 |
-| `context.deleteCookie` の引数形式がバージョン依存 | puppeteer `CookieParam` は `{name, domain}` で削除可能。LHCI 0.15.1 同梱の puppeteer バージョンで確認済み |
+| `context.deleteCookie` の引数形式がバージョン依存 | LHCI 0.15.1 同梱の puppeteer は内部で `Storage.setCookies` (expires:0) を呼ぶため、`{name, domain}` だけだと CDP が value 欠落でエラー。既存 cookie オブジェクトを丸ごと渡す |
 
 ## テスト
 
