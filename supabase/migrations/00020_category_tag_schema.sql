@@ -104,3 +104,84 @@ AS $$
   HAVING COUNT(cd.id) > 0
   ORDER BY c.name;
 $$;
+
+-- 8) get_due_materials: subjects → categories, m.subject_id → m.category_id に追従
+--    RETURN 列名 (subject_id/subject_name/subject_color) は呼び出し側互換のため PBI-2 まで据え置き
+DROP FUNCTION IF EXISTS get_due_materials(UUID, DATE);
+CREATE OR REPLACE FUNCTION get_due_materials(
+  p_user_id UUID,
+  p_today DATE
+)
+RETURNS TABLE(
+  material_id UUID,
+  title TEXT,
+  subject_id UUID,
+  subject_name TEXT,
+  subject_color TEXT,
+  method_id UUID,
+  method_slug TEXT,
+  method_name TEXT,
+  due_count BIGINT
+)
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT
+    m.id AS material_id,
+    m.title,
+    s.id AS subject_id,
+    s.name AS subject_name,
+    s.color AS subject_color,
+    lm.id AS method_id,
+    lm.slug AS method_slug,
+    lm.name AS method_name,
+    COUNT(c.id) FILTER (
+      -- srs_state がないカード（新規）または due_date が今日以前のカードが due
+      WHERE ss.card_id IS NULL OR ss.due_date <= p_today
+    ) AS due_count
+  FROM materials m
+  INNER JOIN categories s ON s.id = m.category_id
+  INNER JOIN material_methods mm ON mm.material_id = m.id
+  INNER JOIN learning_methods lm ON lm.id = mm.method_id
+  INNER JOIN cards c ON c.material_id = m.id
+  -- ユーザーの srs_state のみ LEFT JOIN（他ユーザーのレコードを誤カウントしない）
+  LEFT JOIN srs_states ss ON ss.card_id = c.id AND ss.user_id = p_user_id
+  WHERE m.user_id = p_user_id
+    AND lm.slug = 'srs'
+  GROUP BY m.id, m.title, s.id, s.name, s.color, lm.id, lm.slug, lm.name
+  -- due カードが 1 枚以上ある教材のみ返す
+  HAVING COUNT(c.id) FILTER (WHERE ss.card_id IS NULL OR ss.due_date <= p_today) > 0;
+$$;
+
+-- 9) upsert_daily_log: subjects → categories に追従
+--    引数名 p_subject_id・daily_logs.subject_id 列名は PBI-2 まで据え置き
+DROP FUNCTION IF EXISTS upsert_daily_log(UUID, UUID, UUID, DATE, INT, INT, INT);
+CREATE OR REPLACE FUNCTION upsert_daily_log(
+  p_user_id UUID,
+  p_subject_id UUID,
+  p_method_id UUID,
+  p_log_date DATE,
+  p_duration_sec INT,
+  p_cards_reviewed INT,
+  p_session_count INT DEFAULT 1
+)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- category の所有者チェック (categories.user_id = p_user_id)
+  IF NOT EXISTS (
+    SELECT 1 FROM categories WHERE id = p_subject_id AND user_id = p_user_id
+  ) THEN
+    RAISE EXCEPTION 'subject % not owned by user %', p_subject_id, p_user_id;
+  END IF;
+
+  INSERT INTO daily_logs (user_id, subject_id, method_id, log_date, total_sec, session_count, cards_reviewed)
+  VALUES (p_user_id, p_subject_id, p_method_id, p_log_date, p_duration_sec, p_session_count, p_cards_reviewed)
+  ON CONFLICT (user_id, subject_id, method_id, log_date)
+  DO UPDATE SET
+    total_sec = daily_logs.total_sec + EXCLUDED.total_sec,
+    session_count = daily_logs.session_count + EXCLUDED.session_count,
+    cards_reviewed = daily_logs.cards_reviewed + EXCLUDED.cards_reviewed;
+END;
+$$;

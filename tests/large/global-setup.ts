@@ -6,6 +6,7 @@ import {
   createTestMaterial,
   createTestCard,
   createTestSession,
+  createTestSrsState,
   linkMaterialMethod,
   getSrsMethodId,
 } from "./helpers/db";
@@ -44,6 +45,10 @@ async function globalSetup() {
     0,
     LIGHTHOUSE_CARD_ID,
   );
+  // Lighthouse seed カードは interleaving テストに混入しないよう、
+  // 遠い未来を due_date に設定して「まだ due でない」状態にする
+  const farFuture = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+  await createTestSrsState(LIGHTHOUSE_CARD_ID, userId, farFuture, "Review");
 
   // セッション系動的ルート計測用に in_progress / completed の 2 セッションを seed。
   // /rest/[id] は DB lookup なしのため in_progress session の UUID を流用する
