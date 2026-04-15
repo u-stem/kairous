@@ -193,7 +193,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "subjects_user_id_fkey"
+            foreignKeyName: "categories_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -403,7 +403,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "materials_subject_id_fkey"
+            foreignKeyName: "materials_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
@@ -863,3 +863,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
