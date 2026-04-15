@@ -23,7 +23,7 @@ const EMPTY_STATS: StatsData = {
     prevCardsReviewed: 0,
   },
   daily: [],
-  bySubject: [],
+  byCategory: [],
   byMethod: [],
 };
 
@@ -84,7 +84,7 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
       prevCardsReviewed: sum(prevLogs, "cards_reviewed"),
     },
     daily: aggregateDaily(currentLogs),
-    bySubject: aggregateByKey(currentLogs, "category_id", subjectNames),
+    byCategory: aggregateByKey(currentLogs, "category_id", subjectNames),
     byMethod: aggregateByKey(currentLogs, "method_id", methodNames),
   };
 }

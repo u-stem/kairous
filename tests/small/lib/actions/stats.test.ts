@@ -72,7 +72,7 @@ describe("getStats", () => {
     expect(result.summary.sessionCount).toBe(0);
     expect(result.summary.cardsReviewed).toBe(0);
     expect(result.daily).toEqual([]);
-    expect(result.bySubject).toEqual([]);
+    expect(result.byCategory).toEqual([]);
     expect(result.byMethod).toEqual([]);
   });
 
@@ -101,8 +101,8 @@ describe("getStats", () => {
     expect(result.summary.totalSec).toBe(6300);
     expect(result.summary.sessionCount).toBe(4);
     expect(result.summary.cardsReviewed).toBe(35);
-    expect(result.bySubject).toHaveLength(1);
-    expect(result.bySubject[0].name).toBe("English");
+    expect(result.byCategory).toHaveLength(1);
+    expect(result.byCategory[0].name).toBe("English");
     expect(result.byMethod).toHaveLength(1);
     expect(result.byMethod[0].name).toBe("SRS");
   });
