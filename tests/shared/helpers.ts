@@ -115,10 +115,21 @@ export async function createTestSession(
   materialId: string,
   methodId: string,
   status = "in_progress",
+  id?: string,
+  extra?: { ended_at?: string; duration_sec?: number },
 ) {
+  const insertData: Record<string, unknown> = {
+    user_id: userId,
+    material_id: materialId,
+    method_id: methodId,
+    status,
+  };
+  if (id) insertData.id = id;
+  if (extra?.ended_at) insertData.ended_at = extra.ended_at;
+  if (extra?.duration_sec !== undefined) insertData.duration_sec = extra.duration_sec;
   const result = await getAdminClient()
     .from("sessions")
-    .insert({ user_id: userId, material_id: materialId, method_id: methodId, status })
+    .insert(insertData)
     .select()
     .single();
   if (result.error) throw new Error(`テストセッション作成失敗: ${result.error.message}`);
