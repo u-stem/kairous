@@ -16,6 +16,7 @@
     "lhci:setup": "playwright test --config tests/large/playwright.config.ts --project=setup",
     "lhci": "lhci autorun",
     "check": "bun run lint && bun run typecheck && bun test:small",
+    "check:lighthouse-coverage": "bun run scripts/check-lighthouse-coverage.ts",
     "prepare": "lefthook install"
   },
   "dependencies": {
