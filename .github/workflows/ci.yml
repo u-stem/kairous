@@ -42,7 +42,6 @@ jobs:
 
   test-medium:
     runs-on: ubuntu-latest
-    needs: [test-small]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-kairous
@@ -74,7 +73,6 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-kairous
@@ -114,7 +112,7 @@ jobs:
 
   test-large:
     runs-on: ubuntu-latest
-    needs: [test-medium, lint-and-typecheck, build]
+    needs: [build, lint-and-typecheck]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-kairous
