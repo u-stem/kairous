@@ -28,6 +28,10 @@ BEGIN
     IF NEW.parent_id = NEW.id THEN
       RAISE EXCEPTION 'Category cannot be its own parent';
     END IF;
+    -- 自身が子を持つ場合は親を持てない (C → A → B で depth 3 になるのを防ぐ)
+    IF EXISTS (SELECT 1 FROM categories WHERE parent_id = NEW.id) THEN
+      RAISE EXCEPTION 'Category has children; cannot be assigned a parent';
+    END IF;
     IF (SELECT parent_id FROM categories WHERE id = NEW.parent_id) IS NOT NULL THEN
       RAISE EXCEPTION 'Category depth exceeds 2 levels';
     END IF;

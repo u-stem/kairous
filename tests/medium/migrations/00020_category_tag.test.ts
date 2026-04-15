@@ -80,6 +80,20 @@ describe("migration 00020: category + tags", () => {
     expect(update.error?.message).toMatch(/own parent/i);
   });
 
+  it("子を持つカテゴリを別の親の子にできない (UPDATE 時)", async () => {
+    const db = getAdminClient();
+    const a = await db.from("categories").insert({ user_id: userId, name: "A" }).select().single();
+    const aData = a.data as CategoryRow;
+    await db.from("categories").insert({ user_id: userId, name: "B", parent_id: aData.id });
+    const c = await db.from("categories").insert({ user_id: userId, name: "C" }).select().single();
+    const cData = c.data as CategoryRow;
+    const update = await db
+      .from("categories")
+      .update({ parent_id: cData.id })
+      .eq("id", aData.id);
+    expect(update.error?.message).toMatch(/children|depth/i);
+  });
+
   it("他ユーザーのカテゴリを親にできない", async () => {
     const db = getAdminClient();
     const otherUser = await createTestUser();
