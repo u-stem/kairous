@@ -14,10 +14,17 @@ export async function createTestMaterial(
   subjectId: string,
   userId: string,
   title = "テスト教材",
+  id?: string,
 ) {
+  const insertData: Record<string, unknown> = {
+    subject_id: subjectId,
+    user_id: userId,
+    title,
+  };
+  if (id) insertData.id = id;
   const result = await getAdminClient()
     .from("materials")
-    .insert({ subject_id: subjectId, user_id: userId, title })
+    .insert(insertData)
     .select()
     .single();
   if (result.error) throw new Error(`テスト教材作成失敗: ${result.error.message}`);
@@ -29,10 +36,18 @@ export async function createTestCard(
   front = "テスト表面",
   back = "テスト裏面",
   displayOrder = 0,
+  id?: string,
 ) {
+  const insertData: Record<string, unknown> = {
+    material_id: materialId,
+    front,
+    back,
+    display_order: displayOrder,
+  };
+  if (id) insertData.id = id;
   const result = await getAdminClient()
     .from("cards")
-    .insert({ material_id: materialId, front, back, display_order: displayOrder })
+    .insert(insertData)
     .select()
     .single();
   if (result.error) throw new Error(`テストカード作成失敗: ${result.error.message}`);
