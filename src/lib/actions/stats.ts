@@ -61,14 +61,14 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
   const sum = (arr: typeof logs, key: "total_sec" | "session_count" | "cards_reviewed") =>
     arr.reduce((acc, row) => acc + row[key], 0);
 
-  // 分野・手法は互いに依存しないため並列取得してレイテンシを削減する
-  const [{ data: subjects }, { data: methods }] = await Promise.all([
+  // カテゴリ・手法は互いに依存しないため並列取得してレイテンシを削減する
+  const [{ data: categories }, { data: methods }] = await Promise.all([
     supabase.from("categories").select("id, name").eq("user_id", user.id).order("name"),
     supabase.from("learning_methods").select("id, name").order("name"),
   ]);
 
-  const subjectNames = new Map(
-    (subjects ?? []).map((s: { id: string; name: string }) => [s.id, s.name]),
+  const categoryNames = new Map(
+    (categories ?? []).map((c: { id: string; name: string }) => [c.id, c.name]),
   );
   const methodNames = new Map(
     (methods ?? []).map((m: { id: string; name: string }) => [m.id, m.name]),
@@ -84,7 +84,7 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
       prevCardsReviewed: sum(prevLogs, "cards_reviewed"),
     },
     daily: aggregateDaily(currentLogs),
-    byCategory: aggregateByKey(currentLogs, "category_id", subjectNames),
+    byCategory: aggregateByKey(currentLogs, "category_id", categoryNames),
     byMethod: aggregateByKey(currentLogs, "method_id", methodNames),
   };
 }
@@ -100,7 +100,7 @@ export async function getStreak(): Promise<StreakData> {
 
   if (error) throw new Error(`getStreak failed: ${error.message}`);
 
-  // 同一日に subject/method 別の複数行があるため、アプリ層で重複除去する
+  // 同一日に category/method 別の複数行があるため、アプリ層で重複除去する
   const uniqueDates = [...new Set((logs ?? []).map((l: { log_date: string }) => l.log_date))];
 
   const today = toJstDateString(new Date());
