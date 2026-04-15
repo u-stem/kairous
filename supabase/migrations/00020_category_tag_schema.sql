@@ -5,6 +5,12 @@
 ALTER TABLE subjects RENAME TO categories;
 ALTER INDEX idx_subjects_user_id RENAME TO idx_categories_user_id;
 
+-- テーブルリネームで制約名は自動更新されないため明示的にリネームする
+ALTER TABLE categories
+  RENAME CONSTRAINT subjects_pkey TO categories_pkey;
+ALTER TABLE categories
+  RENAME CONSTRAINT subjects_user_id_fkey TO categories_user_id_fkey;
+
 -- 2) 親子関係
 ALTER TABLE categories
   ADD COLUMN parent_id UUID REFERENCES categories(id) ON DELETE CASCADE;
@@ -12,7 +18,11 @@ CREATE INDEX idx_categories_parent_id ON categories(parent_id);
 
 -- 深度 2 段制限: 自己参照・深さ超過・ユーザー越境をトリガで防ぐ
 CREATE OR REPLACE FUNCTION enforce_category_depth()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
 BEGIN
   IF NEW.parent_id IS NOT NULL THEN
     IF NEW.parent_id = NEW.id THEN
@@ -27,7 +37,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS enforce_category_depth_trigger ON categories;
 CREATE TRIGGER enforce_category_depth_trigger
