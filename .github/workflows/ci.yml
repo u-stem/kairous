@@ -42,7 +42,6 @@ jobs:
 
   test-medium:
     runs-on: ubuntu-latest
-    needs: [test-small]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-kairous
@@ -74,24 +73,21 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck]
+    env:
+      # Next.js は NEXT_PUBLIC_* を build 時に static replace するため、client bundle には
+      # この値が焼き込まれる。Supabase CLI (バージョン固定) は deterministic JWT を emit する
+      # ため、ここで hardcode した ANON_KEY は test-large / lighthouse ジョブが runtime に
+      # 起動する supabase の ANON_KEY と完全一致する。build ジョブから supabase start を
+      # 削除し 30-60s 短縮するための構成 (PBI #261)。
+      # Vercel 本番ビルドは Project Settings の環境変数で上書きされるため影響なし。
+      NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
+      # SUPABASE_SERVICE_ROLE_KEY は build 時不要 (全ページが dynamic rendering で
+      # static generation 中に serverEnv へアクセスしない)。runtime (test-large /
+      # lighthouse) 側で supabase status から取得した実値を注入する。
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-kairous
-      - uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
-        with:
-          version: "2.76.7"
-      - name: Supabase ローカル起動
-        # build 時に NEXT_PUBLIC_SUPABASE_ANON_KEY がクライアントバンドルに焼き込まれるため、
-        # lighthouse / test-large と同一バージョンの Supabase CLI で起動し JWT を一致させる。
-        # edge-runtime は build (静的解析のみ) で不要のため除外
-        run: supabase start -x realtime,storage,imgproxy,inbucket,pgadmin-schema-diff,migra,studio,edge-runtime,logflare,vector,supavisor
-      - name: 環境変数を設定
-        run: |
-          eval $(supabase status -o env | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY)=')
-          echo "NEXT_PUBLIC_SUPABASE_URL=${API_URL}" >> $GITHUB_ENV
-          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}" >> $GITHUB_ENV
-          echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> $GITHUB_ENV
       - name: Next.js build cache を復元
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -114,7 +110,7 @@ jobs:
 
   test-large:
     runs-on: ubuntu-latest
-    needs: [test-medium, lint-and-typecheck, build]
+    needs: [build, lint-and-typecheck]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-kairous
