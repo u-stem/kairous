@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getMaterial } from "@/lib/actions/materials";
-import { getSubjects } from "@/lib/actions/subjects";
+import { getSubjects } from "@/lib/actions/categories";
 import { MaterialEditForm } from "./material-edit-form";
 
 export default async function MaterialEditPage({

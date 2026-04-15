@@ -204,47 +204,47 @@ export type Database = {
       daily_logs: {
         Row: {
           cards_reviewed: number
+          category_id: string
           id: string
           log_date: string
           method_id: string
           session_count: number
-          subject_id: string
           total_sec: number
           user_id: string
         }
         Insert: {
           cards_reviewed?: number
+          category_id: string
           id?: string
           log_date?: string
           method_id: string
           session_count?: number
-          subject_id: string
           total_sec?: number
           user_id: string
         }
         Update: {
           cards_reviewed?: number
+          category_id?: string
           id?: string
           log_date?: string
           method_id?: string
           session_count?: number
-          subject_id?: string
           total_sec?: number
           user_id?: string
         }
         Relationships: [
           {
+            foreignKeyName: "daily_logs_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "daily_logs_method_id_fkey"
             columns: ["method_id"]
             isOneToOne: false
             referencedRelation: "learning_methods"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "daily_logs_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
           {
@@ -672,29 +672,35 @@ export type Database = {
         Args: { p_back: string; p_front: string; p_material_id: string }
         Returns: string
       }
-      get_due_counts_by_subject: {
+      get_due_counts_by_category: {
         Args: { p_target_date: string; p_user_id: string }
         Returns: {
+          category_name: string
           due_count: number
-          subject_name: string
         }[]
       }
       get_due_materials: {
         Args: { p_today: string; p_user_id: string }
         Returns: {
+          category_color: string
+          category_id: string
+          category_name: string
           due_count: number
           material_id: string
           method_id: string
           method_name: string
           method_slug: string
-          subject_color: string
-          subject_id: string
-          subject_name: string
           title: string
         }[]
       }
       get_interleaving_due_cards: {
-        Args: { p_session_id: string; p_today: string; p_user_id: string }
+        Args: {
+          p_category_id?: string
+          p_session_id: string
+          p_tag_ids?: string[]
+          p_today: string
+          p_user_id: string
+        }
         Returns: {
           back: string
           card_id: string
@@ -719,11 +725,11 @@ export type Database = {
       upsert_daily_log: {
         Args: {
           p_cards_reviewed: number
+          p_category_id: string
           p_duration_sec: number
           p_log_date: string
           p_method_id: string
           p_session_count?: number
-          p_subject_id: string
           p_user_id: string
         }
         Returns: undefined

@@ -296,7 +296,7 @@ export async function completePomodoroSession(
 
       const { error: logError } = await supabase.rpc("upsert_daily_log", {
         p_user_id: user.id,
-        p_subject_id: material.category_id,
+        p_category_id: material.category_id,
         p_method_id: session.method_id,
         p_log_date: logDate,
         p_duration_sec: durationSec,
@@ -434,7 +434,7 @@ export async function completeCustomSession(
 
       const { error: logError } = await supabase.rpc("upsert_daily_log", {
         p_user_id: user.id,
-        p_subject_id: material.category_id,
+        p_category_id: material.category_id,
         p_method_id: session.method_id,
         p_log_date: logDate,
         p_duration_sec: durationSec,
@@ -514,7 +514,7 @@ export async function completeFreeStudySession(
 
       const { error: logError } = await supabase.rpc("upsert_daily_log", {
         p_user_id: user.id,
-        p_subject_id: material.category_id,
+        p_category_id: material.category_id,
         p_method_id: session.method_id,
         p_log_date: logDate,
         p_duration_sec: durationSec,

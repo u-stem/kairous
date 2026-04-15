@@ -80,9 +80,9 @@ describe("getStats", () => {
     mockClient = buildMockClient({
       dailyLogs: {
         data: [
-          { log_date: "2026-04-05", total_sec: 3600, session_count: 2, cards_reviewed: 20, subject_id: "s1", method_id: "m1" },
-          { log_date: "2026-04-04", total_sec: 1800, session_count: 1, cards_reviewed: 10, subject_id: "s1", method_id: "m1" },
-          { log_date: "2026-03-30", total_sec: 900, session_count: 1, cards_reviewed: 5, subject_id: "s1", method_id: "m1" },
+          { log_date: "2026-04-05", total_sec: 3600, session_count: 2, cards_reviewed: 20, category_id: "s1", method_id: "m1" },
+          { log_date: "2026-04-04", total_sec: 1800, session_count: 1, cards_reviewed: 10, category_id: "s1", method_id: "m1" },
+          { log_date: "2026-03-30", total_sec: 900, session_count: 1, cards_reviewed: 5, category_id: "s1", method_id: "m1" },
         ],
         error: null,
       },

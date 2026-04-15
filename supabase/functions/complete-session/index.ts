@@ -246,7 +246,7 @@ Deno.serve(async (req) => {
       // PostgreSQL の ON CONFLICT で原子的に upsert（race condition 防止）
       const { error: logError } = await supabase.rpc("upsert_daily_log", {
         p_user_id: session.user_id,
-        p_subject_id: material.category_id,
+        p_category_id: material.category_id,
         p_method_id: session.method_id,
         p_log_date: logDate,
         p_duration_sec: session.duration_sec ?? 0,
@@ -313,7 +313,7 @@ Deno.serve(async (req) => {
 
         const { error: logError } = await supabase.rpc("upsert_daily_log", {
           p_user_id: session.user_id,
-          p_subject_id: material.category_id,
+          p_category_id: material.category_id,
           p_method_id: session.method_id,
           p_log_date: logDate,
           p_duration_sec: proportionalDuration,

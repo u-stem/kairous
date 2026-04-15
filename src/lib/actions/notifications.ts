@@ -220,7 +220,7 @@ export async function deleteNotificationSchedule(
 
 // 通知表示時に呼ばれるデータ取得アクション
 // 注: get_due_materials RPC は SRS 手法のみ返す。通知では全手法の due カードを
-// 対象にするため get_due_counts_by_subject RPC で DB 側集計する
+// 対象にするため get_due_counts_by_category RPC で DB 側集計する
 // (従来 JS 側集計では PostgREST の 1000 行上限で static truncation する問題があった)
 
 type DueTodayResult = { subjects: SubjectDueCount[] };
@@ -238,26 +238,26 @@ export async function getNotificationData(
   const { user, supabase } = await requireAuth();
   const today = toJstDateString(new Date());
 
-  async function getDueBySubject(targetDate: string): Promise<SubjectDueCount[]> {
-    const { data, error } = await supabase.rpc("get_due_counts_by_subject", {
+  async function getDueByCategory(targetDate: string): Promise<SubjectDueCount[]> {
+    const { data, error } = await supabase.rpc("get_due_counts_by_category", {
       p_user_id: user.id,
       p_target_date: targetDate,
     });
 
-    if (error) throw new Error(`get_due_counts_by_subject failed: ${error.message}`);
+    if (error) throw new Error(`get_due_counts_by_category failed: ${error.message}`);
 
-    return (data ?? []).map((row: { subject_name: string; due_count: number }) => ({
-      subject: row.subject_name,
+    return (data ?? []).map((row: { category_name: string; due_count: number }) => ({
+      subject: row.category_name,
       count: Number(row.due_count),
     }));
   }
 
   if (messageType === "due_today") {
-    const subjects = await getDueBySubject(today);
+    const subjects = await getDueByCategory(today);
     return { success: true as const, data: { subjects } };
   }
 
-  // review_and_preview: 今日のセッション数 + 明日の due カード科目一覧
+  // review_and_preview: 今日のセッション数 + 明日の due カードカテゴリ一覧
   const tomorrow = toJstDateString(addDays(new Date(), 1));
 
   const [sessionsResult, subjects] = await Promise.all([
@@ -268,7 +268,7 @@ export async function getNotificationData(
       .eq("status", "completed")
       .gte("created_at", `${today}T00:00:00+09:00`)
       .lt("created_at", `${tomorrow}T00:00:00+09:00`),
-    getDueBySubject(tomorrow),
+    getDueByCategory(tomorrow),
   ]);
 
   return {

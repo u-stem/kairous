@@ -8,7 +8,7 @@ import type { Subject, LearningMethod } from "@/lib/types/materials";
 import { hasCardBasedMethod } from "@/lib/constants";
 import { createMaterial } from "@/lib/actions/materials";
 import { createCard } from "@/lib/actions/cards";
-import { createSubject } from "@/lib/actions/subjects";
+import { createSubject } from "@/lib/actions/categories";
 import { SubjectSelector } from "@/components/subject-selector";
 import { MethodSelector } from "@/components/method-selector";
 import { CardEditor } from "@/components/card-editor";

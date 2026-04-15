@@ -5,7 +5,7 @@ type DailyLogRow = {
   total_sec: number;
   session_count: number;
   cards_reviewed: number;
-  subject_id: string;
+  category_id: string;
   method_id: string;
 };
 
@@ -50,7 +50,7 @@ export function aggregateDaily(rows: DailyLogRow[]): DailyData[] {
 
 export function aggregateByKey(
   rows: DailyLogRow[],
-  key: "subject_id" | "method_id",
+  key: "category_id" | "method_id",
   names: Map<string, string>,
 ): BreakdownItem[] {
   const map = new Map<string, BreakdownItem>();

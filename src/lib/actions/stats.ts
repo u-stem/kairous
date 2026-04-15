@@ -47,7 +47,7 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
   // 現在 + 前期間を1クエリで取得し、コード側で分割する
   const { data: logs, error } = await supabase
     .from("daily_logs")
-    .select("log_date, total_sec, session_count, cards_reviewed, subject_id, method_id")
+    .select("log_date, total_sec, session_count, cards_reviewed, category_id, method_id")
     .eq("user_id", user.id)
     .gte("log_date", prevStartStr)
     .order("log_date", { ascending: true });
@@ -84,7 +84,7 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
       prevCardsReviewed: sum(prevLogs, "cards_reviewed"),
     },
     daily: aggregateDaily(currentLogs),
-    bySubject: aggregateByKey(currentLogs, "subject_id", subjectNames),
+    bySubject: aggregateByKey(currentLogs, "category_id", subjectNames),
     byMethod: aggregateByKey(currentLogs, "method_id", methodNames),
   };
 }

@@ -1,4 +1,4 @@
-import { getSubjects } from "@/lib/actions/subjects";
+import { getSubjects } from "@/lib/actions/categories";
 import { getMethods } from "@/lib/actions/material-methods";
 import { MaterialWizard } from "./material-wizard";
 

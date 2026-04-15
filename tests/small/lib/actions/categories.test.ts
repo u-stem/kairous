@@ -63,7 +63,7 @@ describe("createSubject", () => {
     const formData = new FormData();
     formData.set("name", "");
 
-    const { createSubject } = await import("@/lib/actions/subjects");
+    const { createSubject } = await import("@/lib/actions/categories");
     const result = await createSubject(formData);
 
     expect(result.success).toBe(false);
@@ -74,7 +74,7 @@ describe("createSubject", () => {
     const formData = new FormData();
     formData.set("name", "");
 
-    const { createSubject } = await import("@/lib/actions/subjects");
+    const { createSubject } = await import("@/lib/actions/categories");
     const result = await createSubject(formData);
 
     const { ACTION_ERRORS } = await import("@/lib/constants");
@@ -88,7 +88,7 @@ describe("createSubject", () => {
     const formData = new FormData();
     formData.set("name", "英語");
 
-    const { createSubject } = await import("@/lib/actions/subjects");
+    const { createSubject } = await import("@/lib/actions/categories");
 
     await expect(createSubject(formData)).rejects.toThrow(
       "NEXT_REDIRECT:/auth/login",
@@ -103,7 +103,7 @@ describe("createSubject", () => {
     const formData = new FormData();
     formData.set("name", "英語");
 
-    const { createSubject } = await import("@/lib/actions/subjects");
+    const { createSubject } = await import("@/lib/actions/categories");
     const result = await createSubject(formData);
 
     expect(result.success).toBe(true);
@@ -117,7 +117,7 @@ describe("createSubject", () => {
     const formData = new FormData();
     formData.set("name", "英語");
 
-    const { createSubject } = await import("@/lib/actions/subjects");
+    const { createSubject } = await import("@/lib/actions/categories");
     const result = await createSubject(formData);
 
     expect(result.success === true && result.data.id).toBe("sub-1");
@@ -131,7 +131,7 @@ describe("createSubject", () => {
     const formData = new FormData();
     formData.set("name", "英語");
 
-    const { createSubject } = await import("@/lib/actions/subjects");
+    const { createSubject } = await import("@/lib/actions/categories");
     const result = await createSubject(formData);
 
     expect(result.success === true && result.data.name).toBe("英語");
@@ -148,7 +148,7 @@ describe("createSubject", () => {
     const formData = new FormData();
     formData.set("name", "英語");
 
-    const { createSubject } = await import("@/lib/actions/subjects");
+    const { createSubject } = await import("@/lib/actions/categories");
     const result = await createSubject(formData);
 
     const { ACTION_ERRORS } = await import("@/lib/constants");
@@ -166,7 +166,7 @@ describe("getSubjects", () => {
   it("redirects to /auth/login when user is not authenticated", async () => {
     mockClient = buildMockClient({ user: null });
 
-    const { getSubjects } = await import("@/lib/actions/subjects");
+    const { getSubjects } = await import("@/lib/actions/categories");
 
     await expect(getSubjects()).rejects.toThrow("NEXT_REDIRECT:/auth/login");
   });
@@ -181,7 +181,7 @@ describe("getSubjects", () => {
       queryResult: { data: subjects, error: null },
     });
 
-    const { getSubjects } = await import("@/lib/actions/subjects");
+    const { getSubjects } = await import("@/lib/actions/categories");
     const result = await getSubjects();
 
     expect(result).toHaveLength(2);
@@ -196,7 +196,7 @@ describe("getSubjects", () => {
       queryResult: { data: subjects, error: null },
     });
 
-    const { getSubjects } = await import("@/lib/actions/subjects");
+    const { getSubjects } = await import("@/lib/actions/categories");
     const result = await getSubjects();
 
     expect(result[0].id).toBe("sub-1");
@@ -208,7 +208,7 @@ describe("getSubjects", () => {
       queryResult: { data: null, error: null },
     });
 
-    const { getSubjects } = await import("@/lib/actions/subjects");
+    const { getSubjects } = await import("@/lib/actions/categories");
     const result = await getSubjects();
 
     expect(result).toEqual([]);
