@@ -19,7 +19,7 @@ const STORAGE_STATE_PATH = path.resolve(
 /**
  * @typedef {(
  *   browser: import('puppeteer').Browser,
- *   context: {url: string},
+ *   options: {url: string},
  * ) => Promise<void>} PuppeteerScript
  */
 

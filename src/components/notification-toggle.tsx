@@ -43,7 +43,7 @@ export function NotificationToggle(props: {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <p className="font-medium">通知</p>
+        <p id="notification-toggle-label" className="font-medium">通知</p>
         {isDenied && (
           <p className="text-xs text-muted-foreground">
             ブラウザの設定から通知を許可してください
@@ -54,7 +54,7 @@ export function NotificationToggle(props: {
         type="button"
         role="switch"
         aria-checked={enabled}
-        aria-label="通知を有効化"
+        aria-labelledby="notification-toggle-label"
         disabled={isPending || isDenied}
         onClick={() => { void handleToggle(); }}
         data-testid="notification-master-toggle"
