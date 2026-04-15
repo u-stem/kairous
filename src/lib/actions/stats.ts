@@ -63,7 +63,7 @@ export async function getStats(period: StatsPeriod): Promise<StatsData> {
 
   // 分野・手法は互いに依存しないため並列取得してレイテンシを削減する
   const [{ data: subjects }, { data: methods }] = await Promise.all([
-    supabase.from("subjects").select("id, name").eq("user_id", user.id).order("name"),
+    supabase.from("categories").select("id, name").eq("user_id", user.id).order("name"),
     supabase.from("learning_methods").select("id, name").order("name"),
   ]);
 

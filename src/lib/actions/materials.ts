@@ -24,6 +24,7 @@ export async function createMaterial(
   const parsed = createMaterialSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description") || undefined,
+    // フォームフィールド名は subject_id のまま (PBI-3 で category_id にリネーム予定)
     subject_id: formData.get("subject_id"),
     // JSON文字列をパース。クライアントからは配列をJSON化して送る。改ざん対策で try-catch する
     method_ids: (() => {
@@ -51,7 +52,8 @@ export async function createMaterial(
     .insert({
       title: parsed.data.title,
       description: parsed.data.description ?? null,
-      subject_id: parsed.data.subject_id,
+      // スキーマの列名は category_id。バリデーション側は subject_id キーで受け取り、ここでマッピングする
+      category_id: parsed.data.subject_id,
       user_id: user.id,
     })
     .select("id")
@@ -89,8 +91,8 @@ export async function getMaterials(
   let query = supabase
     .from("materials")
     .select(`
-      id, title, description, subject_id, total_cards, created_at,
-      subjects!inner(id, name, color),
+      id, title, description, category_id, total_cards, created_at,
+      categories!inner(id, name, color),
       material_methods(
         learning_methods(id, slug, name, category)
       )
@@ -99,7 +101,7 @@ export async function getMaterials(
     .order("created_at", { ascending: false });
 
   if (options?.subjectId) {
-    query = query.eq("subject_id", options.subjectId);
+    query = query.eq("category_id", options.subjectId);
   }
   if (options?.search) {
     // LIKE メタ文字（%, _, \）をエスケープし、意図しないパターンマッチを防ぐ
@@ -160,8 +162,8 @@ export async function getMaterials(
     id: m.id,
     title: m.title,
     description: m.description,
-    subject_id: m.subject_id,
-    subject: m.subjects as JoinedSubject,
+    category_id: m.category_id,
+    subject: m.categories as JoinedSubject,
     total_cards: m.total_cards,
     due_count: dueMap.get(m.id) ?? 0,
     methods: (m.material_methods ?? []).map((mm: Record<string, unknown>) => {
@@ -182,8 +184,8 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
   const { data: material, error } = await supabase
     .from("materials")
     .select(`
-      id, title, description, subject_id, total_cards, created_at,
-      subjects!inner(id, name, color),
+      id, title, description, category_id, total_cards, created_at,
+      categories!inner(id, name, color),
       material_methods(
         learning_methods(id, slug, name, category)
       )
@@ -247,8 +249,8 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
     id: material.id,
     title: material.title,
     description: material.description,
-    subject_id: material.subject_id,
-    subject: material.subjects as JoinedSubject,
+    category_id: material.category_id,
+    subject: material.categories as JoinedSubject,
     total_cards: material.total_cards,
     due_count: dueCount,
     methods: (material.material_methods ?? []).map(
@@ -277,6 +279,7 @@ export async function updateMaterial(
   const parsed = updateMaterialSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description") || undefined,
+    // フォームフィールド名は subject_id のまま (PBI-3 で category_id にリネーム予定)
     subject_id: formData.get("subject_id"),
   });
 
@@ -295,7 +298,8 @@ export async function updateMaterial(
     .update({
       title: parsed.data.title,
       description: parsed.data.description ?? null,
-      subject_id: parsed.data.subject_id,
+      // スキーマの列名は category_id。バリデーション側は subject_id キーで受け取り、ここでマッピングする
+      category_id: parsed.data.subject_id,
     })
     .eq("id", id)
     .eq("user_id", user.id);

@@ -156,6 +156,51 @@ export type Database = {
           },
         ]
       }
+      categories: {
+        Row: {
+          color: string
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          parent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+          parent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          parent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subjects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_logs: {
         Row: {
           cards_reviewed: number
@@ -199,7 +244,7 @@ export type Database = {
             foreignKeyName: "daily_logs_subject_id_fkey"
             columns: ["subject_id"]
             isOneToOne: false
-            referencedRelation: "subjects"
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
           {
@@ -292,33 +337,66 @@ export type Database = {
           },
         ]
       }
+      material_tags: {
+        Row: {
+          created_at: string
+          material_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          material_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          material_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_tags_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materials: {
         Row: {
+          category_id: string
           created_at: string
           description: string | null
           id: string
           source_type: string | null
-          subject_id: string
           title: string
           total_cards: number
           user_id: string
         }
         Insert: {
+          category_id: string
           created_at?: string
           description?: string | null
           id?: string
           source_type?: string | null
-          subject_id: string
           title: string
           total_cards?: number
           user_id: string
         }
         Update: {
+          category_id?: string
           created_at?: string
           description?: string | null
           id?: string
           source_type?: string | null
-          subject_id?: string
           title?: string
           total_cards?: number
           user_id?: string
@@ -326,9 +404,9 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "materials_subject_id_fkey"
-            columns: ["subject_id"]
+            columns: ["category_id"]
             isOneToOne: false
-            referencedRelation: "subjects"
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
           {
@@ -542,11 +620,10 @@ export type Database = {
           },
         ]
       }
-      subjects: {
+      tags: {
         Row: {
           color: string
           created_at: string
-          display_order: number
           id: string
           name: string
           user_id: string
@@ -554,7 +631,6 @@ export type Database = {
         Insert: {
           color?: string
           created_at?: string
-          display_order?: number
           id?: string
           name: string
           user_id: string
@@ -562,14 +638,13 @@ export type Database = {
         Update: {
           color?: string
           created_at?: string
-          display_order?: number
           id?: string
           name?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "subjects_user_id_fkey"
+            foreignKeyName: "tags_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -788,4 +863,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

@@ -33,7 +33,7 @@ export default async function MaterialsPage({
     { subject: { id: string; name: string; color: string }; materials: typeof materials }
   >();
   for (const material of materials) {
-    const key = material.subject_id;
+    const key = material.category_id;
     if (!grouped.has(key)) {
       grouped.set(key, { subject: material.subject, materials: [] });
     }

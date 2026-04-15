@@ -29,7 +29,7 @@ type InterleavingCardRow = {
 type JoinedMethod = { slug: string };
 type JoinedMethodWithName = { slug: string; name: string };
 type JoinedMethodWithDetails = { slug: string; name: string; default_duration_sec: number | null };
-type JoinedMaterial = { id: string; title: string; subjects: { name: string } };
+type JoinedMaterial = { id: string; title: string; categories: { name: string } };
 type JoinedMaterialTitle = { title: string };
 
 export type SessionInfo = {
@@ -196,7 +196,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
     .from("sessions")
     .select(`
       id, method_id, status, duration_sec, self_rating, started_at, ended_at, meta,
-      materials(id, title, subjects(name)),
+      materials(id, title, categories(name)),
       learning_methods(slug, name)
     `)
     .eq("id", sessionId)
@@ -266,7 +266,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
   return {
     id: session.id,
     material: mat
-      ? { id: mat.id, title: mat.title, subject: { name: mat.subjects.name } }
+      ? { id: mat.id, title: mat.title, subject: { name: mat.categories.name } }
       : null,
     method,
     method_id: session.method_id,

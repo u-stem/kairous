@@ -36,7 +36,7 @@ export function MaterialEditForm({
 
   const [title, setTitle] = useState(material.title);
   const [description, setDescription] = useState(material.description ?? "");
-  const [subjectId, setSubjectId] = useState(material.subject_id);
+  const [subjectId, setSubjectId] = useState(material.category_id);
   const [subjects, setSubjects] = useState(initialSubjects);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -53,6 +53,7 @@ export function MaterialEditForm({
         id: result.data.id,
         name: result.data.name,
         color: "#6b7280",
+        parent_id: null,
         display_order: Math.max(0, ...subjects.map((s) => s.display_order)) + 1,
         user_id: "",
         created_at: new Date().toISOString(),

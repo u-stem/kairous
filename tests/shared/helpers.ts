@@ -1,23 +1,30 @@
 import { getAdminClient } from "./db";
 
-export async function createTestSubject(userId: string, name = "テスト分野") {
+export async function createTestCategory(
+  userId: string,
+  name = "テストカテゴリ",
+  parentId?: string,
+) {
   const result = await getAdminClient()
-    .from("subjects")
-    .insert({ user_id: userId, name, color: "#6366f1" })
+    .from("categories")
+    .insert({ user_id: userId, name, color: "#6366f1", parent_id: parentId ?? null })
     .select()
     .single();
-  if (result.error) throw new Error(`テスト分野作成失敗: ${result.error.message}`);
-  return result.data as { id: string; name: string; color: string; user_id: string };
+  if (result.error) throw new Error(`テストカテゴリ作成失敗: ${result.error.message}`);
+  return result.data as { id: string; name: string; color: string; user_id: string; parent_id: string | null };
 }
 
+// 後方互換エイリアス。PBI-2 で最終削除
+export const createTestSubject = createTestCategory;
+
 export async function createTestMaterial(
-  subjectId: string,
+  categoryId: string,
   userId: string,
   title = "テスト教材",
   id?: string,
 ) {
   const insertData: Record<string, unknown> = {
-    subject_id: subjectId,
+    category_id: categoryId,
     user_id: userId,
     title,
   };
@@ -28,7 +35,7 @@ export async function createTestMaterial(
     .select()
     .single();
   if (result.error) throw new Error(`テスト教材作成失敗: ${result.error.message}`);
-  return result.data as { id: string; title: string; subject_id: string; user_id: string };
+  return result.data as { id: string; title: string; category_id: string; user_id: string };
 }
 
 export async function createTestCard(
@@ -158,12 +165,12 @@ export async function cleanupTestData(userId: string) {
     .eq("user_id", userId);
   if (matErr) throw new Error(`materials クリーンアップ失敗: ${matErr.message}`);
 
-  // subjects 削除（materials は上で削除済み）
-  const { error: subErr } = await getAdminClient()
-    .from("subjects")
+  // categories 削除（materials は上で削除済み）
+  const { error: catErr } = await getAdminClient()
+    .from("categories")
     .delete()
     .eq("user_id", userId);
-  if (subErr) throw new Error(`subjects クリーンアップ失敗: ${subErr.message}`);
+  if (catErr) throw new Error(`categories クリーンアップ失敗: ${catErr.message}`);
 }
 
 export async function cleanupNotificationSchedules(userId: string) {
