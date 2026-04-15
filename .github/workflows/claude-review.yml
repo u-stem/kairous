@@ -1,12 +1,30 @@
 name: Claude PR Review
 
+# CI が成功した PR のみをレビュー対象にする。CI 失敗中のコードに
+# レビューを走らせても無意味なうえ Opus トークンを浪費するため、
+# job の先頭で CI の完走・成功を待ってから review を実行する。
+#
+# セキュリティ posture:
+# - pull_request トリガーは fork PR では secrets を渡さず GITHUB_TOKEN が
+#   read-only になるため、pwn request 攻撃経路は成立しない
+# - 同一リポ branch からの PR は push 権限を既に持つ信頼済み作業者のみ
+# - workflow_run トリガーは default branch の workflow を privileged に
+#   実行するため、PR head を checkout すると pwn request パターンを
+#   踏む (CodeQL: actions/untrusted-checkout)。本 workflow は採用しない
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+# 同一 PR への連続 push で古い waiting job を即座にキャンセルする
+concurrency:
+  group: claude-review-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   review:
     runs-on: ubuntu-latest
+    # fork PR は secrets にアクセスできず Claude action が早期 fail するため skip
+    if: github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
       pull-requests: write
@@ -14,10 +32,56 @@ jobs:
       id-token: write
       actions: read
     steps:
-      - name: Checkout repository
+      # Claude の Read / Glob / Grep tool がファイル参照するためのワークツリー。
+      # scripts の実行はしない (PR コード由来の package.json / bun install 等は走らせない)。
+      # persist-credentials: false で git 認証情報をディスクに残さず、仮に
+      # 後続で意図せず untrusted code が実行されても credential 漏洩を防ぐ。
+      - name: Checkout PR head (files only, no script execution)
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 1
+          persist-credentials: false
+
+      # CI workflow の成功を待機してからレビュー本体を走らせる。
+      # CI が失敗した場合はこの step で exit 1 し、Claude の run を回避する
+      # (= Opus トークン節約)。polling 間隔は 30 秒、最大 30 分。
+      # gh CLI のみ使用 (新規 action 依存を増やさない)。
+      #
+      # 初期 race condition: 本 job が CI run の登録より先に起動した場合、
+      # workflow_runs が空で jq の last が null を返し status/conclusion が
+      # 空文字列になる。case の `*)` 分岐で sleep 30 して retry するため機能
+      # 的には問題ない (not_started 相当として polling を継続する)。
+      - name: Wait for CI to succeed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          deadline=$((SECONDS + 1800))
+          while [ $SECONDS -lt $deadline ]; do
+            # pull_request イベント由来の最新 CI run を head SHA で検索
+            read -r status conclusion <<EOF
+          $(gh api "repos/${REPO}/actions/runs?head_sha=${PR_HEAD_SHA}&event=pull_request" \
+              --jq '[.workflow_runs[] | select(.name == "CI")] | sort_by(.created_at) | last | "\(.status // "not_started") \(.conclusion // "-")"')
+          EOF
+            echo "CI status: ${status}/${conclusion}"
+            case "${status}/${conclusion}" in
+              completed/success)
+                echo "CI passed; proceeding to review."
+                exit 0
+                ;;
+              completed/*)
+                echo "CI concluded as '${conclusion}'; skipping review."
+                exit 1
+                ;;
+              *)
+                sleep 30
+                ;;
+            esac
+          done
+          echo "Timed out waiting for CI after 30 minutes."
+          exit 1
 
       # 過去のレビュー総評と進捗コメントを OUTDATED として折りたたむ。
       # 新しいレビューが走るたびに積み上がるスクロール負荷を軽減する目的。
@@ -64,7 +128,7 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            この PR のコードレビューを実施してください。
+            この PR のコードレビューを実施してください。CI (lint / typecheck / test:small / test:medium / test:large / lighthouse / build) はすべて成功済みです。
 
             ## 手順
             1. `gh pr diff ${{ github.event.pull_request.number }}` で差分を確認

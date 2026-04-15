@@ -43,7 +43,7 @@ LGTM (マージ承認) を出す際は、以下を明記する。
 
 `claude-code-action` による自動レビューが PR 作成時に実行される。
 
-- `.github/workflows/claude-review.yml`: PR open/sync 時に自動レビュー
+- `.github/workflows/claude-review.yml`: PR push 時に起動し、job 内で CI の完走・success を待機してから review 実行 (CI 失敗時は skip)
 - `.github/workflows/claude.yml`: `@claude` メンションで対話的に質問・修正依頼
 
 ### セットアップ要件
