@@ -1,7 +1,7 @@
 import { NOTIFICATION_MAX_SUBJECTS } from "@/lib/constants";
 
-export type SubjectDueCount = {
-  subject: string;
+export type CategoryDueCount = {
+  category: string;
   count: number;
 };
 
@@ -10,13 +10,13 @@ export type NotificationMessage = {
   body: string;
 };
 
-// 科目リストを「数学 5枚 / 英語 7枚 ほかN科目」形式に整形する
-function formatSubjectList(subjects: SubjectDueCount[]): string {
+// カテゴリリストを「数学 5枚 / 英語 7枚 ほかN科目」形式に整形する
+function formatSubjectList(subjects: CategoryDueCount[]): string {
   if (subjects.length === 0) return "";
 
   const shown = subjects.slice(0, NOTIFICATION_MAX_SUBJECTS);
   const remaining = subjects.length - NOTIFICATION_MAX_SUBJECTS;
-  const parts = shown.map((s) => `${s.subject} ${s.count}枚`);
+  const parts = shown.map((s) => `${s.category} ${s.count}枚`);
   const joined = parts.join(" / ");
 
   if (remaining > 0) {
@@ -26,7 +26,7 @@ function formatSubjectList(subjects: SubjectDueCount[]): string {
 }
 
 export function buildDueTodayMessage(
-  subjects: SubjectDueCount[],
+  subjects: CategoryDueCount[],
 ): NotificationMessage {
   if (subjects.length === 0) {
     return {
@@ -44,7 +44,7 @@ export function buildDueTodayMessage(
 
 export function buildReviewAndPreviewMessage(params: {
   sessionsToday: number;
-  dueTomorrow: SubjectDueCount[];
+  dueTomorrow: CategoryDueCount[];
 }): NotificationMessage {
   const { sessionsToday, dueTomorrow } = params;
   const hasSessions = sessionsToday > 0;

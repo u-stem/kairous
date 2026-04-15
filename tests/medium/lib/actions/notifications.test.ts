@@ -216,10 +216,11 @@ describe("get_due_counts_by_category RPC", () => {
 
     expect(rpcRes.error).toBeNull();
     // 数学: 1 件 (past-due のみ)、英語: 2 件 (未学習 2 件)
+    // RPC が category_id も返すため objectContaining で必要なフィールドのみ検証する
     expect(rpcRes.data).toEqual(
       expect.arrayContaining([
-        { category_name: "数学", due_count: 1 },
-        { category_name: "英語", due_count: 2 },
+        expect.objectContaining({ category_name: "数学", due_count: 1 }),
+        expect.objectContaining({ category_name: "英語", due_count: 2 }),
       ]),
     );
 

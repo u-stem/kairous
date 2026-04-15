@@ -16,7 +16,7 @@ import {
   extractFieldErrors,
   type ActionResult,
 } from "@/lib/validations/notifications";
-import type { SubjectDueCount } from "@/lib/utils/notification-messages";
+import type { CategoryDueCount } from "@/lib/utils/notification-messages";
 import type { NotificationSchedule } from "@/lib/types/notification";
 
 export async function getNotificationSchedules(): Promise<
@@ -223,8 +223,8 @@ export async function deleteNotificationSchedule(
 // 対象にするため get_due_counts_by_category RPC で DB 側集計する
 // (従来 JS 側集計では PostgREST の 1000 行上限で static truncation する問題があった)
 
-type DueTodayResult = { subjects: SubjectDueCount[] };
-type ReviewAndPreviewResult = { sessionsToday: number; subjects: SubjectDueCount[] };
+type DueTodayResult = { subjects: CategoryDueCount[] };
+type ReviewAndPreviewResult = { sessionsToday: number; subjects: CategoryDueCount[] };
 
 export async function getNotificationData(
   messageType: "due_today",
@@ -238,7 +238,7 @@ export async function getNotificationData(
   const { user, supabase } = await requireAuth();
   const today = toJstDateString(new Date());
 
-  async function getDueByCategory(targetDate: string): Promise<SubjectDueCount[]> {
+  async function getDueByCategory(targetDate: string): Promise<CategoryDueCount[]> {
     const { data, error } = await supabase.rpc("get_due_counts_by_category", {
       p_user_id: user.id,
       p_target_date: targetDate,
@@ -247,7 +247,7 @@ export async function getNotificationData(
     if (error) throw new Error(`get_due_counts_by_category failed: ${error.message}`);
 
     return (data ?? []).map((row: { category_name: string; due_count: number }) => ({
-      subject: row.category_name,
+      category: row.category_name,
       count: Number(row.due_count),
     }));
   }
