@@ -134,8 +134,8 @@ describe("profiles.notification_enabled RLS", () => {
   });
 });
 
-describe("get_due_counts_by_subject RPC", () => {
-  it("returns due counts grouped by subject, including unstudied cards", async () => {
+describe("get_due_counts_by_category RPC", () => {
+  it("returns due counts grouped by category, including unstudied cards", async () => {
     const admin = getAdminClient();
 
     // 2科目・2教材・各2カード。A は SRS state あり (future due で除外されるはず)、
@@ -209,7 +209,7 @@ describe("get_due_counts_by_subject RPC", () => {
       },
     ]);
 
-    const rpcRes = await admin.rpc("get_due_counts_by_subject", {
+    const rpcRes = await admin.rpc("get_due_counts_by_category", {
       p_user_id: userId,
       p_target_date: target,
     });
@@ -218,8 +218,8 @@ describe("get_due_counts_by_subject RPC", () => {
     // 数学: 1 件 (past-due のみ)、英語: 2 件 (未学習 2 件)
     expect(rpcRes.data).toEqual(
       expect.arrayContaining([
-        { subject_name: "数学", due_count: 1 },
-        { subject_name: "英語", due_count: 2 },
+        { category_name: "数学", due_count: 1 },
+        { category_name: "英語", due_count: 2 },
       ]),
     );
 
