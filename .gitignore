@@ -57,3 +57,4 @@ playwright-report/
 
 # Lighthouse CI
 .lighthouseci/
+.claude/scheduled_tasks.lock
