@@ -47,6 +47,7 @@ CREATE TRIGGER enforce_category_depth_trigger
 -- 3) materials.subject_id → category_id リネーム
 ALTER TABLE materials RENAME COLUMN subject_id TO category_id;
 ALTER INDEX idx_materials_subject_id RENAME TO idx_materials_category_id;
+ALTER TABLE materials RENAME CONSTRAINT materials_subject_id_fkey TO materials_category_id_fkey;
 
 -- 4) tags テーブル
 CREATE TABLE tags (
@@ -89,6 +90,7 @@ CREATE OR REPLACE FUNCTION get_due_counts_by_subject(
 RETURNS TABLE(subject_name TEXT, due_count BIGINT)
 LANGUAGE sql
 SECURITY INVOKER
+SET search_path = public
 AS $$
   SELECT
     c.name AS subject_name,
@@ -125,6 +127,8 @@ RETURNS TABLE(
 )
 LANGUAGE sql
 STABLE
+SECURITY INVOKER
+SET search_path = public
 AS $$
   SELECT
     m.id AS material_id,

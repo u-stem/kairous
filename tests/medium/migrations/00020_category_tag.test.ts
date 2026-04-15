@@ -45,7 +45,9 @@ describe("migration 00020: category + tags", () => {
     expect(lv3.error?.message).toMatch(/depth/i);
   });
 
-  it("tags と material_tags が RLS 越しに自分のデータのみ見える", async () => {
+  // admin client は service_role で RLS をバイパスする。
+  // RLS の実動作検証 (anon/authed client で別ユーザーのデータが見えないこと) は PBI-2 以降の専用テストで担う。
+  it("tags が INSERT 可能で color デフォルトが設定される", async () => {
     const db = getAdminClient();
     const tag = await db.from("tags").insert({ user_id: userId, name: "重要" }).select().single();
     expect(tag.error).toBeNull();
