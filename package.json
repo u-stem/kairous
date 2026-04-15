@@ -17,6 +17,8 @@
     "lhci": "lhci autorun",
     "check": "bun run lint && bun run typecheck && bun test:small",
     "check:lighthouse-coverage": "bun run scripts/check-lighthouse-coverage.ts",
+    "worktree:create": "bun run scripts/worktree.ts create",
+    "worktree:cleanup": "bun run scripts/worktree.ts cleanup",
     "prepare": "lefthook install"
   },
   "dependencies": {
