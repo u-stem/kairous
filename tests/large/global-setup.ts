@@ -35,7 +35,8 @@ async function globalSetup() {
     "Lighthouse seed教材",
     LIGHTHOUSE_MATERIAL_ID,
   );
-  await linkMaterialMethod(LIGHTHOUSE_MATERIAL_ID, await getSrsMethodId());
+  const srsMethodId = await getSrsMethodId();
+  await linkMaterialMethod(LIGHTHOUSE_MATERIAL_ID, srsMethodId);
   await createTestCard(
     LIGHTHOUSE_MATERIAL_ID,
     "Lighthouse seed 表",
@@ -46,7 +47,6 @@ async function globalSetup() {
 
   // セッション系動的ルート計測用に in_progress / completed の 2 セッションを seed。
   // /rest/[id] は DB lookup なしのため in_progress session の UUID を流用する
-  const srsMethodId = await getSrsMethodId();
   await createTestSession(
     userId,
     LIGHTHOUSE_MATERIAL_ID,
