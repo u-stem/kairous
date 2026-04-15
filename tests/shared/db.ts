@@ -26,7 +26,7 @@ export function getAdminClient() {
 }
 
 export async function createTestUser(
-  email = `test-${Date.now()}@kairous.local`,
+  email = `test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@kairous.local`,
   password = "test-password-12345",
 ): Promise<string> {
   const { data, error } = await getAdminClient().auth.admin.createUser({
