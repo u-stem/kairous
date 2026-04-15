@@ -15,12 +15,13 @@
 
 1. **pre-push が通る** (自動): lint + typecheck + test:small + test:medium
 2. **UI 動作確認**: `bun dev` + ブラウザで変更画面を実操作。表示崩れ、遷移、エラー状態を確認
-3. **ドキュメント整合性**: 変更が影響する md ファイル (CLAUDE.md, .claude/rules/, docs/, README.md) が実態と一致
-4. **ローカル code-review**: code-reviewer エージェントで全指摘を解消 (blocker 0 件)
-5. **受け入れ条件の充足**: PBI Issue に記載した受け入れ条件を全て満たしている
-6. **PR description**: Summary と Test plan が全コミットを反映している
-7. **CI が通る** (自動): lint + typecheck + test:small + test:medium + test:large + migration
-8. **Claude PR Review**: 自動レビューのコメントに返信し resolve
+3. **Lighthouse coverage**: 新規ルート (`src/app/**/page.tsx`) を追加した場合、`lighthouserc.json` にも対応 URL を追加し `bun run check:lighthouse-coverage` が pass する。意図的除外は `scripts/lighthouse-coverage-allowlist.json` の `routes` に追記する
+4. **ドキュメント整合性**: 変更が影響する md ファイル (CLAUDE.md, .claude/rules/, docs/, README.md) が実態と一致
+5. **ローカル code-review**: code-reviewer エージェントで全指摘を解消 (blocker 0 件)
+6. **受け入れ条件の充足**: PBI Issue に記載した受け入れ条件を全て満たしている
+7. **PR description**: Summary と Test plan が全コミットを反映している
+8. **CI が通る** (自動): lint + typecheck + test:small + test:medium + test:large + migration
+9. **Claude PR Review**: 自動レビューのコメントに返信し resolve
 
 ## エピック完了 (= マイルストーンクローズ可能)
 
