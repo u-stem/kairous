@@ -675,6 +675,7 @@ export type Database = {
       get_due_counts_by_category: {
         Args: { p_target_date: string; p_user_id: string }
         Returns: {
+          category_id: string
           category_name: string
           due_count: number
         }[]

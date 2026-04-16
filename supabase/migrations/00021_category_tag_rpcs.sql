@@ -24,6 +24,7 @@ CREATE OR REPLACE FUNCTION get_due_counts_by_category(
 )
 RETURNS TABLE(category_id UUID, category_name TEXT, due_count BIGINT)
 LANGUAGE sql
+STABLE
 SECURITY INVOKER
 SET search_path = public
 AS $$
@@ -33,9 +34,9 @@ AS $$
     COUNT(cd.id) AS due_count
   FROM cards cd
   INNER JOIN materials m ON cd.material_id = m.id
-  -- 親カテゴリ集約: 各教材を「ルートカテゴリ (parent_id IS NULL の祖先)」に紐付ける。
-  -- 親カテゴリ選択時は自身 + 全子カテゴリの due を合算する。
-  -- 子カテゴリ選択時は自身のみ (子カテゴリには親がいないため COALESCE で自分を返す)
+  -- 親カテゴリ集約: 各教材を「ルートカテゴリ (parent_id IS NULL のノード)」に紐付ける。
+  -- 子カテゴリ (parent_id IS NOT NULL): COALESCE で parent_id を返し、親に合算
+  -- 親カテゴリ (parent_id IS NULL): COALESCE で自分の id を返し、自身に集計
   INNER JOIN categories cat ON cat.id = (
     SELECT COALESCE(c2.parent_id, c2.id)
     FROM categories c2

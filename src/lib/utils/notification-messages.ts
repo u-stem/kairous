@@ -16,7 +16,7 @@ function formatCategoryList(categories: CategoryDueCount[]): string {
 
   const shown = categories.slice(0, NOTIFICATION_MAX_CATEGORIES);
   const remaining = categories.length - NOTIFICATION_MAX_CATEGORIES;
-  const parts = shown.map((s) => `${s.category} ${s.count}枚`);
+  const parts = shown.map((c) => `${c.category} ${c.count}枚`);
   const joined = parts.join(" / ");
 
   if (remaining > 0) {
@@ -26,19 +26,19 @@ function formatCategoryList(categories: CategoryDueCount[]): string {
 }
 
 export function buildDueTodayMessage(
-  subjects: CategoryDueCount[],
+  categories: CategoryDueCount[],
 ): NotificationMessage {
-  if (subjects.length === 0) {
+  if (categories.length === 0) {
     return {
       title: "今日の復習はありません",
       body: "新しい教材を追加してみませんか?",
     };
   }
 
-  const total = subjects.reduce((sum, s) => sum + s.count, 0);
+  const total = categories.reduce((sum, c) => sum + c.count, 0);
   return {
     title: `今日の復習: ${total}枚`,
-    body: formatCategoryList(subjects),
+    body: formatCategoryList(categories),
   };
 }
 
@@ -52,7 +52,7 @@ export function buildReviewAndPreviewMessage(params: {
 
   // セッションがなく明日の復習がある場合は「明日の復習: N枚」形式にフォールバック
   if (!hasSessions && hasDue) {
-    const total = dueTomorrow.reduce((sum, s) => sum + s.count, 0);
+    const total = dueTomorrow.reduce((sum, c) => sum + c.count, 0);
     return {
       title: `明日の復習: ${total}枚`,
       body: formatCategoryList(dueTomorrow),
