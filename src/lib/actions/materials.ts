@@ -43,6 +43,15 @@ export async function createMaterial(
         return [];
       }
     })(),
+    type: formData.get("type") || "flashcard",
+    // meta は JSON 文字列で受け取る。未指定時は空オブジェクトにフォールバックする
+    meta: (() => {
+      try {
+        return JSON.parse((formData.get("meta") as string) ?? "{}") as unknown;
+      } catch {
+        return {};
+      }
+    })(),
   });
 
   if (!parsed.success) {
@@ -55,6 +64,16 @@ export async function createMaterial(
 
   const { user, supabase } = await requireAuth();
 
+  // タイプに応じた meta バリデーション。空オブジェクトは全タイプで許容される
+  const metaValidation = validateMaterialMeta(parsed.data.type, parsed.data.meta);
+  if (!metaValidation.success) {
+    return {
+      success: false,
+      error: ACTION_ERRORS.INVALID_INPUT,
+      fieldErrors: extractFieldErrors(metaValidation.error),
+    };
+  }
+
   // material_methods が material_id FK を必要とするため、教材を先に作成する
   const { data: material, error: materialError } = await supabase
     .from("materials")
@@ -63,6 +82,8 @@ export async function createMaterial(
       description: parsed.data.description ?? null,
       category_id: parsed.data.category_id,
       user_id: user.id,
+      type: parsed.data.type,
+      meta: metaValidation.data,
     })
     .select("id")
     .single();

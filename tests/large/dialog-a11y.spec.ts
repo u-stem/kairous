@@ -24,6 +24,11 @@ test.describe.serial("Dialog / Sheet a11y", () => {
   test("Dialog: focus trap, Escape close, focus restore", async ({ page }) => {
     // SRS 教材 + カード 1 枚を UI から作成する (削除ダイアログを使うため)
     await page.goto("/materials/new");
+
+    // Step 0: flashcard を選択（デフォルトのまま次へ）
+    await page.getByRole("button", { name: "次へ" }).click(); // Step0 → Step1
+
+    // Step 1: 基本情報を入力する
     await page.locator("#material-title").fill(materialTitle);
     await page.getByRole("combobox").click();
     await page.getByRole("option", { name: subjectName }).click();

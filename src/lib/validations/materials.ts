@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { VALIDATION_LIMITS } from "@/lib/constants";
+import { VALIDATION_LIMITS, MATERIAL_TYPES } from "@/lib/constants";
 import type { MaterialType } from "@/lib/constants";
 
 // Server Action の戻り値型。成功/失敗を型レベルで区別することでハンドリング漏れを防ぐ
@@ -37,6 +37,10 @@ export const createMaterialSchema = z.object({
     .array(z.uuid("無効な学習手法IDです"))
     .min(1, "学習手法を1つ以上選択してください")
     .max(20, "学習手法は20個以内で選択してください"),
+  // MATERIAL_TYPES を単一の source of truth として参照し、定義の重複を防ぐ
+  type: z.enum(MATERIAL_TYPES).default("flashcard"),
+  // meta は JSONB フィールド。タイプ別詳細バリデーションは validateMaterialMeta で行う
+  meta: z.record(z.string(), z.unknown()).default({}),
 });
 
 export const updateMaterialSchema = z.object({

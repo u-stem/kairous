@@ -19,6 +19,9 @@ test.describe.serial("タップターゲット (WCAG 2.5.5)", () => {
     await page.goto("/materials/new");
     await page.waitForLoadState("networkidle");
 
+    // Step 0: flashcard を選択（デフォルトのまま次へ）して Step1 へ進む
+    await page.getByRole("button", { name: "次へ" }).click(); // Step0 → Step1
+
     const addCategoryButton = page.getByRole("button", { name: "カテゴリを追加" });
     await expect(addCategoryButton).toBeVisible();
 
