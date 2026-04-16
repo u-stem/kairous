@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { type Dispatch, type SetStateAction, useState } from "react";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import type { Category } from "@/lib/types/materials";
+import type { ActionResult } from "@/lib/validations/materials";
 import {
   Select,
   SelectContent,
@@ -28,6 +30,43 @@ type CategorySelectorProps = {
   onCreateCategory: (name: string, parentId: string | null) => Promise<{ id: string; name: string } | null>;
   selectAriaLabelledBy?: string;
 };
+
+type CreateCategoryAction = (formData: FormData) => Promise<ActionResult<{ id: string; name: string }>>;
+
+/**
+ * createCategory Server Action を呼び出す共通ハンドラを生成する。
+ * material-wizard と material-edit-form で重複するロジックをここに集約する。
+ * Server Action を引数で受け取ることで、テスト時に Supabase env 依存を避ける。
+ * setCategories に既存リストを渡してローカル追加することで再フェッチを避ける。
+ */
+export function buildCreateCategoryHandler(
+  createCategoryAction: CreateCategoryAction,
+  setCategories: Dispatch<SetStateAction<Category[]>>,
+): (name: string, parentId: string | null) => Promise<{ id: string; name: string } | null> {
+  return async (name: string, parentId: string | null) => {
+    const formData = new FormData();
+    formData.set("name", name);
+    if (parentId) formData.set("parent_id", parentId);
+    const result = await createCategoryAction(formData);
+    if (!result.success) {
+      toast.error(result.error);
+      return null;
+    }
+    // color・created_at はサーバー側で設定されるため暫定値を使う
+    setCategories((prev) => [
+      ...prev,
+      {
+        ...result.data,
+        color: "#6b7280",
+        parent_id: parentId,
+        display_order: Math.max(0, ...prev.map((c) => c.display_order)) + 1,
+        user_id: "",
+        created_at: new Date().toISOString(),
+      },
+    ]);
+    return result.data;
+  };
+}
 
 export function CategorySelector({
   categories,

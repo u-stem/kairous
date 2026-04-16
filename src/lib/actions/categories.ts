@@ -28,6 +28,17 @@ export async function createCategory(
 
   const { user, supabase } = await requireAuth();
 
+  // RLS により自分のカテゴリしか返らないため、他ユーザーの parent_id は null になる
+  // DB トリガ enforce_category_depth が深さを保証するが、ここでも早期に弾く
+  if (parsed.data.parent_id) {
+    const { data: parent } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("id", parsed.data.parent_id)
+      .single();
+    if (!parent) return { success: false, error: "無効な親カテゴリです" };
+  }
+
   const insertData: { name: string; user_id: string; parent_id?: string } = {
     name: parsed.data.name,
     user_id: user.id,

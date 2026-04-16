@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { CategorySelector } from "@/components/category-selector";
+import { CategorySelector, buildCreateCategoryHandler } from "@/components/category-selector";
 import {
   Dialog,
   DialogContent,
@@ -40,31 +40,8 @@ export function MaterialEditForm({
   const [categories, setCategories] = useState(initialCategories);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // カテゴリを新規作成して選択状態に反映する。
-  // createCategory が返す data に Category 全フィールドがないため、不足フィールドをデフォルト値で補完する
-  async function handleCreateCategory(
-    name: string,
-    parentId: string | null,
-  ): Promise<{ id: string; name: string } | null> {
-    const formData = new FormData();
-    formData.set("name", name);
-    if (parentId) formData.set("parent_id", parentId);
-    const result = await createCategory(formData);
-    if (result.success) {
-      const newCategory: Category = {
-        id: result.data.id,
-        name: result.data.name,
-        color: "#6b7280",
-        parent_id: parentId,
-        display_order: Math.max(0, ...categories.map((c) => c.display_order)) + 1,
-        user_id: "",
-        created_at: new Date().toISOString(),
-      };
-      setCategories((prev) => [...prev, newCategory]);
-      return result.data;
-    }
-    return null;
-  }
+  // buildCreateCategoryHandler で共通ロジックを集約し、createCategory と setCategories をバインドする
+  const handleCreateCategory = buildCreateCategoryHandler(createCategory, setCategories);
 
   function handleSave() {
     setErrors({});

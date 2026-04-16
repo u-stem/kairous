@@ -13,7 +13,7 @@ import { requireAuth } from "@/lib/actions/auth-utils";
 import { toJstDateString } from "@/lib/utils/date";
 
 // Supabase JOIN 結果の型: SDK は joined テーブルを unknown として推論するため名前付き型で上書きする
-type JoinedSubject = { id: string; name: string; color: string; parent_id: string | null };
+type JoinedCategory = { id: string; name: string; color: string; parent_id: string | null };
 type JoinedLearningMethod = { id: string; slug: string; name: string; category: string };
 type JoinedCardMaterialId = { material_id: string };
 type JoinedMethodSlugName = { slug: string; name: string };
@@ -82,7 +82,7 @@ export async function createMaterial(
 }
 
 export async function getMaterials(
-  options?: { subjectId?: string; search?: string },
+  options?: { categoryId?: string; search?: string },
 ): Promise<MaterialWithMethods[]> {
   const { user, supabase } = await requireAuth();
 
@@ -98,8 +98,8 @@ export async function getMaterials(
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  if (options?.subjectId) {
-    query = query.eq("category_id", options.subjectId);
+  if (options?.categoryId) {
+    query = query.eq("category_id", options.categoryId);
   }
   if (options?.search) {
     // LIKE メタ文字（%, _, \）をエスケープし、意図しないパターンマッチを防ぐ
@@ -161,7 +161,7 @@ export async function getMaterials(
     title: m.title,
     description: m.description,
     category_id: m.category_id,
-    category: m.categories as JoinedSubject,
+    category: m.categories as JoinedCategory,
     total_cards: m.total_cards,
     due_count: dueMap.get(m.id) ?? 0,
     methods: (m.material_methods ?? []).map((mm: Record<string, unknown>) => {
@@ -248,7 +248,7 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
     title: material.title,
     description: material.description,
     category_id: material.category_id,
-    category: material.categories as JoinedSubject,
+    category: material.categories as JoinedCategory,
     total_cards: material.total_cards,
     due_count: dueCount,
     methods: (material.material_methods ?? []).map(

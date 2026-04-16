@@ -9,7 +9,7 @@ import { hasCardBasedMethod } from "@/lib/constants";
 import { createMaterial } from "@/lib/actions/materials";
 import { createCard } from "@/lib/actions/cards";
 import { createCategory } from "@/lib/actions/categories";
-import { CategorySelector } from "@/components/category-selector";
+import { CategorySelector, buildCreateCategoryHandler } from "@/components/category-selector";
 import { MethodSelector } from "@/components/method-selector";
 import { CardEditor } from "@/components/card-editor";
 import { Button } from "@/components/ui/button";
@@ -108,35 +108,8 @@ export function MaterialWizard({ categories: initialCategories, methods }: Props
     setCards((prev) => prev.filter((_, i) => i !== index));
   }
 
-  // CategorySelector の onCreateCategory コールバック
-  // createCategory は FormData を受け取るため、ここでラップする
-  async function handleCreateCategory(
-    name: string,
-    parentId: string | null,
-  ): Promise<{ id: string; name: string } | null> {
-    const formData = new FormData();
-    formData.set("name", name);
-    if (parentId) formData.set("parent_id", parentId);
-    const result = await createCategory(formData);
-    if (!result.success) {
-      toast.error(result.error);
-      return null;
-    }
-    // 新しく作成したカテゴリをローカルリストに追加し、再フェッチを避ける
-    // color・created_atはサーバー側で設定されるため、暫定値を設定する
-    setCategories((prev) => [
-      ...prev,
-      {
-        ...result.data,
-        color: "#6b7280",
-        parent_id: parentId,
-        display_order: Math.max(0, ...prev.map((c) => c.display_order)) + 1,
-        user_id: "",
-        created_at: new Date().toISOString(),
-      } as Category,
-    ]);
-    return result.data;
-  }
+  // buildCreateCategoryHandler で共通ロジックを集約し、createCategory と setCategories をバインドする
+  const handleCreateCategory = buildCreateCategoryHandler(createCategory, setCategories);
 
   function submitForm(cardDrafts: CardDraft[]) {
     startTransition(async () => {
