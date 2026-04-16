@@ -3,15 +3,13 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { completeSession, completeElaborationSession } from "@/lib/actions/session-commands";
-import { SELF_RATING_LABELS } from "@/lib/constants";
+import { SELF_RATING_LABELS, SELF_RATINGS } from "@/lib/constants";
 import type { CardReview } from "@/lib/types/sessions";
 import type { ElaborationInput } from "@/lib/validations/elaboration";
 
 type Props = {
   sessionId: string;
 };
-
-const SELF_RATINGS = [1, 2, 3, 4] as const;
 
 export function SessionReview({ sessionId }: Props) {
   const router = useRouter();

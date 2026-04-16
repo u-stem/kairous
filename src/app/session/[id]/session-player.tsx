@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSessionPlayer } from "./use-session-player";
-import { RATING_LABELS, RATING_COLORS } from "@/lib/constants";
+import { RATING_LABELS, RATING_COLORS, SELF_RATINGS } from "@/lib/constants";
 import type { SessionCard, InterleavingCard } from "@/lib/types/sessions";
 
 function isInterleavingCard(card: SessionCard | InterleavingCard): card is InterleavingCard {
@@ -14,8 +14,6 @@ type Props = {
   sessionId: string;
   cards: SessionCard[] | InterleavingCard[];
 };
-
-const RATINGS = [1, 2, 3, 4] as const;
 
 export function SessionPlayer({ sessionId, cards }: Props) {
   const router = useRouter();
@@ -74,7 +72,7 @@ export function SessionPlayer({ sessionId, cards }: Props) {
           </button>
         ) : (
           <div className="grid grid-cols-4 gap-2">
-            {RATINGS.map((r) => (
+            {SELF_RATINGS.map((r) => (
               <button
                 key={r}
                 type="button"

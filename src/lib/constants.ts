@@ -120,6 +120,9 @@ export const REST_DURATION_SEC = 600;
 export const POMODORO_FOCUS_SEC = 1500;
 export const POMODORO_BREAK_SEC = 300;
 
+// 学習手法で用いる自己評価の取りうる値。UI の各プレイヤーと summary/review で共通利用する
+export const SELF_RATINGS = [1, 2, 3, 4] as const;
+
 export const RATING_LABELS = {
   1: "忘れた",
   2: "曖昧",
