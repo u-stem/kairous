@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { SubjectSelector } from "@/components/subject-selector";
+import { CategorySelector, buildCreateCategoryHandler } from "@/components/category-selector";
 import {
   Dialog,
   DialogContent,
@@ -18,17 +18,17 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { updateMaterial, deleteMaterial } from "@/lib/actions/materials";
-import { createSubject } from "@/lib/actions/categories";
-import type { MaterialDetail, Subject } from "@/lib/types/materials";
+import { createCategory } from "@/lib/actions/categories";
+import type { MaterialDetail, Category } from "@/lib/types/materials";
 
 type MaterialEditFormProps = {
   material: MaterialDetail;
-  subjects: Subject[];
+  categories: Category[];
 };
 
 export function MaterialEditForm({
   material,
-  subjects: initialSubjects,
+  categories: initialCategories,
 }: MaterialEditFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -36,33 +36,12 @@ export function MaterialEditForm({
 
   const [title, setTitle] = useState(material.title);
   const [description, setDescription] = useState(material.description ?? "");
-  const [subjectId, setSubjectId] = useState(material.category_id);
-  const [subjects, setSubjects] = useState(initialSubjects);
+  const [categoryId, setCategoryId] = useState<string | null>(material.category_id);
+  const [categories, setCategories] = useState(initialCategories);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // 科目を新規作成して選択状態に反映する。
-  // createSubject が返す data に Subject 全フィールドがないため、不足フィールドをデフォルト値で補完する
-  async function handleCreateSubject(
-    name: string,
-  ): Promise<{ id: string; name: string } | null> {
-    const formData = new FormData();
-    formData.set("name", name);
-    const result = await createSubject(formData);
-    if (result.success) {
-      const newSubject: Subject = {
-        id: result.data.id,
-        name: result.data.name,
-        color: "#6b7280",
-        parent_id: null,
-        display_order: Math.max(0, ...subjects.map((s) => s.display_order)) + 1,
-        user_id: "",
-        created_at: new Date().toISOString(),
-      };
-      setSubjects((prev) => [...prev, newSubject]);
-      return result.data;
-    }
-    return null;
-  }
+  // buildCreateCategoryHandler で共通ロジックを集約し、createCategory と setCategories をバインドする
+  const handleCreateCategory = buildCreateCategoryHandler(createCategory, setCategories);
 
   function handleSave() {
     setErrors({});
@@ -75,7 +54,7 @@ export function MaterialEditForm({
       const formData = new FormData();
       formData.set("title", title);
       formData.set("description", description);
-      formData.set("subject_id", subjectId);
+      if (categoryId) formData.set("category_id", categoryId);
 
       const result = await updateMaterial(material.id, formData);
 
@@ -136,18 +115,18 @@ export function MaterialEditForm({
         />
       </div>
 
-      {/* 科目 */}
+      {/* カテゴリ */}
       <div className="flex flex-col gap-1.5">
-        <Label id="subject-label">科目</Label>
-        <SubjectSelector
-          subjects={subjects}
-          value={subjectId}
-          onChange={setSubjectId}
-          onCreateSubject={handleCreateSubject}
-          selectAriaLabelledBy="subject-label"
+        <Label id="category-label">カテゴリ</Label>
+        <CategorySelector
+          categories={categories}
+          value={categoryId}
+          onChange={setCategoryId}
+          onCreateCategory={handleCreateCategory}
+          selectAriaLabelledBy="category-label"
         />
-        {errors.subject_id && (
-          <p className="text-sm text-destructive">{errors.subject_id}</p>
+        {errors.category_id && (
+          <p className="text-sm text-destructive">{errors.category_id}</p>
         )}
       </div>
 
@@ -206,7 +185,7 @@ export function MaterialEditForm({
           </Button>
           <Button
             onClick={() => void handleSave()}
-            disabled={isPending || !title.trim()}
+            disabled={isPending || !title.trim() || !categoryId}
           >
             {isPending ? (
               <>

@@ -9,7 +9,7 @@ export default function MaterialsLoading() {
         <Skeleton className="hidden h-10 w-28 md:block" />
       </div>
 
-      {/* 科目セクション x 2 */}
+      {/* カテゴリセクション x 2 */}
       {[1, 2].map((section) => (
         <div key={section} className="mb-6">
           <div className="mb-3 flex items-center justify-between">

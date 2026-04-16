@@ -10,7 +10,7 @@ export type NotificationMessage = {
   body: string;
 };
 
-// カテゴリリストを「数学 5枚 / 英語 7枚 ほかN科目」形式に整形する
+// カテゴリリストを「数学 5枚 / 英語 7枚 ほかN件」形式に整形する
 function formatCategoryList(categories: CategoryDueCount[]): string {
   if (categories.length === 0) return "";
 
@@ -20,7 +20,7 @@ function formatCategoryList(categories: CategoryDueCount[]): string {
   const joined = parts.join(" / ");
 
   if (remaining > 0) {
-    return `${joined} ほか${remaining}科目`;
+    return `${joined} ほか${remaining}件`;
   }
   return joined;
 }

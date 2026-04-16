@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function MaterialDetailLoading() {
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-6">
-      {/* ヘッダー: タイトル・科目・編集ボタンのスケルトン */}
+      {/* ヘッダー: タイトル・カテゴリ・編集ボタンのスケルトン */}
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="flex flex-1 flex-col gap-2">
           <Skeleton className="h-7 w-48" />

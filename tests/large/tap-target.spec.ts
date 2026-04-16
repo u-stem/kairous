@@ -15,16 +15,16 @@ test.describe.serial("タップターゲット (WCAG 2.5.5)", () => {
   });
 
   test("icon variant ボタンのタップ領域が 44×44px 以上ある", async ({ page }) => {
-    // SubjectSelector の「科目を追加」ボタンは size="icon" の代表例
+    // CategorySelector の「カテゴリを追加」ボタンは size="icon" の代表例
     await page.goto("/materials/new");
     await page.waitForLoadState("networkidle");
 
-    const addSubjectButton = page.getByRole("button", { name: "科目を追加" });
-    await expect(addSubjectButton).toBeVisible();
+    const addCategoryButton = page.getByRole("button", { name: "カテゴリを追加" });
+    await expect(addCategoryButton).toBeVisible();
 
     // ::after 疑似要素によるタップ領域を含む実効範囲を測定する
     // 視覚ボックス size-8 (32px) + ::after の -inset-1.5 (6px) × 2 = 44px
-    const tapArea = await addSubjectButton.evaluate((el) => {
+    const tapArea = await addCategoryButton.evaluate((el) => {
       const rect = el.getBoundingClientRect();
       const after = window.getComputedStyle(el, "::after");
       // ::after の top/right/bottom/left が負の値で絶対配置される

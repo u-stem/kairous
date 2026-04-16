@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { getMaterials } from "@/lib/actions/materials";
+import { getCategories } from "@/lib/actions/categories";
 import { MaterialCard } from "@/components/material-card";
 import { EmptyState } from "@/components/empty-state";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -13,7 +14,10 @@ export default async function MaterialsPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const params = await searchParams;
-  const materials = await getMaterials({ search: params.q });
+  const [materials, allCategories] = await Promise.all([
+    getMaterials({ search: params.q }),
+    getCategories(),
+  ]);
 
   if (materials.length === 0) {
     return (
@@ -27,17 +31,36 @@ export default async function MaterialsPage({
     );
   }
 
-  // subject_id をキーに科目ごとにグループ化する
-  const grouped = new Map<
-    string,
-    { subject: { id: string; name: string; color: string }; materials: typeof materials }
-  >();
+  // 親カテゴリのマップ (id -> { id, name })
+  const parentCategoryMap = new Map(
+    allCategories
+      .filter((c) => c.parent_id === null)
+      .map((c) => [c.id, c]),
+  );
+
+  // 3 階層グルーピング: 親カテゴリ > 子カテゴリ > 教材
+  // 教材の category.parent_id が null なら parent 直下、non-null なら子カテゴリ配下
+  type ChildGroup = Map<string | null, { name: string | null; materials: typeof materials }>;
+  const grouped = new Map<string, { parentName: string; children: ChildGroup }>();
+
   for (const material of materials) {
-    const key = material.category_id;
-    if (!grouped.has(key)) {
-      grouped.set(key, { subject: material.subject, materials: [] });
+    const cat = material.category;
+    const parentId = cat.parent_id !== null ? cat.parent_id : cat.id;
+    const childId = cat.parent_id !== null ? cat.id : null;
+    const childName = cat.parent_id !== null ? cat.name : null;
+    const parentName =
+      cat.parent_id !== null
+        ? (parentCategoryMap.get(cat.parent_id)?.name ?? cat.name)
+        : cat.name;
+
+    if (!grouped.has(parentId)) {
+      grouped.set(parentId, { parentName, children: new Map() });
     }
-    grouped.get(key)!.materials.push(material);
+    const parentGroup = grouped.get(parentId)!;
+    if (!parentGroup.children.has(childId)) {
+      parentGroup.children.set(childId, { name: childName, materials: [] });
+    }
+    parentGroup.children.get(childId)!.materials.push(material);
   }
 
   return (
@@ -54,22 +77,28 @@ export default async function MaterialsPage({
         </Link>
       </div>
 
-      {/* 科目別セクション */}
-      {Array.from(grouped.entries()).map(([subjectId, { subject, materials: subjectMaterials }]) => (
-        <section key={subjectId} className="mb-6">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-xs font-bold uppercase text-muted-foreground">
-              {subject.name}
-            </h2>
-            <span className="text-xs text-muted-foreground">
-              {subjectMaterials.length} 教材
-            </span>
-          </div>
-          <div className="grid gap-2 md:grid-cols-2">
-            {subjectMaterials.map((material) => (
-              <MaterialCard key={material.id} material={material} />
-            ))}
-          </div>
+      {/* カテゴリ別セクション (親 > 子 > 教材 の 3 階層) */}
+      {Array.from(grouped.entries()).map(([parentId, { parentName, children }]) => (
+        <section key={parentId} className="mb-6">
+          <h2 className="mb-3 text-xs font-bold uppercase text-muted-foreground">
+            {parentName}
+          </h2>
+
+          {Array.from(children.entries()).map(([childId, { name: childName, materials: childMaterials }]) => (
+            <div key={childId ?? "__parent_only__"} className="mb-4">
+              {/* 子カテゴリが設定されている場合のみ subheading を表示する */}
+              {childName && (
+                <h3 className="mb-2 ml-3 text-xs font-semibold text-muted-foreground">
+                  {childName}
+                </h3>
+              )}
+              <div className={cn("grid gap-2 md:grid-cols-2", childName && "ml-3")}>
+                {childMaterials.map((material) => (
+                  <MaterialCard key={material.id} material={material} />
+                ))}
+              </div>
+            </div>
+          ))}
         </section>
       ))}
 

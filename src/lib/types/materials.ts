@@ -24,10 +24,11 @@ export type MaterialWithMethods = {
   title: string;
   description: string | null;
   category_id: string;
-  subject: {
+  category: {
     id: string;
     name: string;
     color: string;
+    parent_id: string | null;
   };
   total_cards: number;
   due_count: number;

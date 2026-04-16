@@ -161,7 +161,7 @@ export const ACTION_ERRORS = {
 // --- バリデーション制約値 ---
 // 各 validation ファイルに散在していたマジックナンバーを集約
 export const VALIDATION_LIMITS = {
-  SUBJECT_NAME_MAX: 100,
+  CATEGORY_NAME_MAX: 100,
   MATERIAL_TITLE_MAX: 200,
   MATERIAL_DESCRIPTION_MAX: 2000,
   CARD_TEXT_MAX: 5000,
@@ -186,7 +186,7 @@ export const PG_ERROR_CODES = {
 export const NOTIFICATION_DELAY_THRESHOLD_MS = 30 * 60 * 1000;
 // 1ユーザーあたりの通知スケジュール上限。過剰なタイマー生成を防ぐ
 export const MAX_NOTIFICATION_SCHEDULES = 10;
-// 通知本文に表示するカテゴリの最大数。超過分は「ほかN科目」で表示
+// 通知本文に表示するカテゴリの最大数。超過分は「ほかN件」で表示
 export const NOTIFICATION_MAX_CATEGORIES = 2;
 
 export const NOTIFICATION_MESSAGE_TYPES = ["due_today", "review_and_preview"] as const;

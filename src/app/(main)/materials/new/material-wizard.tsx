@@ -4,12 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Trash2 } from "lucide-react";
-import type { Subject, LearningMethod } from "@/lib/types/materials";
+import type { Category, LearningMethod } from "@/lib/types/materials";
 import { hasCardBasedMethod } from "@/lib/constants";
 import { createMaterial } from "@/lib/actions/materials";
 import { createCard } from "@/lib/actions/cards";
-import { createSubject } from "@/lib/actions/categories";
-import { SubjectSelector } from "@/components/subject-selector";
+import { createCategory } from "@/lib/actions/categories";
+import { CategorySelector, buildCreateCategoryHandler } from "@/components/category-selector";
 import { MethodSelector } from "@/components/method-selector";
 import { CardEditor } from "@/components/card-editor";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  subjects: Subject[];
+  categories: Category[];
   methods: LearningMethod[];
 };
 
@@ -40,16 +40,16 @@ function hasSelectedCardBasedMethod(
 // ウィザードのステップ数（カードベース手法なしの場合は2ステップで完了）
 const TOTAL_STEPS = 3;
 
-export function MaterialWizard({ subjects: initialSubjects, methods }: Props) {
+export function MaterialWizard({ categories: initialCategories, methods }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   // ステップ1: 基本情報
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [subjectId, setSubjectId] = useState("");
-  const [subjects, setSubjects] = useState<Subject[]>(initialSubjects);
-  const [step1Errors, setStep1Errors] = useState<{ title?: string; subject_id?: string }>({});
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [step1Errors, setStep1Errors] = useState<{ title?: string; category_id?: string }>({});
 
   // ステップ2: 学習手法
   const [selectedMethodIds, setSelectedMethodIds] = useState<string[]>([]);
@@ -66,10 +66,10 @@ export function MaterialWizard({ subjects: initialSubjects, methods }: Props) {
   const visibleStepCount = needsCardStep ? TOTAL_STEPS : 2;
 
   function validateStep1(): boolean {
-    const errors: { title?: string; subject_id?: string } = {};
+    const errors: { title?: string; category_id?: string } = {};
     if (!title.trim()) errors.title = "タイトルを入力してください";
     else if (title.trim().length > 200) errors.title = "200文字以内で入力してください";
-    if (!subjectId) errors.subject_id = "科目を選択してください";
+    if (!categoryId) errors.category_id = "カテゴリを選択してください";
     setStep1Errors(errors);
     return Object.keys(errors).length === 0;
   }
@@ -108,32 +108,8 @@ export function MaterialWizard({ subjects: initialSubjects, methods }: Props) {
     setCards((prev) => prev.filter((_, i) => i !== index));
   }
 
-  // SubjectSelector の onCreateSubject コールバック
-  // createSubject は FormData を受け取るため、ここでラップする
-  async function handleCreateSubject(
-    name: string,
-  ): Promise<{ id: string; name: string } | null> {
-    const formData = new FormData();
-    formData.set("name", name);
-    const result = await createSubject(formData);
-    if (!result.success) {
-      toast.error(result.error);
-      return null;
-    }
-    // 新しく作成した科目をローカルリストに追加し、再フェッチを避ける
-    // color・created_atはサーバー側で設定されるため、暫定値を設定する
-    setSubjects((prev) => [
-      ...prev,
-      {
-        ...result.data,
-        color: "#6b7280",
-        display_order: Math.max(0, ...prev.map((s) => s.display_order)) + 1,
-        user_id: "",
-        created_at: new Date().toISOString(),
-      } as Subject,
-    ]);
-    return result.data;
-  }
+  // buildCreateCategoryHandler で共通ロジックを集約し、createCategory と setCategories をバインドする
+  const handleCreateCategory = buildCreateCategoryHandler(createCategory, setCategories);
 
   function submitForm(cardDrafts: CardDraft[]) {
     startTransition(async () => {
@@ -141,7 +117,7 @@ export function MaterialWizard({ subjects: initialSubjects, methods }: Props) {
       const formData = new FormData();
       formData.set("title", title.trim());
       if (description.trim()) formData.set("description", description.trim());
-      formData.set("subject_id", subjectId);
+      if (categoryId) formData.set("category_id", categoryId);
       formData.set("method_ids", JSON.stringify(selectedMethodIds));
 
       const result = await createMaterial(formData);
@@ -220,16 +196,16 @@ export function MaterialWizard({ subjects: initialSubjects, methods }: Props) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label id="subject-label">科目</Label>
-            <SubjectSelector
-              subjects={subjects}
-              value={subjectId}
-              onChange={setSubjectId}
-              onCreateSubject={handleCreateSubject}
-              selectAriaLabelledBy="subject-label"
+            <Label id="category-label">カテゴリ</Label>
+            <CategorySelector
+              categories={categories}
+              value={categoryId}
+              onChange={setCategoryId}
+              onCreateCategory={handleCreateCategory}
+              selectAriaLabelledBy="category-label"
             />
-            {step1Errors.subject_id && (
-              <p className="text-xs text-destructive">{step1Errors.subject_id}</p>
+            {step1Errors.category_id && (
+              <p className="text-xs text-destructive">{step1Errors.category_id}</p>
             )}
           </div>
 
