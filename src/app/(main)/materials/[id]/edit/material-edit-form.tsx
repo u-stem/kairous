@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { CategorySelector, buildCreateCategoryHandler } from "@/components/category-selector";
+import { TagInput } from "@/components/tag-input";
 import {
   Dialog,
   DialogContent,
@@ -20,15 +21,20 @@ import {
 import { updateMaterial, deleteMaterial } from "@/lib/actions/materials";
 import { createCategory } from "@/lib/actions/categories";
 import type { MaterialDetail, Category } from "@/lib/types/materials";
+import type { Tag } from "@/lib/actions/tags";
 
 type MaterialEditFormProps = {
   material: MaterialDetail;
   categories: Category[];
+  allTags: Tag[];
+  existingTags: Tag[];
 };
 
 export function MaterialEditForm({
   material,
   categories: initialCategories,
+  allTags,
+  existingTags,
 }: MaterialEditFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -128,6 +134,16 @@ export function MaterialEditForm({
         {errors.category_id && (
           <p className="text-sm text-destructive">{errors.category_id}</p>
         )}
+      </div>
+
+      {/* タグ */}
+      <div className="flex flex-col gap-1.5">
+        <Label>タグ（任意）</Label>
+        <TagInput
+          materialId={material.id}
+          existingTags={existingTags}
+          allTags={allTags}
+        />
       </div>
 
       {/* 操作バー: 削除（左）/ キャンセル・保存（右） */}
