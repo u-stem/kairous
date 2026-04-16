@@ -3,15 +3,13 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useElaborationPlayer } from "./use-elaboration-player";
-import { SELF_RATING_LABELS, RATING_COLORS } from "@/lib/constants";
+import { SELF_RATING_LABELS, RATING_COLORS, SELF_RATINGS } from "@/lib/constants";
 import type { SessionCard } from "@/lib/types/sessions";
 
 type Props = {
   sessionId: string;
   cards: SessionCard[];
 };
-
-const RATINGS = [1, 2, 3, 4] as const;
 
 export function ElaborationPlayer({ sessionId, cards }: Props) {
   const router = useRouter();
@@ -95,7 +93,7 @@ export function ElaborationPlayer({ sessionId, cards }: Props) {
           </button>
         ) : (
           <div className="grid grid-cols-2 gap-2">
-            {RATINGS.map((r) => (
+            {SELF_RATINGS.map((r) => (
               <button
                 key={r}
                 type="button"
