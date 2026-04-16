@@ -373,32 +373,47 @@ export type Database = {
       materials: {
         Row: {
           category_id: string
+          completed_units: number
           created_at: string
           description: string | null
           id: string
+          meta: Json
           source_type: string | null
           title: string
           total_cards: number
+          total_units: number
+          type: string
+          unit_label: string
           user_id: string
         }
         Insert: {
           category_id: string
+          completed_units?: number
           created_at?: string
           description?: string | null
           id?: string
+          meta?: Json
           source_type?: string | null
           title: string
           total_cards?: number
+          total_units?: number
+          type?: string
+          unit_label?: string
           user_id: string
         }
         Update: {
           category_id?: string
+          completed_units?: number
           created_at?: string
           description?: string | null
           id?: string
+          meta?: Json
           source_type?: string | null
           title?: string
           total_cards?: number
+          total_units?: number
+          type?: string
+          unit_label?: string
           user_id?: string
         }
         Relationships: [
@@ -414,6 +429,29 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      method_material_types: {
+        Row: {
+          material_type: string
+          method_id: string
+        }
+        Insert: {
+          material_type: string
+          method_id: string
+        }
+        Update: {
+          material_type?: string
+          method_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "method_material_types_method_id_fkey"
+            columns: ["method_id"]
+            isOneToOne: false
+            referencedRelation: "learning_methods"
             referencedColumns: ["id"]
           },
         ]

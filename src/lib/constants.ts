@@ -1,3 +1,13 @@
+// materials.type の取りうる値。CHECK 制約と一致させる
+export const MATERIAL_TYPES = [
+  "flashcard",
+  "reading",
+  "project",
+  "practice_log",
+  "note",
+] as const;
+export type MaterialType = (typeof MATERIAL_TYPES)[number];
+
 // ウィザードで選択可能な学習手法スラッグ
 export const MATERIAL_METHOD_SLUGS = [
   "srs",
