@@ -22,6 +22,9 @@ test.describe.serial("教材 CRUD", () => {
   test("教材を作成して詳細ページに遷移する", async ({ page }) => {
     await page.goto("/materials/new");
 
+    // Step 0: flashcard を選択（デフォルトのまま次へ）
+    await page.getByRole("button", { name: "次へ" }).click(); // Step0 → Step1
+
     // Step 1: 基本情報を入力する
     await page.locator("#material-title").fill("E2Eテスト教材");
     await page.locator("#material-description").fill("E2Eテスト用の教材です");
@@ -118,6 +121,7 @@ test.describe("手法紐付け", () => {
   test("教材の手法を追加・削除できる", async ({ page }) => {
     // 1. ポモドーロのみで教材を作成する
     await page.goto("/materials/new");
+    await page.getByRole("button", { name: "次へ" }).click(); // Step0 → Step1 (flashcard のまま)
     await page.locator("#material-title").fill("手法テスト教材");
     await page.getByRole("combobox").click();
     await page.getByRole("option", { name: subjectName }).click();
@@ -194,6 +198,9 @@ test.describe("カテゴリ 2 段セレクタ + グルーピング", () => {
     await page.goto("/materials/new");
     await page.waitForLoadState("networkidle");
 
+    // Step 0: flashcard を選択（デフォルトのまま次へ）
+    await page.getByRole("button", { name: "次へ" }).click(); // Step0 → Step1
+
     // Step 1: タイトルを入力し、親カテゴリを選択する
     await page.locator("#material-title").fill("E2Eカテゴリグルーピング教材");
 
@@ -244,6 +251,9 @@ test.describe("カード管理", () => {
   test("カードを追加・編集・削除できる", async ({ page }) => {
     // === ウィザードで SRS 手法 + 初期カード 1 枚の教材を作成する ===
     await page.goto("/materials/new");
+
+    // Step 0: flashcard を選択（デフォルトのまま次へ）
+    await page.getByRole("button", { name: "次へ" }).click(); // Step0 → Step1
 
     // Step 1: タイトルと科目を入力する
     await page.locator("#material-title").fill("カードテスト教材");
@@ -337,5 +347,49 @@ test.describe("カード管理", () => {
       timeout: 5_000,
     });
     await expect(page.getByTestId("card-front").filter({ hasText: "apple" })).toBeVisible();
+  });
+});
+
+test.describe("reading タイプの教材作成と手法絞り込み", () => {
+  let userId: string;
+  let subjectName: string;
+
+  test.beforeAll(async () => {
+    const user = getTestUser();
+    userId = user.id;
+    subjectName = `E2E読書科目-${Date.now()}`;
+    await createTestSubject(userId, subjectName);
+  });
+
+  test.afterAll(async () => {
+    await cleanupTestData(userId);
+  });
+
+  test("reading タイプでは srs が表示されず pomodoro が表示される", async ({ page }) => {
+    await page.goto("/materials/new");
+
+    // Step 0: reading タイプを選択する
+    await page.getByTestId("material-type-option-reading").click();
+    await page.getByRole("button", { name: "次へ" }).click(); // Step0 → Step1
+
+    // Step 1: 基本情報を入力する
+    await page.locator("#material-title").fill("E2E読書テスト教材");
+    await page.getByRole("combobox").click();
+    await page.getByRole("option", { name: subjectName }).click();
+    await page.getByRole("button", { name: "次へ" }).click(); // Step1 → Step1.5
+    await page.getByRole("button", { name: "次へ" }).click(); // Step1.5 → Step2 (手法)
+
+    // reading タイプでは srs が表示されないことを確認する
+    await expect(page.getByText("間隔反復 (FSRS)")).not.toBeVisible();
+
+    // ポモドーロは表示されることを確認する
+    await expect(page.getByText("ポモドーロ")).toBeVisible();
+
+    // ポモドーロで教材を作成する
+    await page.getByText("ポモドーロ").click();
+    await page.getByRole("button", { name: "作成", exact: true }).click();
+
+    await expect(page).toHaveURL(/\/materials\/[0-9a-f-]{36}$/, { timeout: 10_000 });
+    await expect(page.getByTestId("material-title")).toHaveText("E2E読書テスト教材");
   });
 });
