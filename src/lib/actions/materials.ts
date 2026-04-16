@@ -5,12 +5,22 @@ import {
   createMaterialSchema,
   updateMaterialSchema,
   extractFieldErrors,
+  validateMaterialMeta,
 } from "@/lib/validations/materials";
 import type { ActionResult } from "@/lib/validations/materials";
 import type { MaterialWithMethods, MaterialDetail } from "@/lib/types/materials";
 import { ACTION_ERRORS } from "@/lib/constants";
+import type { MaterialType } from "@/lib/constants";
 import { requireAuth } from "@/lib/actions/auth-utils";
 import { toJstDateString } from "@/lib/utils/date";
+
+// getAllowedMethods の戻り値型
+export type AllowedMethod = {
+  id: string;
+  slug: string;
+  name: string;
+  category: string;
+};
 
 // Supabase JOIN 結果の型: SDK は joined テーブルを unknown として推論するため名前付き型で上書きする
 type JoinedCategory = { id: string; name: string; color: string; parent_id: string | null };
@@ -320,5 +330,64 @@ export async function deleteMaterial(id: string): Promise<ActionResult<undefined
   if (error) return { success: false, error: ACTION_ERRORS.DELETE_FAILED("教材") };
 
   revalidatePath("/materials");
+  return { success: true, data: undefined };
+}
+
+// タイプに対応する学習手法を method_material_types 経由で取得する
+export async function getAllowedMethods(type: MaterialType): Promise<AllowedMethod[]> {
+  const { supabase } = await requireAuth();
+
+  const { data, error } = await supabase
+    .from("method_material_types")
+    .select("learning_methods(id, slug, name, category)")
+    .eq("material_type", type);
+
+  if (error) throw new Error(`getAllowedMethods failed: ${error.message}`);
+  if (!data) return [];
+
+  return data
+    .map((row) => row.learning_methods as JoinedLearningMethod | null)
+    .filter((lm): lm is JoinedLearningMethod => lm !== null)
+    .map((lm) => ({ id: lm.id, slug: lm.slug, name: lm.name, category: lm.category }));
+}
+
+// 教材の meta フィールドを更新する
+// タイプに応じたバリデーションを行い、不正な meta の混入を防ぐ
+export async function updateMaterialMeta(
+  materialId: string,
+  meta: unknown,
+): Promise<ActionResult<undefined>> {
+  const { user, supabase } = await requireAuth();
+
+  // 所有者確認と type 取得を同時に行う
+  const { data: material, error: fetchError } = await supabase
+    .from("materials")
+    .select("type")
+    .eq("id", materialId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (fetchError) return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("教材") };
+  if (!material) return { success: false, error: "教材が見つかりません" };
+
+  const parsed = validateMaterialMeta(material.type as MaterialType, meta);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: ACTION_ERRORS.INVALID_INPUT,
+      fieldErrors: extractFieldErrors(parsed.error),
+    };
+  }
+
+  const { error: updateError } = await supabase
+    .from("materials")
+    .update({ meta: parsed.data })
+    .eq("id", materialId)
+    .eq("user_id", user.id);
+
+  if (updateError) return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("教材") };
+
+  revalidatePath(`/materials/${materialId}`);
   return { success: true, data: undefined };
 }
