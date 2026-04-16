@@ -232,7 +232,7 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
         <div className="flex flex-col gap-5">
           <p className="text-sm text-muted-foreground">ステップ 1 / {visibleStepCount}: 教材タイプ</p>
 
-          <MaterialTypeSelector value={materialType} onChange={setMaterialType} />
+          <MaterialTypeSelector value={materialType} onChange={setMaterialType} disabled={isStep0Pending} />
 
           <div className="flex justify-end">
             <Button onClick={handleNextFromStep0} disabled={isStep0Pending}>

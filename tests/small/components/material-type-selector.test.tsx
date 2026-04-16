@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MaterialTypeSelector } from "@/components/material-type-selector";
 import { MATERIAL_TYPES, MATERIAL_TYPE_LABELS } from "@/lib/constants";
+import type { MaterialType } from "@/lib/constants";
 
 describe("MaterialTypeSelector", () => {
   it("5 タイプのカードをすべてレンダリングする", () => {
@@ -131,5 +132,44 @@ describe("MaterialTypeSelector", () => {
     await user.keyboard("{ArrowUp}");
 
     expect(onChange).toHaveBeenCalledWith("note");
+  });
+
+  it("ArrowDown 後に DOM フォーカスが次の選択肢に移動する", async () => {
+    const user = userEvent.setup();
+    // onChange で value が更新されるよう controlled component を模倣する
+    let currentValue: MaterialType = "flashcard";
+    const onChange = vi.fn((type: MaterialType) => { currentValue = type; });
+    const { rerender } = render(<MaterialTypeSelector value={currentValue} onChange={onChange} />);
+
+    const flashcardOption = screen.getByTestId("material-type-option-flashcard");
+    flashcardOption.focus();
+    await user.keyboard("{ArrowDown}");
+
+    // onChange が reading を返した後に rerender して tabIndex を更新する
+    rerender(<MaterialTypeSelector value={currentValue} onChange={onChange} />);
+
+    expect(document.activeElement).toBe(screen.getByTestId("material-type-option-reading"));
+  });
+
+  it("disabled のとき Arrow キーを押しても onChange が発火しない", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<MaterialTypeSelector value="flashcard" onChange={onChange} disabled />);
+
+    const flashcardOption = screen.getByTestId("material-type-option-flashcard");
+    flashcardOption.focus();
+    await user.keyboard("{ArrowDown}");
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("disabled のときクリックしても onChange が発火しない", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<MaterialTypeSelector value="flashcard" onChange={onChange} disabled />);
+
+    await user.click(screen.getByTestId("material-type-option-note"));
+
+    expect(onChange).not.toHaveBeenCalled();
   });
 });
