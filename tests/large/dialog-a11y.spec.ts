@@ -27,7 +27,8 @@ test.describe.serial("Dialog / Sheet a11y", () => {
     await page.locator("#material-title").fill(materialTitle);
     await page.getByRole("combobox").click();
     await page.getByRole("option", { name: subjectName }).click();
-    await page.getByRole("button", { name: "次へ" }).click();
+    await page.getByRole("button", { name: "次へ" }).click(); // Step1 → Step1.5 (タグ)
+    await page.getByRole("button", { name: "次へ" }).click(); // Step1.5 (タグ未入力) → Step2
 
     await page.getByText("間隔反復 (FSRS)").click();
     await page.getByRole("button", { name: "次へ" }).click();
