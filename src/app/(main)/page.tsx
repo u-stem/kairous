@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getDueMaterials, getTodaySessions } from "@/lib/actions/session-queries";
 import { getStreak } from "@/lib/actions/stats";
-import { getTags, getTagsForMaterial } from "@/lib/actions/tags";
+import { getTags, getBulkTagsForMaterials } from "@/lib/actions/tags";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { TodayMaterialList } from "./today-material-list";
@@ -18,10 +18,8 @@ export default async function TodayPage() {
   ]);
 
   // interleaving タグ絞り込み用に教材ごとのタグを一括取得する
-  const materialTagsEntries = await Promise.all(
-    materials.map(async (m) => [m.id, await getTagsForMaterial(m.id)] as const),
-  );
-  const materialTagsMap = Object.fromEntries(materialTagsEntries);
+  const bulkTagsMap = await getBulkTagsForMaterials(materials.map((m) => m.id));
+  const materialTagsMap = Object.fromEntries(bulkTagsMap);
   const today = new Date();
   const dateStr = format(today, "M月d日 EEEE", { locale: ja });
 

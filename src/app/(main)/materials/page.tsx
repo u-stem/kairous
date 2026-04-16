@@ -2,7 +2,7 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { getMaterials } from "@/lib/actions/materials";
 import { getCategories } from "@/lib/actions/categories";
-import { getTags, getTagsForMaterial } from "@/lib/actions/tags";
+import { getTags, getBulkTagsForMaterials } from "@/lib/actions/tags";
 import { EmptyState } from "@/components/empty-state";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
@@ -34,10 +34,8 @@ export default async function MaterialsPage({
   }
 
   // 教材ごとのタグを一括取得し、クライアントにマップとして渡す
-  const materialTagsEntries = await Promise.all(
-    materials.map(async (m) => [m.id, await getTagsForMaterial(m.id)] as const),
-  );
-  const materialTagsMap = Object.fromEntries(materialTagsEntries);
+  const bulkTagsMap = await getBulkTagsForMaterials(materials.map((m) => m.id));
+  const materialTagsMap = Object.fromEntries(bulkTagsMap);
 
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-6">
