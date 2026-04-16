@@ -143,6 +143,27 @@ export async function createTestSession(
   return result.data as { id: string; user_id: string; material_id: string; method_id: string; status: string; started_at: string };
 }
 
+export async function createTestTag(
+  userId: string,
+  name: string,
+  color = "#94a3b8",
+) {
+  const result = await getAdminClient()
+    .from("tags")
+    .insert({ user_id: userId, name, color })
+    .select()
+    .single();
+  if (result.error) throw new Error(`テストタグ作成失敗: ${result.error.message}`);
+  return result.data as { id: string; name: string; color: string; user_id: string };
+}
+
+export async function addTestTagToMaterial(materialId: string, tagId: string) {
+  const { error } = await getAdminClient()
+    .from("material_tags")
+    .upsert({ material_id: materialId, tag_id: tagId });
+  if (error) throw new Error(`テストタグ紐付け失敗: ${error.message}`);
+}
+
 // テストデータ全削除（テスト間の独立性を保証）
 // 外部キー制約の順序: 子テーブル → 親テーブル
 export async function cleanupTestData(userId: string) {

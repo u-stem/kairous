@@ -14,5 +14,7 @@ export {
   linkMaterialMethod,
   createTestSrsState,
   createTestSession,
+  createTestTag,
+  addTestTagToMaterial,
   cleanupTestData,
 } from "../../shared/helpers";
