@@ -368,7 +368,7 @@ export async function updateMaterialMeta(
     .maybeSingle();
 
   if (fetchError) return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("教材") };
-  if (!material) return { success: false, error: "教材が見つかりません" };
+  if (!material) return { success: false, error: ACTION_ERRORS.NOT_FOUND("教材") };
 
   const parsed = validateMaterialMeta(material.type as MaterialType, meta);
 

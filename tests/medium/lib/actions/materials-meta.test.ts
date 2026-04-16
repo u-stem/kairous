@@ -60,7 +60,7 @@ describe("updateMaterialMeta (DB integration)", () => {
     expect(data?.meta).toMatchObject({ total_pages: 300, author: "著者テスト" });
   });
 
-  it("他ユーザーの教材は RLS により更新できない", async () => {
+  it("user_id フィルタで他ユーザーの教材は更新されない (service_role 経由で RLS バイパスのため user_id チェックを検証)", async () => {
     const category = await createTestSubject(otherUserId, "他ユーザーカテゴリ");
     const otherMaterial = await createTestMaterial(category.id, otherUserId, "他ユーザー教材");
 

@@ -78,12 +78,12 @@ export const projectMetaSchema = z
         z.object({
           name: z.string().min(1).max(200),
           done: z.boolean(),
-          date: z.string().optional(),
+          date: z.iso.date().optional(),
         }),
       )
       .max(50)
       .optional(),
-    deadline: z.string().optional(),
+    deadline: z.iso.date().optional(),
   })
   .strict();
 
@@ -93,7 +93,7 @@ export const practiceLogMetaSchema = z
     entries: z
       .array(
         z.object({
-          date: z.string(),
+          date: z.iso.date(),
           value: z.union([z.number(), z.string()]),
           note: z.string().max(500).optional(),
         }),
@@ -124,6 +124,10 @@ export function validateMaterialMeta(type: MaterialType, meta: unknown) {
       return practiceLogMetaSchema.safeParse(meta);
     case "note":
       return noteMetaSchema.safeParse(meta);
+    default: {
+      const _exhaustive: never = type;
+      throw new Error(`Unknown material type: ${_exhaustive as string}`);
+    }
   }
 }
 
