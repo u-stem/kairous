@@ -37,17 +37,8 @@ export const createMaterialSchema = z.object({
     .array(z.uuid("無効な学習手法IDです"))
     .min(1, "学習手法を1つ以上選択してください")
     .max(20, "学習手法は20個以内で選択してください"),
-  // MATERIAL_TYPES は readonly tuple。zod v4 の enum はキー/値両方を string で受け取る形式のため
-  // z.literal の union で型安全に定義する
-  type: z
-    .union([
-      z.literal("flashcard"),
-      z.literal("reading"),
-      z.literal("project"),
-      z.literal("practice_log"),
-      z.literal("note"),
-    ])
-    .default("flashcard"),
+  // MATERIAL_TYPES を単一の source of truth として参照し、定義の重複を防ぐ
+  type: z.enum(MATERIAL_TYPES).default("flashcard"),
   // meta は JSONB フィールド。タイプ別詳細バリデーションは validateMaterialMeta で行う
   meta: z.record(z.string(), z.unknown()).default({}),
 });

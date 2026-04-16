@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Trash2 } from "lucide-react";
@@ -49,6 +49,7 @@ const TOTAL_STEPS = 4;
 export function MaterialWizard({ categories: initialCategories, methods: allMethods, allTags: initialAllTags }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [isStep0Pending, startStep0Transition] = useTransition();
 
   // ステップ0: タイプ選択
   const [materialType, setMaterialType] = useState<MaterialType>("flashcard");
@@ -97,22 +98,25 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
     return true;
   }
 
-  async function handleNextFromStep0() {
-    // タイプが変わったら手法の絞り込みを更新する
-    try {
-      const allowed = await getAllowedMethods(materialType);
-      // allowed の ID に存在する allMethods のエントリのみ表示する
-      const allowedIds = new Set(allowed.map((m) => m.id));
-      const filtered = allMethods.filter((m) => allowedIds.has(m.id));
-      setFilteredMethods(filtered);
-      // 絞り込み後に無効になった手法を選択解除する
-      setSelectedMethodIds((prev) => prev.filter((id) => allowedIds.has(id)));
-    } catch {
-      // 取得失敗時は全手法を表示して続行する
-      setFilteredMethods(allMethods);
-    }
-    setCurrentStep(1);
-  }
+  // useCallback で参照を安定させ、startStep0Transition 経由で連打を防ぐ
+  const handleNextFromStep0 = useCallback(() => {
+    startStep0Transition(async () => {
+      // タイプが変わったら手法の絞り込みを更新する
+      try {
+        const allowed = await getAllowedMethods(materialType);
+        // allowed の ID に存在する allMethods のエントリのみ表示する
+        const allowedIds = new Set(allowed.map((m) => m.id));
+        const filtered = allMethods.filter((m) => allowedIds.has(m.id));
+        setFilteredMethods(filtered);
+        // 絞り込み後に無効になった手法を選択解除する
+        setSelectedMethodIds((prev) => prev.filter((id) => allowedIds.has(id)));
+      } catch {
+        // 取得失敗時は全手法を表示して続行する
+        setFilteredMethods(allMethods);
+      }
+      setCurrentStep(1);
+    });
+  }, [materialType, allMethods]);
 
   function handleNextFromStep1() {
     if (!validateStep1()) return;
@@ -196,16 +200,16 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
     submitForm(cards);
   }
 
-  // Step 0 → 1 → 1.5 → 2 → 3 のプログレスバー上での番号
-  // Step1.5 は 3 番目として扱う
-  const progressStep =
-    currentStep === 0
-      ? 1
-      : currentStep === 1
-        ? 2
-        : currentStep === 1.5
-          ? 3
-          : currentStep + 2;
+  // Step 0 → 1 → 1.5 → 2 → 3 をプログレスバーの番号に変換する
+  // Step1.5 はステップ番号が整数でないため文字列キーで管理する
+  const STEP_TO_PROGRESS: Record<string, number> = {
+    "0": 1,
+    "1": 2,
+    "1.5": 3,
+    "2": 4,
+    "3": 5,
+  };
+  const progressStep = STEP_TO_PROGRESS[String(currentStep)] ?? 1;
 
   return (
     <div className="flex flex-col gap-6">
@@ -230,7 +234,10 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
           <MaterialTypeSelector value={materialType} onChange={setMaterialType} />
 
           <div className="flex justify-end">
-            <Button onClick={() => void handleNextFromStep0()}>次へ</Button>
+            <Button onClick={handleNextFromStep0} disabled={isStep0Pending}>
+              {isStep0Pending && <Loader2 aria-hidden="true" className="animate-spin" />}
+              次へ
+            </Button>
           </div>
         </div>
       )}

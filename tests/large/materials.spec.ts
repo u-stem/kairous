@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createTestSubject, createTestCategory, cleanupTestData } from "./helpers/db";
+import { createTestSubject, createTestCategory, cleanupTestData, getAdminClient } from "./helpers/db";
 import { getTestUser } from "./helpers/types";
 import type { TestUserData } from "./helpers/types";
 
@@ -391,5 +391,16 @@ test.describe("reading タイプの教材作成と手法絞り込み", () => {
 
     await expect(page).toHaveURL(/\/materials\/[0-9a-f-]{36}$/, { timeout: 10_000 });
     await expect(page.getByTestId("material-title")).toHaveText("E2E読書テスト教材");
+
+    // DB に reading タイプで保存されているかを確認する (詳細ページの type 表示は PBI-4 で追加)
+    const materialId = page.url().match(/\/materials\/([0-9a-f-]{36})$/)?.[1];
+    expect(materialId).toBeTruthy();
+    const adminClient = getAdminClient();
+    const { data: material } = await adminClient
+      .from("materials")
+      .select("type")
+      .eq("id", materialId!)
+      .single();
+    expect(material?.type).toBe("reading");
   });
 });

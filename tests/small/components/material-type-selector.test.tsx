@@ -58,4 +58,78 @@ describe("MaterialTypeSelector", () => {
 
     expect(onChange).toHaveBeenCalledWith("project");
   });
+
+  it("ArrowDown キーで次のタイプに onChange が発火する", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    // flashcard (index 0) が選択された状態でArrowDown → reading (index 1)
+    render(<MaterialTypeSelector value="flashcard" onChange={onChange} />);
+
+    const flashcardOption = screen.getByTestId("material-type-option-flashcard");
+    flashcardOption.focus();
+    await user.keyboard("{ArrowDown}");
+
+    expect(onChange).toHaveBeenCalledWith("reading");
+  });
+
+  it("ArrowRight キーで次のタイプに onChange が発火する", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<MaterialTypeSelector value="reading" onChange={onChange} />);
+
+    const readingOption = screen.getByTestId("material-type-option-reading");
+    readingOption.focus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(onChange).toHaveBeenCalledWith("project");
+  });
+
+  it("ArrowUp キーで前のタイプに onChange が発火する", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<MaterialTypeSelector value="reading" onChange={onChange} />);
+
+    const readingOption = screen.getByTestId("material-type-option-reading");
+    readingOption.focus();
+    await user.keyboard("{ArrowUp}");
+
+    expect(onChange).toHaveBeenCalledWith("flashcard");
+  });
+
+  it("ArrowLeft キーで前のタイプに onChange が発火する", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<MaterialTypeSelector value="project" onChange={onChange} />);
+
+    const projectOption = screen.getByTestId("material-type-option-project");
+    projectOption.focus();
+    await user.keyboard("{ArrowLeft}");
+
+    expect(onChange).toHaveBeenCalledWith("reading");
+  });
+
+  it("最後のタイプで ArrowDown を押すと最初のタイプに循環する", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    // note は MATERIAL_TYPES の最後
+    render(<MaterialTypeSelector value="note" onChange={onChange} />);
+
+    const noteOption = screen.getByTestId("material-type-option-note");
+    noteOption.focus();
+    await user.keyboard("{ArrowDown}");
+
+    expect(onChange).toHaveBeenCalledWith("flashcard");
+  });
+
+  it("最初のタイプで ArrowUp を押すと最後のタイプに循環する", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<MaterialTypeSelector value="flashcard" onChange={onChange} />);
+
+    const flashcardOption = screen.getByTestId("material-type-option-flashcard");
+    flashcardOption.focus();
+    await user.keyboard("{ArrowUp}");
+
+    expect(onChange).toHaveBeenCalledWith("note");
+  });
 });

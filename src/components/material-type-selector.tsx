@@ -21,9 +21,20 @@ type Props = {
 };
 
 export function MaterialTypeSelector({ value, onChange }: Props) {
+  const currentIdx = MATERIAL_TYPES.indexOf(value);
+
   function handleKeyDown(e: React.KeyboardEvent, type: MaterialType) {
-    // Enter または Space で選択できるようにする (radio group の標準的なキーボード操作)
-    if (e.key === "Enter" || e.key === " ") {
+    // WAI-ARIA radio group 仕様: Arrow で隣接する選択肢に移動して自動選択する
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+      e.preventDefault();
+      const nextIdx = (currentIdx + 1) % MATERIAL_TYPES.length;
+      onChange(MATERIAL_TYPES[nextIdx]);
+    } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      const prevIdx = (currentIdx - 1 + MATERIAL_TYPES.length) % MATERIAL_TYPES.length;
+      onChange(MATERIAL_TYPES[prevIdx]);
+    } else if (e.key === "Enter" || e.key === " ") {
+      // Enter または Space で現在フォーカス中の項目を選択する
       e.preventDefault();
       onChange(type);
     }
