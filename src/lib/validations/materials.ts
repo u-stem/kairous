@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { VALIDATION_LIMITS } from "@/lib/constants";
+import type { MaterialType } from "@/lib/constants";
 
 // Server Action の戻り値型。成功/失敗を型レベルで区別することでハンドリング漏れを防ぐ
 export type ActionResult<T> =
@@ -57,6 +58,74 @@ export const cardSchema = z.object({
     .min(1, "裏面のテキストを入力してください")
     .max(VALIDATION_LIMITS.CARD_TEXT_MAX, "裏面のテキストは5000文字以内で入力してください"),
 });
+
+// タイプ別 meta バリデーションスキーマ
+// .strict() で余分なキーを拒否し、意図しないデータ混入を防ぐ
+export const flashcardMetaSchema = z.object({}).strict();
+
+export const readingMetaSchema = z
+  .object({
+    total_pages: z.number().int().positive().max(99999).optional(),
+    isbn: z.string().max(20).optional(),
+    author: z.string().max(200).optional(),
+  })
+  .strict();
+
+export const projectMetaSchema = z
+  .object({
+    milestones: z
+      .array(
+        z.object({
+          name: z.string().min(1).max(200),
+          done: z.boolean(),
+          date: z.string().optional(),
+        }),
+      )
+      .max(50)
+      .optional(),
+    deadline: z.string().optional(),
+  })
+  .strict();
+
+export const practiceLogMetaSchema = z
+  .object({
+    entry_schema: z.enum(["reps", "duration", "freeform"]).optional(),
+    entries: z
+      .array(
+        z.object({
+          date: z.string(),
+          value: z.union([z.number(), z.string()]),
+          note: z.string().max(500).optional(),
+        }),
+      )
+      .max(10000)
+      .optional(),
+  })
+  .strict();
+
+export const noteMetaSchema = z
+  .object({
+    section_count: z.number().int().nonnegative().max(10000).optional(),
+    word_count: z.number().int().nonnegative().max(1000000).optional(),
+  })
+  .strict();
+
+// タイプに応じた meta バリデーションを実行する。switch で全タイプを網羅し、
+// 型レベルで未処理タイプが残らないことを保証する
+export function validateMaterialMeta(type: MaterialType, meta: unknown) {
+  switch (type) {
+    case "flashcard":
+      return flashcardMetaSchema.safeParse(meta);
+    case "reading":
+      return readingMetaSchema.safeParse(meta);
+    case "project":
+      return projectMetaSchema.safeParse(meta);
+    case "practice_log":
+      return practiceLogMetaSchema.safeParse(meta);
+    case "note":
+      return noteMetaSchema.safeParse(meta);
+  }
+}
 
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 // 後方互換エイリアス
