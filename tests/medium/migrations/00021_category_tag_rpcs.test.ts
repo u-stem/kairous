@@ -316,8 +316,7 @@ describe("migration 00021: category_tag_rpcs", () => {
       const srsMethodId = await getMethodIdBySlug("srs");
 
       // 別ユーザーを作成して、そのカテゴリを使用する
-      const { createTestUser: createUser, deleteTestUser: deleteUser } = await import("../../shared/db");
-      const otherUserId = await createUser();
+      const otherUserId = await createTestUser();
       const otherCat = await createTestCategory(otherUserId, "別ユーザーカテゴリ");
       const today = new Date().toISOString().split("T")[0];
 
@@ -335,7 +334,7 @@ describe("migration 00021: category_tag_rpcs", () => {
       expect(error?.message).toContain("not owned by user");
 
       // クリーンアップ
-      await deleteUser(otherUserId);
+      await deleteTestUser(otherUserId);
     });
   });
 });
