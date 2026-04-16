@@ -122,7 +122,7 @@ jobs:
           show_full_output: true
           claude_args: |
             --model claude-opus-4-6
-            --max-turns 30
+            --max-turns 60
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment *),Bash(gh pr diff *),Bash(gh pr view *),Read,Glob,Grep"
           prompt: |
             REPO: ${{ github.repository }}
@@ -133,9 +133,14 @@ jobs:
             ## 手順
             1. `gh pr diff ${{ github.event.pull_request.number }}` で差分を確認
             2. 既存の PR コメントを確認し、過去のレビューで指摘済み・resolve 済みの内容を把握する
-            3. 変更されたファイルを Read で読み、コンテキストを理解
-            4. **新規の問題のみ** inline コメントを投稿 (confirmed: true を必ず指定)。過去のレビューで既に指摘した内容は繰り返さない
+            3. **変更ファイルの Read は 1 turn で並列実行** (複数の tool call を同一メッセージに詰める)。Grep/Glob も独立なら並列化
+            4. **新規の問題のみ** inline コメントを投稿 (confirmed: true を必ず指定)。過去のレビューで既に指摘した内容は繰り返さない。inline コメント上限は合計 8 件 (blocker は全件、suggestion/nit は重要な 3-5 件に絞る)
             5. 最後に `gh pr comment ${{ github.event.pull_request.number }}` で総評を投稿
+
+            ## turn 節約のコツ
+            - 並列ツール呼び出しを積極的に使う (Read + Grep を同時発行可)
+            - 大きなファイルは必要な範囲だけ offset+limit で読む
+            - 全 diff が 200 行以下なら Read せず diff のみで判断可
 
             ## コメントプレフィックス
             - blocker: マージをブロックする問題 (修正必須)
