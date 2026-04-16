@@ -14,7 +14,7 @@ export async function createTestCategory(
   return result.data as { id: string; name: string; color: string; user_id: string; parent_id: string | null };
 }
 
-// 後方互換エイリアス。PBI-2 で最終削除
+// 後方互換エイリアス。Epic #232 全 PBI マージ完了時に削除予定 (呼び出し元 20+ 箇所)
 export const createTestSubject = createTestCategory;
 
 export async function createTestMaterial(

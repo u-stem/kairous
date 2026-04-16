@@ -69,23 +69,23 @@ BEGIN
     v_d := CURRENT_DATE - i;
 
     -- English + SRS (daily, 20-50min, 15-45 cards)
-    INSERT INTO daily_logs (user_id, subject_id, method_id, log_date, total_sec, session_count, cards_reviewed)
+    INSERT INTO daily_logs (user_id, category_id, method_id, log_date, total_sec, session_count, cards_reviewed)
     VALUES (v_user_id, v_english, v_srs, v_d, 1200 + (random() * 1800)::int, 1 + (random() * 2)::int, 15 + (random() * 30)::int)
-    ON CONFLICT (user_id, subject_id, method_id, log_date) DO NOTHING;
+    ON CONFLICT (user_id, category_id, method_id, log_date) DO NOTHING;
 
     -- Math + Pomodoro (every other day, 25-50min)
     IF i % 2 = 0 THEN
-      INSERT INTO daily_logs (user_id, subject_id, method_id, log_date, total_sec, session_count, cards_reviewed)
+      INSERT INTO daily_logs (user_id, category_id, method_id, log_date, total_sec, session_count, cards_reviewed)
       VALUES (v_user_id, v_math, v_pomodoro, v_d, 1500 + (random() * 1500)::int, 1, 0)
-      ON CONFLICT (user_id, subject_id, method_id, log_date) DO NOTHING;
+      ON CONFLICT (user_id, category_id, method_id, log_date) DO NOTHING;
     END IF;
 
     -- Physics + SRS (every 3 days, 15-30min, 10-25 cards)
     -- active_recall は migration 00012 で srs に統合されたため srs を使用する
     IF i % 3 = 0 THEN
-      INSERT INTO daily_logs (user_id, subject_id, method_id, log_date, total_sec, session_count, cards_reviewed)
+      INSERT INTO daily_logs (user_id, category_id, method_id, log_date, total_sec, session_count, cards_reviewed)
       VALUES (v_user_id, v_physics, v_srs, v_d, 900 + (random() * 900)::int, 1, 10 + (random() * 15)::int)
-      ON CONFLICT (user_id, subject_id, method_id, log_date) DO NOTHING;
+      ON CONFLICT (user_id, category_id, method_id, log_date) DO NOTHING;
     END IF;
   END LOOP;
 END $$;

@@ -172,7 +172,7 @@ describe("completeFreeStudySession", () => {
       "upsert_daily_log",
       expect.objectContaining({
         p_user_id: "user-1",
-        p_subject_id: "subj-1",
+        p_category_id: "subj-1",
         p_method_id: "method-1",
         p_cards_reviewed: 0,
       }),

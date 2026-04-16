@@ -12,9 +12,9 @@ type DueMaterialRow = {
   method_id: string;
   method_name: string;
   method_slug: string;
-  subject_color: string;
-  subject_id: string;
-  subject_name: string;
+  category_color: string;
+  category_id: string;
+  category_name: string;
   title: string;
 };
 type InterleavingCardRow = {
@@ -136,9 +136,9 @@ export async function getDueMaterials(): Promise<DueMaterial[]> {
     id: row.material_id,
     title: row.title,
     subject: {
-      id: row.subject_id,
-      name: row.subject_name,
-      color: row.subject_color,
+      id: row.category_id,
+      name: row.category_name,
+      color: row.category_color,
     },
     srs_method_id: row.method_id,
     due_count: Number(row.due_count),
@@ -328,7 +328,10 @@ export async function getSessionElaborations(sessionId: string): Promise<Session
   }));
 }
 
-export async function getInterleavingCards(sessionId: string): Promise<InterleavingCard[]> {
+export async function getInterleavingCards(
+  sessionId: string,
+  options?: { categoryId?: string; tagIds?: string[] },
+): Promise<InterleavingCard[]> {
   const { user, supabase } = await requireAuth();
 
   // RLS に加えてアプリ層でも所有者を確認し、RLS 緩和時の誤操作を防ぐ
@@ -347,6 +350,8 @@ export async function getInterleavingCards(sessionId: string): Promise<Interleav
     p_session_id: sessionId,
     p_user_id: user.id,
     p_today: today,
+    p_category_id: options?.categoryId,
+    p_tag_ids: options?.tagIds,
   });
 
   if (rpcError) {

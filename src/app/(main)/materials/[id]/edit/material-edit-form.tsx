@@ -18,7 +18,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { updateMaterial, deleteMaterial } from "@/lib/actions/materials";
-import { createSubject } from "@/lib/actions/subjects";
+import { createSubject } from "@/lib/actions/categories";
 import type { MaterialDetail, Subject } from "@/lib/types/materials";
 
 type MaterialEditFormProps = {

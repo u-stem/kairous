@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import {
   getAdminClient,
-  createTestSubject,
+  createTestCategory,
   createTestMaterial,
   getMethodIdBySlug,
   linkMaterialMethod,
@@ -18,19 +18,19 @@ test.describe("Stats ページ", () => {
 
     // Stats に表示するデータを作成: subject → material → method link → daily_log
     // sessions テーブルは Stats ページのデータソースではないため省略
-    const subject = await createTestSubject(userId, `E2E-Stats-${Date.now()}`);
-    const material = await createTestMaterial(subject.id, userId, "Stats テスト教材");
+    const category = await createTestCategory(userId, `E2E-Stats-${Date.now()}`);
+    const material = await createTestMaterial(category.id, userId, "Stats テスト教材");
     const srsMethodId = await getMethodIdBySlug("srs");
     await linkMaterialMethod(material.id, srsMethodId);
 
     // daily_log を作成 (Stats ページのデータソース)
-    // テスト固有の subject を使うため UNIQUE 制約に衝突しない
+    // テスト固有の category を使うため UNIQUE 制約に衝突しない
     const today = new Date().toISOString().split("T")[0];
     const { error: logErr } = await getAdminClient()
       .from("daily_logs")
       .insert({
         user_id: userId,
-        subject_id: subject.id,
+        category_id: category.id,
         method_id: srsMethodId,
         log_date: today,
         total_sec: 300,

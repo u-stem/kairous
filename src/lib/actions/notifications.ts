@@ -16,7 +16,7 @@ import {
   extractFieldErrors,
   type ActionResult,
 } from "@/lib/validations/notifications";
-import type { SubjectDueCount } from "@/lib/utils/notification-messages";
+import type { CategoryDueCount } from "@/lib/utils/notification-messages";
 import type { NotificationSchedule } from "@/lib/types/notification";
 
 export async function getNotificationSchedules(): Promise<
@@ -220,11 +220,11 @@ export async function deleteNotificationSchedule(
 
 // 通知表示時に呼ばれるデータ取得アクション
 // 注: get_due_materials RPC は SRS 手法のみ返す。通知では全手法の due カードを
-// 対象にするため get_due_counts_by_subject RPC で DB 側集計する
+// 対象にするため get_due_counts_by_category RPC で DB 側集計する
 // (従来 JS 側集計では PostgREST の 1000 行上限で static truncation する問題があった)
 
-type DueTodayResult = { subjects: SubjectDueCount[] };
-type ReviewAndPreviewResult = { sessionsToday: number; subjects: SubjectDueCount[] };
+type DueTodayResult = { categories: CategoryDueCount[] };
+type ReviewAndPreviewResult = { sessionsToday: number; categories: CategoryDueCount[] };
 
 export async function getNotificationData(
   messageType: "due_today",
@@ -238,29 +238,29 @@ export async function getNotificationData(
   const { user, supabase } = await requireAuth();
   const today = toJstDateString(new Date());
 
-  async function getDueBySubject(targetDate: string): Promise<SubjectDueCount[]> {
-    const { data, error } = await supabase.rpc("get_due_counts_by_subject", {
+  async function getDueByCategory(targetDate: string): Promise<CategoryDueCount[]> {
+    const { data, error } = await supabase.rpc("get_due_counts_by_category", {
       p_user_id: user.id,
       p_target_date: targetDate,
     });
 
-    if (error) throw new Error(`get_due_counts_by_subject failed: ${error.message}`);
+    if (error) throw new Error(`get_due_counts_by_category failed: ${error.message}`);
 
-    return (data ?? []).map((row: { subject_name: string; due_count: number }) => ({
-      subject: row.subject_name,
+    return (data ?? []).map((row: { category_name: string; due_count: number }) => ({
+      category: row.category_name,
       count: Number(row.due_count),
     }));
   }
 
   if (messageType === "due_today") {
-    const subjects = await getDueBySubject(today);
-    return { success: true as const, data: { subjects } };
+    const categories = await getDueByCategory(today);
+    return { success: true as const, data: { categories } };
   }
 
-  // review_and_preview: 今日のセッション数 + 明日の due カード科目一覧
+  // review_and_preview: 今日のセッション数 + 明日の due カードカテゴリ一覧
   const tomorrow = toJstDateString(addDays(new Date(), 1));
 
-  const [sessionsResult, subjects] = await Promise.all([
+  const [sessionsResult, categories] = await Promise.all([
     supabase
       .from("sessions")
       .select("id", { count: "exact", head: true })
@@ -268,14 +268,14 @@ export async function getNotificationData(
       .eq("status", "completed")
       .gte("created_at", `${today}T00:00:00+09:00`)
       .lt("created_at", `${tomorrow}T00:00:00+09:00`),
-    getDueBySubject(tomorrow),
+    getDueByCategory(tomorrow),
   ]);
 
   return {
     success: true as const,
     data: {
       sessionsToday: sessionsResult.count ?? 0,
-      subjects,
+      categories,
     },
   };
 }

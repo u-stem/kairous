@@ -54,9 +54,9 @@ describe("calcChangeRate", () => {
 describe("aggregateDaily", () => {
   it("aggregates rows by log_date", () => {
     const rows = [
-      { log_date: "2026-04-01", total_sec: 100, session_count: 1, cards_reviewed: 5, subject_id: "s1", method_id: "m1" },
-      { log_date: "2026-04-01", total_sec: 200, session_count: 2, cards_reviewed: 10, subject_id: "s2", method_id: "m1" },
-      { log_date: "2026-04-02", total_sec: 300, session_count: 1, cards_reviewed: 8, subject_id: "s1", method_id: "m1" },
+      { log_date: "2026-04-01", total_sec: 100, session_count: 1, cards_reviewed: 5, category_id: "s1", method_id: "m1" },
+      { log_date: "2026-04-01", total_sec: 200, session_count: 2, cards_reviewed: 10, category_id: "s2", method_id: "m1" },
+      { log_date: "2026-04-02", total_sec: 300, session_count: 1, cards_reviewed: 8, category_id: "s1", method_id: "m1" },
     ];
     const result = aggregateDaily(rows);
     expect(result).toEqual([
@@ -73,12 +73,12 @@ describe("aggregateDaily", () => {
 describe("aggregateByKey", () => {
   it("aggregates rows by specified key with name lookup", () => {
     const rows = [
-      { log_date: "2026-04-01", total_sec: 100, session_count: 1, cards_reviewed: 5, subject_id: "s1", method_id: "m1" },
-      { log_date: "2026-04-02", total_sec: 200, session_count: 2, cards_reviewed: 10, subject_id: "s1", method_id: "m1" },
-      { log_date: "2026-04-01", total_sec: 150, session_count: 1, cards_reviewed: 7, subject_id: "s2", method_id: "m2" },
+      { log_date: "2026-04-01", total_sec: 100, session_count: 1, cards_reviewed: 5, category_id: "s1", method_id: "m1" },
+      { log_date: "2026-04-02", total_sec: 200, session_count: 2, cards_reviewed: 10, category_id: "s1", method_id: "m1" },
+      { log_date: "2026-04-01", total_sec: 150, session_count: 1, cards_reviewed: 7, category_id: "s2", method_id: "m2" },
     ];
     const names = new Map([["s1", "English"], ["s2", "Math"]]);
-    const result = aggregateByKey(rows, "subject_id", names);
+    const result = aggregateByKey(rows, "category_id", names);
     expect(result).toEqual([
       { id: "s1", name: "English", totalSec: 300, sessionCount: 3, cardsReviewed: 15 },
       { id: "s2", name: "Math", totalSec: 150, sessionCount: 1, cardsReviewed: 7 },
@@ -87,11 +87,11 @@ describe("aggregateByKey", () => {
 
   it("sorts by totalSec descending", () => {
     const rows = [
-      { log_date: "2026-04-01", total_sec: 100, session_count: 1, cards_reviewed: 5, subject_id: "s1", method_id: "m1" },
-      { log_date: "2026-04-01", total_sec: 500, session_count: 3, cards_reviewed: 20, subject_id: "s2", method_id: "m1" },
+      { log_date: "2026-04-01", total_sec: 100, session_count: 1, cards_reviewed: 5, category_id: "s1", method_id: "m1" },
+      { log_date: "2026-04-01", total_sec: 500, session_count: 3, cards_reviewed: 20, category_id: "s2", method_id: "m1" },
     ];
     const names = new Map([["s1", "A"], ["s2", "B"]]);
-    const result = aggregateByKey(rows, "subject_id", names);
+    const result = aggregateByKey(rows, "category_id", names);
     expect(result[0].id).toBe("s2");
   });
 });

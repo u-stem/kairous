@@ -30,7 +30,7 @@ export type BreakdownItem = {
 export type StatsData = {
   summary: StatsSummary;
   daily: DailyData[];
-  bySubject: BreakdownItem[];
+  byCategory: BreakdownItem[];
   byMethod: BreakdownItem[];
 };
 
