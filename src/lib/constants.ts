@@ -63,6 +63,18 @@ export const METHOD_CATEGORIES: Record<
   },
 };
 
+// ウィザード Step0 でタイプカードに表示するラベルと説明文
+export const MATERIAL_TYPE_LABELS: Record<
+  MaterialType,
+  { label: string; description: string }
+> = {
+  flashcard: { label: "Q&A カード", description: "暗記・知識定着に" },
+  reading: { label: "読書", description: "書籍・論文の進捗管理" },
+  project: { label: "プロジェクト", description: "成果物ベースの学習" },
+  practice_log: { label: "練習ログ", description: "反復記録 (楽器/コード/運動)" },
+  note: { label: "ノート", description: "長文ノート・Zettelkasten" },
+};
+
 // ウィザード Step2 でのみ表示する説明文。他画面では learning_methods.name を使う
 export const METHOD_DESCRIPTIONS: Record<string, string> = {
   srs: "間隔を空けて復習し、長期記憶に定着させる",
