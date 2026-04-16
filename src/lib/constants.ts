@@ -181,6 +181,18 @@ export const PG_ERROR_CODES = {
   UNIQUE_VIOLATION: "23505",
 } as const;
 
+// タグのプリセット色: 視認性を確保しつつ UI に馴染む 8 色
+export const TAG_PRESET_COLORS = [
+  "#94a3b8", // slate-400 (default)
+  "#f87171", // red-400
+  "#fb923c", // orange-400
+  "#facc15", // yellow-400
+  "#4ade80", // green-400
+  "#38bdf8", // sky-400
+  "#818cf8", // indigo-400
+  "#e879f9", // fuchsia-400
+] as const;
+
 // --- 通知 ---
 // タブ非アクティブ時に経過した通知を表示する最大遅延。30分を超えた古い通知は破棄する
 export const NOTIFICATION_DELAY_THRESHOLD_MS = 30 * 60 * 1000;

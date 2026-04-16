@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createInterleavingSession } from "@/lib/actions/session-commands";
 import { TagFilter } from "@/components/tag-filter";
-import type { Tag } from "@/lib/actions/tags";
+import type { Tag } from "@/lib/types/tags";
 
 type DueMaterial = {
   id: string;

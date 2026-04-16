@@ -4,26 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ACTION_ERRORS } from "@/lib/constants";
 import { requireAuth } from "@/lib/actions/auth-utils";
-
-// タグのプリセット色: 視認性を確保しつつ UI に馴染む 8 色
-export const TAG_PRESET_COLORS = [
-  "#94a3b8", // slate-400 (default)
-  "#f87171", // red-400
-  "#fb923c", // orange-400
-  "#facc15", // yellow-400
-  "#4ade80", // green-400
-  "#38bdf8", // sky-400
-  "#818cf8", // indigo-400
-  "#e879f9", // fuchsia-400
-] as const;
-
-export type Tag = {
-  id: string;
-  user_id: string;
-  name: string;
-  color: string;
-  created_at: string;
-};
+import type { Tag } from "@/lib/types/tags";
 
 type ActionResult<T = undefined> =
   | { success: true; data: T }

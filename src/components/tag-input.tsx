@@ -9,9 +9,9 @@ import {
   createTag,
   addTagToMaterial,
   removeTagFromMaterial,
-  TAG_PRESET_COLORS,
 } from "@/lib/actions/tags";
-import type { Tag } from "@/lib/actions/tags";
+import { TAG_PRESET_COLORS } from "@/lib/constants";
+import type { Tag } from "@/lib/types/tags";
 import { cn } from "@/lib/utils";
 
 type Props = {

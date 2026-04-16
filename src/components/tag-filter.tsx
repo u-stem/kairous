@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import type { Tag } from "@/lib/actions/tags";
+import type { Tag } from "@/lib/types/tags";
 
 type Props = {
   tags: Tag[];

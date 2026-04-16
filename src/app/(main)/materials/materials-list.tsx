@@ -6,7 +6,7 @@ import { TagFilter } from "@/components/tag-filter";
 import { EmptyState } from "@/components/empty-state";
 import { cn } from "@/lib/utils";
 import type { MaterialWithMethods } from "@/lib/types/materials";
-import type { Tag } from "@/lib/actions/tags";
+import type { Tag } from "@/lib/types/tags";
 
 type Category = {
   id: string;

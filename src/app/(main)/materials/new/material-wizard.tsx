@@ -10,7 +10,7 @@ import { createMaterial } from "@/lib/actions/materials";
 import { createCard } from "@/lib/actions/cards";
 import { createCategory } from "@/lib/actions/categories";
 import { addTagToMaterial } from "@/lib/actions/tags";
-import type { Tag } from "@/lib/actions/tags";
+import type { Tag } from "@/lib/types/tags";
 import { CategorySelector, buildCreateCategoryHandler } from "@/components/category-selector";
 import { MethodSelector } from "@/components/method-selector";
 import { TagInputPreview } from "@/components/tag-input";

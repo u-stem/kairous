@@ -21,7 +21,7 @@ import {
 import { updateMaterial, deleteMaterial } from "@/lib/actions/materials";
 import { createCategory } from "@/lib/actions/categories";
 import type { MaterialDetail, Category } from "@/lib/types/materials";
-import type { Tag } from "@/lib/actions/tags";
+import type { Tag } from "@/lib/types/tags";
 
 type MaterialEditFormProps = {
   material: MaterialDetail;
