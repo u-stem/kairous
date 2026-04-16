@@ -30,7 +30,8 @@ test.describe.serial("教材 CRUD", () => {
     await page.getByRole("combobox").click();
     await page.getByRole("option", { name: subjectName }).click();
 
-    await page.getByRole("button", { name: "次へ" }).click();
+    await page.getByRole("button", { name: "次へ" }).click(); // Step1 → Step1.5 (タグ)
+    await page.getByRole("button", { name: "次へ" }).click(); // Step1.5 (タグ未入力) → Step2
 
     // Step 2: 手法を選択する (ポモドーロは time-based なので "作成" ボタンが表示される)
     await page.getByText("ポモドーロ").click();
@@ -120,7 +121,8 @@ test.describe("手法紐付け", () => {
     await page.locator("#material-title").fill("手法テスト教材");
     await page.getByRole("combobox").click();
     await page.getByRole("option", { name: subjectName }).click();
-    await page.getByRole("button", { name: "次へ" }).click();
+    await page.getByRole("button", { name: "次へ" }).click(); // Step1 → Step1.5 (タグ)
+    await page.getByRole("button", { name: "次へ" }).click(); // Step1.5 (タグ未入力) → Step2
     await page.getByText("ポモドーロ").click();
     await page.getByRole("button", { name: "作成", exact: true }).click();
     await expect(page).toHaveURL(/\/materials\/[0-9a-f-]{36}$/, {
@@ -204,7 +206,8 @@ test.describe("カテゴリ 2 段セレクタ + グルーピング", () => {
     await page.getByRole("combobox").nth(1).click();
     await page.getByRole("option", { name: childName }).click();
 
-    await page.getByRole("button", { name: "次へ" }).click();
+    await page.getByRole("button", { name: "次へ" }).click(); // Step1 → Step1.5 (タグ)
+    await page.getByRole("button", { name: "次へ" }).click(); // Step1.5 (タグ未入力) → Step2
 
     // Step 2: ポモドーロを選択して教材を作成する
     await page.getByText("ポモドーロ").click();
@@ -246,7 +249,8 @@ test.describe("カード管理", () => {
     await page.locator("#material-title").fill("カードテスト教材");
     await page.getByRole("combobox").click();
     await page.getByRole("option", { name: subjectName }).click();
-    await page.getByRole("button", { name: "次へ" }).click();
+    await page.getByRole("button", { name: "次へ" }).click(); // Step1 → Step1.5 (タグ)
+    await page.getByRole("button", { name: "次へ" }).click(); // Step1.5 (タグ未入力) → Step2
 
     // Step 2: 間隔反復 (FSRS) を選択するとカード入力ステップが出現する
     await page.getByText("間隔反復 (FSRS)").click();

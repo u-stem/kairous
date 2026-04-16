@@ -1,19 +1,25 @@
 import Link from "next/link";
 import { getDueMaterials, getTodaySessions } from "@/lib/actions/session-queries";
 import { getStreak } from "@/lib/actions/stats";
+import { getTags, getBulkTagsForMaterials } from "@/lib/actions/tags";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { TodayMaterialList } from "./today-material-list";
-import { InterleavingButton } from "@/components/interleaving-button";
+import { InterleavingFilter } from "@/components/interleaving-filter";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { formatDurationHuman } from "@/lib/session-utils";
 
 export default async function TodayPage() {
-  const [materials, todaySessions, streak] = await Promise.all([
+  const [materials, todaySessions, streak, allTags] = await Promise.all([
     getDueMaterials(),
     getTodaySessions(),
     getStreak(),
+    getTags(),
   ]);
+
+  // interleaving タグ絞り込み用に教材ごとのタグを一括取得する
+  const bulkTagsMap = await getBulkTagsForMaterials(materials.map((m) => m.id));
+  const materialTagsMap = Object.fromEntries(bulkTagsMap);
   const today = new Date();
   const dateStr = format(today, "M月d日 EEEE", { locale: ja });
 
@@ -58,7 +64,11 @@ export default async function TodayPage() {
 
           {materials.length >= 2 && (
             <div className="mb-4">
-              <InterleavingButton materialIds={materials.map((m) => m.id)} />
+              <InterleavingFilter
+                materials={materials}
+                allTags={allTags}
+                materialTagsMap={materialTagsMap}
+              />
             </div>
           )}
 
