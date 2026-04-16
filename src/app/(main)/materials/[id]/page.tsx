@@ -68,7 +68,7 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-bold" data-testid="material-title">{material.title}</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            {material.subject.name}
+            {material.category.name}
           </p>
         </div>
         <Link

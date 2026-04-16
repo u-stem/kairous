@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { MaterialCard } from "@/components/material-card";
 import type { MaterialWithMethods } from "@/lib/types/materials";
 
-const baseSubject = { id: "subj-1", name: "数学", color: "#4f46e5", parent_id: null };
+const baseCategory = { id: "subj-1", name: "数学", color: "#4f46e5", parent_id: null };
 
 function makeMaterial(overrides: Partial<MaterialWithMethods> = {}): MaterialWithMethods {
   return {
@@ -11,7 +11,7 @@ function makeMaterial(overrides: Partial<MaterialWithMethods> = {}): MaterialWit
     title: "微分積分",
     description: null,
     category_id: "subj-1",
-    subject: baseSubject,
+    category: baseCategory,
     total_cards: 10,
     due_count: 0,
     methods: [],

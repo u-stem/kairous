@@ -161,7 +161,7 @@ export const ACTION_ERRORS = {
 // --- バリデーション制約値 ---
 // 各 validation ファイルに散在していたマジックナンバーを集約
 export const VALIDATION_LIMITS = {
-  SUBJECT_NAME_MAX: 100,
+  CATEGORY_NAME_MAX: 100,
   MATERIAL_TITLE_MAX: 200,
   MATERIAL_DESCRIPTION_MAX: 2000,
   CARD_TEXT_MAX: 5000,

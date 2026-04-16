@@ -39,12 +39,12 @@ export default async function MaterialsPage({
   );
 
   // 3 階層グルーピング: 親カテゴリ > 子カテゴリ > 教材
-  // 教材の subject.parent_id が null なら parent 直下、non-null なら子カテゴリ配下
+  // 教材の category.parent_id が null なら parent 直下、non-null なら子カテゴリ配下
   type ChildGroup = Map<string | null, { name: string | null; materials: typeof materials }>;
   const grouped = new Map<string, { parentName: string; children: ChildGroup }>();
 
   for (const material of materials) {
-    const cat = material.subject;
+    const cat = material.category;
     const parentId = cat.parent_id !== null ? cat.parent_id : cat.id;
     const childId = cat.parent_id !== null ? cat.id : null;
     const childName = cat.parent_id !== null ? cat.name : null;

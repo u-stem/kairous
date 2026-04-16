@@ -65,7 +65,8 @@ export function CategorySelector({
     selectedParentId !== null ? childCategoriesForParent(selectedParentId) : [];
 
   function handleParentChange(parentId: string | null) {
-    // 親が変わったら子の選択を解除し、親カテゴリを選択済みにする
+    // 親が変わったら子の選択を解除し、親カテゴリを選択済みにする。
+    // 呼び出し元の onValueChange で空文字列を弾いているため null は渡らない
     onChange(parentId);
   }
 

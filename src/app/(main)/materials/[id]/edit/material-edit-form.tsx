@@ -208,7 +208,7 @@ export function MaterialEditForm({
           </Button>
           <Button
             onClick={() => void handleSave()}
-            disabled={isPending || !title.trim()}
+            disabled={isPending || !title.trim() || !categoryId}
           >
             {isPending ? (
               <>

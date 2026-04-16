@@ -161,7 +161,7 @@ export async function getMaterials(
     title: m.title,
     description: m.description,
     category_id: m.category_id,
-    subject: m.categories as JoinedSubject,
+    category: m.categories as JoinedSubject,
     total_cards: m.total_cards,
     due_count: dueMap.get(m.id) ?? 0,
     methods: (m.material_methods ?? []).map((mm: Record<string, unknown>) => {
@@ -248,7 +248,7 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
     title: material.title,
     description: material.description,
     category_id: material.category_id,
-    subject: material.categories as JoinedSubject,
+    category: material.categories as JoinedSubject,
     total_cards: material.total_cards,
     due_count: dueCount,
     methods: (material.material_methods ?? []).map(

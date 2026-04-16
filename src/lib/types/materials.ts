@@ -24,7 +24,7 @@ export type MaterialWithMethods = {
   title: string;
   description: string | null;
   category_id: string;
-  subject: {
+  category: {
     id: string;
     name: string;
     color: string;

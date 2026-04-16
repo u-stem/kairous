@@ -17,7 +17,7 @@ export const createCategorySchema = z.object({
   name: z
     .string()
     .min(1, "カテゴリ名を入力してください")
-    .max(VALIDATION_LIMITS.SUBJECT_NAME_MAX, "カテゴリ名は100文字以内で入力してください"),
+    .max(VALIDATION_LIMITS.CATEGORY_NAME_MAX, "カテゴリ名は100文字以内で入力してください"),
   parent_id: z.uuid().nullable().optional(),
 });
 
