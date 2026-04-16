@@ -27,7 +27,7 @@ describe("buildDueTodayMessage", () => {
       { category: "物理", count: 3 },
     ]);
     expect(result.title).toBe("今日の復習: 15枚");
-    expect(result.body).toBe("数学 5枚 / 英語 7枚 ほか1科目");
+    expect(result.body).toBe("数学 5枚 / 英語 7枚 ほか1件");
   });
 
   it("truncates to top 2 subjects when 4 or more", () => {
@@ -37,7 +37,7 @@ describe("buildDueTodayMessage", () => {
       { category: "物理", count: 3 },
       { category: "化学", count: 2 },
     ]);
-    expect(result.body).toBe("数学 5枚 / 英語 7枚 ほか2科目");
+    expect(result.body).toBe("数学 5枚 / 英語 7枚 ほか2件");
   });
 
   it("returns no-due message when empty", () => {
@@ -81,7 +81,7 @@ describe("buildReviewAndPreviewMessage", () => {
         { category: "物理", count: 3 },
       ],
     });
-    expect(result.body).toBe("明日は 数学 5枚 / 英語 7枚 ほか1科目 が待っています");
+    expect(result.body).toBe("明日は 数学 5枚 / 英語 7枚 ほか1件 が待っています");
   });
 
   it("handles no due cards tomorrow", () => {

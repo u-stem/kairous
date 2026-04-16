@@ -28,6 +28,7 @@ export type MaterialWithMethods = {
     id: string;
     name: string;
     color: string;
+    parent_id: string | null;
   };
   total_cards: number;
   due_count: number;

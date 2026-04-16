@@ -13,12 +13,16 @@ export function extractFieldErrors(
   return z.flattenError(error).fieldErrors as Record<string, string[]>;
 }
 
-export const createSubjectSchema = z.object({
+export const createCategorySchema = z.object({
   name: z
     .string()
-    .min(1, "科目名を入力してください")
-    .max(VALIDATION_LIMITS.SUBJECT_NAME_MAX, "科目名は100文字以内で入力してください"),
+    .min(1, "カテゴリ名を入力してください")
+    .max(VALIDATION_LIMITS.SUBJECT_NAME_MAX, "カテゴリ名は100文字以内で入力してください"),
+  parent_id: z.uuid().nullable().optional(),
 });
+
+// 後方互換エイリアス。Epic #232 全 PBI マージ完了時に削除予定
+export const createSubjectSchema = createCategorySchema;
 
 export const createMaterialSchema = z.object({
   title: z
@@ -26,8 +30,7 @@ export const createMaterialSchema = z.object({
     .min(1, "タイトルを入力してください")
     .max(VALIDATION_LIMITS.MATERIAL_TITLE_MAX, "タイトルは200文字以内で入力してください"),
   description: z.string().max(VALIDATION_LIMITS.MATERIAL_DESCRIPTION_MAX, "説明は2000文字以内で入力してください").optional(),
-  // UI 上のキー名は subject_id のまま。PBI-3 で category_id にリネーム予定
-  subject_id: z.uuid("有効な科目を選択してください"),
+  category_id: z.uuid("有効なカテゴリを選択してください"),
   // 学習手法は1つ以上必須（material_methodsテーブルの整合性を保つため）
   method_ids: z
     .array(z.uuid("無効な学習手法IDです"))
@@ -41,8 +44,7 @@ export const updateMaterialSchema = z.object({
     .min(1, "タイトルを入力してください")
     .max(VALIDATION_LIMITS.MATERIAL_TITLE_MAX, "タイトルは200文字以内で入力してください"),
   description: z.string().max(VALIDATION_LIMITS.MATERIAL_DESCRIPTION_MAX, "説明は2000文字以内で入力してください").optional(),
-  // UI 上のキー名は subject_id のまま。PBI-3 で category_id にリネーム予定
-  subject_id: z.uuid("有効な科目を選択してください"),
+  category_id: z.uuid("有効なカテゴリを選択してください"),
 });
 
 export const cardSchema = z.object({
@@ -56,7 +58,9 @@ export const cardSchema = z.object({
     .max(VALIDATION_LIMITS.CARD_TEXT_MAX, "裏面のテキストは5000文字以内で入力してください"),
 });
 
-export type CreateSubjectInput = z.infer<typeof createSubjectSchema>;
+export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
+// 後方互換エイリアス
+export type CreateSubjectInput = CreateCategoryInput;
 export type CreateMaterialInput = z.infer<typeof createMaterialSchema>;
 export type UpdateMaterialInput = z.infer<typeof updateMaterialSchema>;
 export type CardInput = z.infer<typeof cardSchema>;

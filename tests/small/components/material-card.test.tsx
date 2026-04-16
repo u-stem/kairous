@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { MaterialCard } from "@/components/material-card";
 import type { MaterialWithMethods } from "@/lib/types/materials";
 
-const baseSubject = { id: "subj-1", name: "数学", color: "#4f46e5" };
+const baseSubject = { id: "subj-1", name: "数学", color: "#4f46e5", parent_id: null };
 
 function makeMaterial(overrides: Partial<MaterialWithMethods> = {}): MaterialWithMethods {
   return {

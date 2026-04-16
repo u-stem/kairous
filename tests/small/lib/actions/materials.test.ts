@@ -69,7 +69,7 @@ describe("createMaterial", () => {
 
     const formData = new FormData();
     formData.set("title", "");
-    formData.set("subject_id", "sub-1");
+    formData.set("category_id", "sub-1");
     formData.set("method_ids", JSON.stringify(["method-1"]));
 
     const result = await createMaterial(formData);
@@ -86,7 +86,7 @@ describe("createMaterial", () => {
 
     const formData = new FormData();
     formData.set("title", "");
-    formData.set("subject_id", "sub-1");
+    formData.set("category_id", "sub-1");
     formData.set("method_ids", JSON.stringify(["method-1"]));
 
     const result = await createMaterial(formData);
@@ -104,7 +104,7 @@ describe("createMaterial", () => {
     const formData = new FormData();
     formData.set("title", "英単語帳");
     // バリデーションを通過させて auth チェックに到達させるため UUID を渡す
-    formData.set("subject_id", "a0000000-0000-4000-a000-000000000001");
+    formData.set("category_id", "a0000000-0000-4000-a000-000000000001");
     formData.set(
       "method_ids",
       JSON.stringify(["b0000000-0000-4000-b000-000000000001"]),
@@ -225,7 +225,7 @@ describe("updateMaterial", () => {
 
     const formData = new FormData();
     formData.set("title", "新しいタイトル");
-    formData.set("subject_id", "a0000000-0000-4000-a000-000000000001");
+    formData.set("category_id", "a0000000-0000-4000-a000-000000000001");
 
     await expect(updateMaterial("mat-1", formData)).rejects.toThrow(
       "NEXT_REDIRECT:/auth/login",

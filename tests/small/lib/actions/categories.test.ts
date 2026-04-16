@@ -53,7 +53,7 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(() => Promise.resolve(mockClient)),
 }));
 
-describe("createSubject", () => {
+describe("createCategory", () => {
   beforeEach(() => {
     vi.resetModules();
   });
@@ -63,8 +63,8 @@ describe("createSubject", () => {
     const formData = new FormData();
     formData.set("name", "");
 
-    const { createSubject } = await import("@/lib/actions/categories");
-    const result = await createSubject(formData);
+    const { createCategory } = await import("@/lib/actions/categories");
+    const result = await createCategory(formData);
 
     expect(result.success).toBe(false);
   });
@@ -74,8 +74,8 @@ describe("createSubject", () => {
     const formData = new FormData();
     formData.set("name", "");
 
-    const { createSubject } = await import("@/lib/actions/categories");
-    const result = await createSubject(formData);
+    const { createCategory } = await import("@/lib/actions/categories");
+    const result = await createCategory(formData);
 
     const { ACTION_ERRORS } = await import("@/lib/constants");
     expect(result.success === false && result.error).toBe(
@@ -88,53 +88,55 @@ describe("createSubject", () => {
     const formData = new FormData();
     formData.set("name", "英語");
 
-    const { createSubject } = await import("@/lib/actions/categories");
+    const { createCategory } = await import("@/lib/actions/categories");
 
-    await expect(createSubject(formData)).rejects.toThrow(
+    await expect(createCategory(formData)).rejects.toThrow(
       "NEXT_REDIRECT:/auth/login",
     );
   });
 
-  it("returns success true with subject data on valid input", async () => {
+  it("returns success true with category data on valid input", async () => {
     mockClient = buildMockClient({
       user: { id: "user-1" },
-      queryResult: { data: { id: "sub-1", name: "英語" }, error: null },
+      queryResult: { data: { id: "cat-1", name: "英語" }, error: null },
     });
     const formData = new FormData();
     formData.set("name", "英語");
 
-    const { createSubject } = await import("@/lib/actions/categories");
-    const result = await createSubject(formData);
+    const { createCategory } = await import("@/lib/actions/categories");
+    const result = await createCategory(formData);
 
     expect(result.success).toBe(true);
   });
 
-  it("returns created subject id when creation succeeds", async () => {
+  it("returns created category id when creation succeeds", async () => {
     mockClient = buildMockClient({
       user: { id: "user-1" },
-      queryResult: { data: { id: "sub-1", name: "英語" }, error: null },
+      queryResult: { data: { id: "cat-1", name: "英語" }, error: null },
     });
     const formData = new FormData();
     formData.set("name", "英語");
 
-    const { createSubject } = await import("@/lib/actions/categories");
-    const result = await createSubject(formData);
+    const { createCategory } = await import("@/lib/actions/categories");
+    const result = await createCategory(formData);
 
-    expect(result.success === true && result.data.id).toBe("sub-1");
+    expect(result.success === true && result.data.id).toBe("cat-1");
   });
 
-  it("returns created subject name when creation succeeds", async () => {
+  it("creates child category when parent_id is provided", async () => {
     mockClient = buildMockClient({
       user: { id: "user-1" },
-      queryResult: { data: { id: "sub-1", name: "英語" }, error: null },
+      queryResult: { data: { id: "a0000000-0000-4000-a000-000000000002", name: "Python" }, error: null },
     });
     const formData = new FormData();
-    formData.set("name", "英語");
+    formData.set("name", "Python");
+    // parent_id は UUID 形式でなければバリデーションを通過しない
+    formData.set("parent_id", "a0000000-0000-4000-a000-000000000001");
 
-    const { createSubject } = await import("@/lib/actions/categories");
-    const result = await createSubject(formData);
+    const { createCategory } = await import("@/lib/actions/categories");
+    const result = await createCategory(formData);
 
-    expect(result.success === true && result.data.name).toBe("英語");
+    expect(result.success === true && result.data.id).toBe("a0000000-0000-4000-a000-000000000002");
   });
 
   it("returns CREATE_FAILED error when database insert fails", async () => {
@@ -148,17 +150,17 @@ describe("createSubject", () => {
     const formData = new FormData();
     formData.set("name", "英語");
 
-    const { createSubject } = await import("@/lib/actions/categories");
-    const result = await createSubject(formData);
+    const { createCategory } = await import("@/lib/actions/categories");
+    const result = await createCategory(formData);
 
     const { ACTION_ERRORS } = await import("@/lib/constants");
     expect(result.success === false && result.error).toBe(
-      ACTION_ERRORS.CREATE_FAILED("科目"),
+      ACTION_ERRORS.CREATE_FAILED("カテゴリ"),
     );
   });
 });
 
-describe("getSubjects", () => {
+describe("getCategories", () => {
   beforeEach(() => {
     vi.resetModules();
   });
@@ -166,50 +168,50 @@ describe("getSubjects", () => {
   it("redirects to /auth/login when user is not authenticated", async () => {
     mockClient = buildMockClient({ user: null });
 
-    const { getSubjects } = await import("@/lib/actions/categories");
+    const { getCategories } = await import("@/lib/actions/categories");
 
-    await expect(getSubjects()).rejects.toThrow("NEXT_REDIRECT:/auth/login");
+    await expect(getCategories()).rejects.toThrow("NEXT_REDIRECT:/auth/login");
   });
 
-  it("returns subjects array when user is authenticated", async () => {
-    const subjects = [
-      { id: "sub-1", name: "英語", user_id: "user-1", display_order: 0 },
-      { id: "sub-2", name: "数学", user_id: "user-1", display_order: 1 },
+  it("returns categories array when user is authenticated", async () => {
+    const categories = [
+      { id: "cat-1", name: "英語", user_id: "user-1", display_order: 0 },
+      { id: "cat-2", name: "数学", user_id: "user-1", display_order: 1 },
     ];
     mockClient = buildMockClient({
       user: { id: "user-1" },
-      queryResult: { data: subjects, error: null },
+      queryResult: { data: categories, error: null },
     });
 
-    const { getSubjects } = await import("@/lib/actions/categories");
-    const result = await getSubjects();
+    const { getCategories } = await import("@/lib/actions/categories");
+    const result = await getCategories();
 
     expect(result).toHaveLength(2);
   });
 
-  it("returns first subject correctly when user is authenticated", async () => {
-    const subjects = [
-      { id: "sub-1", name: "英語", user_id: "user-1", display_order: 0 },
+  it("returns first category correctly when user is authenticated", async () => {
+    const categories = [
+      { id: "cat-1", name: "英語", user_id: "user-1", display_order: 0 },
     ];
     mockClient = buildMockClient({
       user: { id: "user-1" },
-      queryResult: { data: subjects, error: null },
+      queryResult: { data: categories, error: null },
     });
 
-    const { getSubjects } = await import("@/lib/actions/categories");
-    const result = await getSubjects();
+    const { getCategories } = await import("@/lib/actions/categories");
+    const result = await getCategories();
 
-    expect(result[0].id).toBe("sub-1");
+    expect(result[0].id).toBe("cat-1");
   });
 
-  it("returns empty array when no subjects exist", async () => {
+  it("returns empty array when no categories exist", async () => {
     mockClient = buildMockClient({
       user: { id: "user-1" },
       queryResult: { data: null, error: null },
     });
 
-    const { getSubjects } = await import("@/lib/actions/categories");
-    const result = await getSubjects();
+    const { getCategories } = await import("@/lib/actions/categories");
+    const result = await getCategories();
 
     expect(result).toEqual([]);
   });

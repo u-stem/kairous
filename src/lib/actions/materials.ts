@@ -13,7 +13,7 @@ import { requireAuth } from "@/lib/actions/auth-utils";
 import { toJstDateString } from "@/lib/utils/date";
 
 // Supabase JOIN 結果の型: SDK は joined テーブルを unknown として推論するため名前付き型で上書きする
-type JoinedSubject = { id: string; name: string; color: string };
+type JoinedSubject = { id: string; name: string; color: string; parent_id: string | null };
 type JoinedLearningMethod = { id: string; slug: string; name: string; category: string };
 type JoinedCardMaterialId = { material_id: string };
 type JoinedMethodSlugName = { slug: string; name: string };
@@ -24,8 +24,7 @@ export async function createMaterial(
   const parsed = createMaterialSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description") || undefined,
-    // フォームフィールド名は subject_id のまま (PBI-3 で category_id にリネーム予定)
-    subject_id: formData.get("subject_id"),
+    category_id: formData.get("category_id"),
     // JSON文字列をパース。クライアントからは配列をJSON化して送る。改ざん対策で try-catch する
     method_ids: (() => {
       try {
@@ -52,8 +51,7 @@ export async function createMaterial(
     .insert({
       title: parsed.data.title,
       description: parsed.data.description ?? null,
-      // スキーマの列名は category_id。バリデーション側は subject_id キーで受け取り、ここでマッピングする
-      category_id: parsed.data.subject_id,
+      category_id: parsed.data.category_id,
       user_id: user.id,
     })
     .select("id")
@@ -92,7 +90,7 @@ export async function getMaterials(
     .from("materials")
     .select(`
       id, title, description, category_id, total_cards, created_at,
-      categories!inner(id, name, color),
+      categories!inner(id, name, color, parent_id),
       material_methods(
         learning_methods(id, slug, name, category)
       )
@@ -279,8 +277,7 @@ export async function updateMaterial(
   const parsed = updateMaterialSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description") || undefined,
-    // フォームフィールド名は subject_id のまま (PBI-3 で category_id にリネーム予定)
-    subject_id: formData.get("subject_id"),
+    category_id: formData.get("category_id"),
   });
 
   if (!parsed.success) {
@@ -298,8 +295,7 @@ export async function updateMaterial(
     .update({
       title: parsed.data.title,
       description: parsed.data.description ?? null,
-      // スキーマの列名は category_id。バリデーション側は subject_id キーで受け取り、ここでマッピングする
-      category_id: parsed.data.subject_id,
+      category_id: parsed.data.category_id,
     })
     .eq("id", id)
     .eq("user_id", user.id);

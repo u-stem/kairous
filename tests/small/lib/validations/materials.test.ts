@@ -29,7 +29,7 @@ describe("createMaterialSchema", () => {
   const validData = {
     title: "微分積分学",
     description: "大学数学の基礎",
-    subject_id: VALID_UUID,
+    category_id: VALID_UUID,
     method_ids: [VALID_UUID],
   };
 
@@ -76,15 +76,15 @@ describe("createMaterialSchema", () => {
   });
 
   it("descriptionを省略できる", () => {
-    const { title, subject_id, method_ids } = validData;
-    const result = createMaterialSchema.safeParse({ title, subject_id, method_ids });
+    const { title, category_id, method_ids } = validData;
+    const result = createMaterialSchema.safeParse({ title, category_id, method_ids });
     expect(result.success).toBe(true);
   });
 
-  it("無効なUUIDのsubject_idを拒否する", () => {
+  it("無効なUUIDのcategory_idを拒否する", () => {
     const result = createMaterialSchema.safeParse({
       ...validData,
-      subject_id: "not-a-uuid",
+      category_id: "not-a-uuid",
     });
     expect(result.success).toBe(false);
   });
@@ -103,7 +103,7 @@ describe("updateMaterialSchema", () => {
     const result = updateMaterialSchema.safeParse({
       title: "更新後のタイトル",
       description: "更新後の説明",
-      subject_id: VALID_UUID,
+      category_id: VALID_UUID,
     });
     expect(result.success).toBe(true);
   });
@@ -112,7 +112,7 @@ describe("updateMaterialSchema", () => {
     const result = updateMaterialSchema.safeParse({
       title: "更新後のタイトル",
       description: "a".repeat(2001),
-      subject_id: VALID_UUID,
+      category_id: VALID_UUID,
     });
     expect(result.success).toBe(false);
   });
@@ -120,7 +120,7 @@ describe("updateMaterialSchema", () => {
   it("descriptionを省略できる", () => {
     const result = updateMaterialSchema.safeParse({
       title: "更新後のタイトル",
-      subject_id: VALID_UUID,
+      category_id: VALID_UUID,
     });
     expect(result.success).toBe(true);
   });

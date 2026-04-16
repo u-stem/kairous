@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createTestSubject, cleanupTestData } from "./helpers/db";
+import { createTestSubject, createTestCategory, cleanupTestData } from "./helpers/db";
 import { getTestUser } from "./helpers/types";
 import type { TestUserData } from "./helpers/types";
 
@@ -168,6 +168,60 @@ test.describe("手法紐付け", () => {
   });
 });
 
+test.describe("カテゴリ 2 段セレクタ + グルーピング", () => {
+  let userId: string;
+  let parentCategoryId: string;
+  let childCategoryId: string;
+  const parentName = `E2E親カテゴリ-${Date.now()}`;
+  const childName = `E2E子カテゴリ-${Date.now()}`;
+
+  test.beforeAll(async () => {
+    const user = getTestUser();
+    userId = user.id;
+    const parent = await createTestCategory(userId, parentName);
+    parentCategoryId = parent.id;
+    const child = await createTestCategory(userId, childName, parentCategoryId);
+    childCategoryId = child.id;
+  });
+
+  test.afterAll(async () => {
+    await cleanupTestData(userId);
+  });
+
+  test("子カテゴリを選択して教材を作成し、一覧でグルーピング表示される", async ({ page }) => {
+    await page.goto("/materials/new");
+    await page.waitForLoadState("networkidle");
+
+    // Step 1: タイトルを入力し、親カテゴリを選択する
+    await page.locator("#material-title").fill("E2Eカテゴリグルーピング教材");
+
+    // 1 段目の親カテゴリ combobox を開いて選択する
+    await page.getByRole("combobox").first().click();
+    await page.getByRole("option", { name: parentName }).click();
+
+    // 2 段目の子カテゴリ combobox が表示されるまで待つ
+    await expect(page.getByRole("combobox").nth(1)).toBeVisible({ timeout: 3_000 });
+    await page.getByRole("combobox").nth(1).click();
+    await page.getByRole("option", { name: childName }).click();
+
+    await page.getByRole("button", { name: "次へ" }).click();
+
+    // Step 2: ポモドーロを選択して教材を作成する
+    await page.getByText("ポモドーロ").click();
+    await page.getByRole("button", { name: "作成", exact: true }).click();
+
+    await expect(page).toHaveURL(/\/materials\/[0-9a-f-]{36}$/, { timeout: 10_000 });
+
+    // 教材一覧に移動して親カテゴリ heading と子カテゴリ subheading でグルーピングされていることを確認する
+    await page.goto("/materials");
+    await page.waitForLoadState("networkidle");
+
+    await expect(page.getByRole("heading", { level: 2, name: parentName })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 3, name: childName })).toBeVisible();
+    await expect(page.getByText("E2Eカテゴリグルーピング教材")).toBeVisible();
+  });
+});
+
 test.describe("カード管理", () => {
   let userId: string;
   let subjectName: string;
@@ -175,7 +229,7 @@ test.describe("カード管理", () => {
   test.beforeAll(async () => {
     const user = getTestUser();
     userId = user.id;
-    // テストごとに一意な科目名を使い、他のテストデータと衝突しない
+    // テストごとに一意なカテゴリ名を使い、他のテストデータと衝突しない
     subjectName = `E2Eカード科目-${Date.now()}`;
     await createTestSubject(userId, subjectName);
   });
