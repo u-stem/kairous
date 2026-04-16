@@ -63,7 +63,7 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
         教材一覧
       </Link>
 
-      {/* ヘッダー: タイトル・科目・編集ボタン */}
+      {/* ヘッダー: タイトル・カテゴリ・編集ボタン */}
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-bold" data-testid="material-title">{material.title}</h1>
