@@ -46,6 +46,16 @@ function hasSelectedCardBasedMethod(
 // ウィザードのステップ数（Step0 + カードベース手法なしの場合は3ステップ完了）
 const TOTAL_STEPS = 4;
 
+// Step 0 → 1 → 1.5 → 2 → 3 をプログレスバーの番号に変換する
+// Step1.5 はステップ番号が整数でないため文字列キーで管理する
+const STEP_TO_PROGRESS: Record<string, number> = {
+  "0": 1,
+  "1": 2,
+  "1.5": 3,
+  "2": 4,
+  "3": 5,
+};
+
 export function MaterialWizard({ categories: initialCategories, methods: allMethods, allTags: initialAllTags }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -200,15 +210,6 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
     submitForm(cards);
   }
 
-  // Step 0 → 1 → 1.5 → 2 → 3 をプログレスバーの番号に変換する
-  // Step1.5 はステップ番号が整数でないため文字列キーで管理する
-  const STEP_TO_PROGRESS: Record<string, number> = {
-    "0": 1,
-    "1": 2,
-    "1.5": 3,
-    "2": 4,
-    "3": 5,
-  };
   const progressStep = STEP_TO_PROGRESS[String(currentStep)] ?? 1;
 
   return (
@@ -323,25 +324,36 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
         <div className="flex flex-col gap-5">
           <p className="text-sm text-muted-foreground">ステップ 4 / {visibleStepCount}: 学習手法の選択</p>
 
-          <MethodSelector
-            methods={filteredMethods}
-            selected={selectedMethodIds}
-            onChange={setSelectedMethodIds}
-            onMethodsChange={() => router.refresh()}
-          />
+          {filteredMethods.length === 0 ? (
+            // getAllowedMethods が空配列を返した場合のデッドエンド対策
+            <p className="text-sm text-destructive">
+              このタイプに対応する学習手法が設定されていません。管理者にお問い合わせください。
+            </p>
+          ) : (
+            <>
+              <MethodSelector
+                methods={filteredMethods}
+                selected={selectedMethodIds}
+                onChange={setSelectedMethodIds}
+                onMethodsChange={() => router.refresh()}
+              />
 
-          {step2Error && (
-            <p className="text-xs text-destructive">{step2Error}</p>
+              {step2Error && (
+                <p className="text-xs text-destructive">{step2Error}</p>
+              )}
+            </>
           )}
 
           <div className="flex justify-between">
             <Button variant="outline" onClick={() => setCurrentStep(1.5)}>
               戻る
             </Button>
-            <Button onClick={handleNextFromStep2} disabled={isPending}>
-              {isPending && <Loader2 aria-hidden="true" className="animate-spin" />}
-              {needsCardStep ? "次へ" : "作成"}
-            </Button>
+            {filteredMethods.length > 0 && (
+              <Button onClick={handleNextFromStep2} disabled={isPending}>
+                {isPending && <Loader2 aria-hidden="true" className="animate-spin" />}
+                {needsCardStep ? "次へ" : "作成"}
+              </Button>
+            )}
           </div>
         </div>
       )}
