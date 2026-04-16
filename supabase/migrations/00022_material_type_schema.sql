@@ -16,6 +16,9 @@ CREATE INDEX idx_materials_type ON materials(type);
 UPDATE materials SET total_units = total_cards WHERE type = 'flashcard';
 
 -- 3) total_cards を total_units と同期する trigger (PBI-7 で total_cards 削除後に DROP)
+-- 同期方向: total_units → total_cards (一方向)。
+-- total_cards を直接更新しても total_units は変化しない。
+-- INSERT 時に total_cards のみ指定した場合 trigger は total_cards を total_units (=0) で上書きする。
 CREATE FUNCTION sync_total_cards()
 RETURNS TRIGGER
 LANGUAGE plpgsql
