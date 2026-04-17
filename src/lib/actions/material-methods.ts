@@ -103,8 +103,11 @@ export async function getMethods(): Promise<LearningMethod[]> {
 
   // DB 障害時に空配列を返すと、呼び出し側で「手法が 0 件」と区別できず
   // ユーザーは原因不明の選択不能状態に陥る。error は throw して errorBoundary に伝播させる。
+  // DB の内部メッセージ (テーブル名・カラム名) がクライアントへ漏れないよう、throw する
+  // 文言は汎用化し、詳細は server ログにのみ残す
   if (error) {
-    throw new Error(`学習手法の取得に失敗しました: ${error.message}`);
+    console.error("getMethods failed:", error.message);
+    throw new Error("学習手法の取得に失敗しました");
   }
   return data ?? [];
 }
