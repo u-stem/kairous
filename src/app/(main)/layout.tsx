@@ -8,7 +8,9 @@ export default async function MainLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // 通知設定を取得（未認証時は空にして NotificationProvider を無効化）
+  // 通知設定を取得（未認証時は空にして NotificationProvider を無効化）。
+  // (main) 配下だが layout レベルでは意図的に requireAuth を使わない: middleware で
+  // 認証保護しつつ、ログイン直後の race でも layout が 500 にならないよう許容する。
   let notificationEnabled = false;
   let schedules: Array<{
     id: string;

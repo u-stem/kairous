@@ -4,10 +4,9 @@ import { revalidatePath } from "next/cache";
 import {
   createMaterialSchema,
   updateMaterialSchema,
-  extractFieldErrors,
   validateMaterialMeta,
 } from "@/lib/validations/materials";
-import type { ActionResult } from "@/lib/validations/materials";
+import { extractFieldErrors, type ActionResult } from "@/lib/types/action-result";
 import type { MaterialWithMethods, MaterialDetail } from "@/lib/types/materials";
 import { ACTION_ERRORS } from "@/lib/constants";
 import type { MaterialType } from "@/lib/constants";

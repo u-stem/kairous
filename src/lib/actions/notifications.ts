@@ -13,9 +13,8 @@ import {
   createNotificationScheduleSchema,
   updateNotificationScheduleSchema,
   deleteNotificationScheduleSchema,
-  extractFieldErrors,
-  type ActionResult,
 } from "@/lib/validations/notifications";
+import { extractFieldErrors, type ActionResult } from "@/lib/types/action-result";
 import type { CategoryDueCount } from "@/lib/utils/notification-messages";
 import type { NotificationSchedule } from "@/lib/types/notification";
 

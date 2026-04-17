@@ -2,25 +2,25 @@ import { describe, it, expect } from "vitest";
 import {
   createMaterialSchema,
   updateMaterialSchema,
-  createSubjectSchema,
+  createCategorySchema,
   cardSchema,
 } from "@/lib/validations/materials";
 
 const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
 
-describe("createSubjectSchema", () => {
+describe("createCategorySchema", () => {
   it("有効なnameを受け付ける", () => {
-    const result = createSubjectSchema.safeParse({ name: "数学" });
+    const result = createCategorySchema.safeParse({ name: "数学" });
     expect(result.success).toBe(true);
   });
 
   it("空のnameを拒否する", () => {
-    const result = createSubjectSchema.safeParse({ name: "" });
+    const result = createCategorySchema.safeParse({ name: "" });
     expect(result.success).toBe(false);
   });
 
   it("100文字超のnameを拒否する", () => {
-    const result = createSubjectSchema.safeParse({ name: "a".repeat(101) });
+    const result = createCategorySchema.safeParse({ name: "a".repeat(101) });
     expect(result.success).toBe(false);
   });
 });

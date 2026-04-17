@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { VALIDATION_LIMITS } from "@/lib/constants";
 
-// Server Action の共通型を re-export し、sessions 側の import を一箇所にまとめる
-export { type ActionResult, extractFieldErrors } from "./materials";
-
 export const cardReviewSchema = z.object({
   card_id: z.uuid("無効なカードIDです"),
   rating: z.number().int().min(1, "評価は1以上です").max(4, "評価は4以下です"),

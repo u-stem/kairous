@@ -1,11 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import {
-  createCategorySchema,
-  extractFieldErrors,
-} from "@/lib/validations/materials";
-import type { ActionResult } from "@/lib/validations/materials";
+import { createCategorySchema } from "@/lib/validations/materials";
+import { extractFieldErrors, type ActionResult } from "@/lib/types/action-result";
 import type { Category } from "@/lib/types/materials";
 import { ACTION_ERRORS } from "@/lib/constants";
 import { requireAuth } from "@/lib/actions/auth-utils";
@@ -61,9 +58,6 @@ export async function createCategory(
   return { success: true, data };
 }
 
-// 後方互換エイリアス。Epic #232 全 PBI マージ完了時に削除予定
-export const createSubject = createCategory;
-
 export async function getCategories(): Promise<Category[]> {
   const { user, supabase } = await requireAuth();
 
@@ -76,6 +70,3 @@ export async function getCategories(): Promise<Category[]> {
   if (error) throw new Error(`getCategories failed: ${error.message}`);
   return data ?? [];
 }
-
-// 後方互換エイリアス。Epic #232 全 PBI マージ完了時に削除予定
-export const getSubjects = getCategories;

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { ActionResult } from "@/lib/validations/materials";
+import type { ActionResult } from "@/lib/types/action-result";
 import type { LearningMethod } from "@/lib/types/materials";
 import type { Json } from "@/lib/types/database";
 import { MATERIAL_METHOD_SLUGS, ACTION_ERRORS, PG_ERROR_CODES } from "@/lib/constants";

@@ -4,8 +4,6 @@ type Tables<T extends keyof Database["public"]["Tables"]> =
   Database["public"]["Tables"][T]["Row"];
 
 export type Category = Tables<"categories">;
-// 後方互換エイリアス。PBI-3 で削除予定
-export type Subject = Category;
 export type Material = Tables<"materials">;
 export type Card = Tables<"cards">;
 export type LearningMethod = Tables<"learning_methods">;

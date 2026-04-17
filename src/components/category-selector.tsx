@@ -4,7 +4,7 @@ import { type Dispatch, type SetStateAction, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { Category } from "@/lib/types/materials";
-import type { ActionResult } from "@/lib/validations/materials";
+import type { ActionResult } from "@/lib/types/action-result";
 import {
   Select,
   SelectContent,

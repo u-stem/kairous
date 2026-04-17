@@ -1,12 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { ActionResult } from "@/lib/validations/materials";
+import { extractFieldErrors, type ActionResult } from "@/lib/types/action-result";
 import {
   createMethodSchema,
   updateMethodSchema,
 } from "@/lib/validations/methods";
-import { extractFieldErrors } from "@/lib/validations/materials";
 import { ACTION_ERRORS, PG_ERROR_CODES } from "@/lib/constants";
 import { requireAuth } from "@/lib/actions/auth-utils";
 import { generateMethodSlug } from "@/lib/utils/slug";

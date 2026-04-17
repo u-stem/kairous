@@ -5,7 +5,7 @@ import { z } from "zod";
 import { ACTION_ERRORS, PG_ERROR_CODES, VALIDATION_LIMITS } from "@/lib/constants";
 import { requireAuth } from "@/lib/actions/auth-utils";
 import type { Tag } from "@/lib/types/tags";
-import type { ActionResult } from "@/lib/validations/materials";
+import type { ActionResult } from "@/lib/types/action-result";
 
 const createTagSchema = z.object({
   name: z.string().min(1, "タグ名を入力してください").max(VALIDATION_LIMITS.TAG_NAME_MAX, `${VALIDATION_LIMITS.TAG_NAME_MAX}文字以内で入力してください`).trim(),

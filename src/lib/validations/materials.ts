@@ -2,18 +2,6 @@ import { z } from "zod";
 import { VALIDATION_LIMITS, MATERIAL_TYPES } from "@/lib/constants";
 import type { MaterialType } from "@/lib/constants";
 
-// Server Action の戻り値型。成功/失敗を型レベルで区別することでハンドリング漏れを防ぐ
-export type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string; fieldErrors?: Record<string, string[]> };
-
-// zod v4 で ZodError.flatten() が非推奨になったため、トップレベル関数を使う
-export function extractFieldErrors(
-  error: z.ZodError,
-): Record<string, string[]> {
-  return z.flattenError(error).fieldErrors as Record<string, string[]>;
-}
-
 export const createCategorySchema = z.object({
   name: z
     .string()
@@ -21,9 +9,6 @@ export const createCategorySchema = z.object({
     .max(VALIDATION_LIMITS.CATEGORY_NAME_MAX, "カテゴリ名は100文字以内で入力してください"),
   parent_id: z.uuid().nullable().optional(),
 });
-
-// 後方互換エイリアス。Epic #232 全 PBI マージ完了時に削除予定
-export const createSubjectSchema = createCategorySchema;
 
 export const createMaterialSchema = z.object({
   title: z
@@ -136,8 +121,6 @@ export function validateMaterialMeta(type: MaterialType, meta: unknown) {
 }
 
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
-// 後方互換エイリアス
-export type CreateSubjectInput = CreateCategoryInput;
 export type CreateMaterialInput = z.infer<typeof createMaterialSchema>;
 export type UpdateMaterialInput = z.infer<typeof updateMaterialSchema>;
 export type CardInput = z.infer<typeof cardSchema>;
