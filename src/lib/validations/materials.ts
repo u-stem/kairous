@@ -26,6 +26,8 @@ export const createMaterialSchema = z.object({
   type: z.enum(MATERIAL_TYPES).default("flashcard"),
   // meta は JSONB フィールド。タイプ別詳細バリデーションは validateMaterialMeta で行う
   meta: z.record(z.string(), z.unknown()).default({}),
+  // reading/practice_log 等の進捗単位ラベル (「ページ」「章」「回」等)。未指定時は DB 側のデフォルトを使用
+  unit_label: z.string().min(1).max(20).optional(),
 });
 
 export const updateMaterialSchema = z.object({

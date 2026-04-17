@@ -17,6 +17,11 @@ function makeMaterial(overrides: Partial<MaterialWithMethods> = {}): MaterialWit
     methods: [],
     last_studied_at: null,
     created_at: "2026-01-01T00:00:00Z",
+    type: "flashcard",
+    meta: {},
+    completed_units: 0,
+    total_units: 10,
+    unit_label: "枚",
     ...overrides,
   };
 }

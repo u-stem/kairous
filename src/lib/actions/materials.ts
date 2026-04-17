@@ -51,6 +51,7 @@ export async function createMaterial(
         return {};
       }
     })(),
+    unit_label: formData.get("unit_label") || undefined,
   });
 
   if (!parsed.success) {
@@ -83,6 +84,7 @@ export async function createMaterial(
       user_id: user.id,
       type: parsed.data.type,
       meta: metaValidation.data,
+      ...(parsed.data.unit_label ? { unit_label: parsed.data.unit_label } : {}),
     })
     .select("id")
     .single();
@@ -120,6 +122,7 @@ export async function getMaterials(
     .from("materials")
     .select(`
       id, title, description, category_id, total_cards, created_at,
+      type, meta, completed_units, total_units, unit_label,
       categories!inner(id, name, color, parent_id),
       material_methods(
         learning_methods(id, slug, name, category)
@@ -200,6 +203,13 @@ export async function getMaterials(
     }),
     last_studied_at: lastStudiedMap.get(m.id) ?? null,
     created_at: m.created_at,
+    type: m.type as MaterialType,
+    meta: (m.meta as Record<string, unknown>) ?? {},
+    completed_units: m.completed_units ?? 0,
+    total_units: m.total_units ?? 0,
+    // DB 側は NOT NULL DEFAULT '枚' のため NULL にならないが、型システム側で nullable のため fallback。
+    // reading 教材は createMaterial で 'ページ' を明示的に設定する
+    unit_label: m.unit_label ?? "枚",
   }));
 }
 
@@ -213,6 +223,7 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
     .from("materials")
     .select(`
       id, title, description, category_id, total_cards, created_at,
+      type, meta, completed_units, total_units, unit_label,
       categories!inner(id, name, color),
       material_methods(
         learning_methods(id, slug, name, category)
@@ -289,6 +300,11 @@ export async function getMaterial(id: string): Promise<MaterialDetail | null> {
     ),
     last_studied_at: sessions?.[0]?.started_at ?? null,
     created_at: material.created_at,
+    type: material.type as MaterialType,
+    meta: (material.meta as Record<string, unknown>) ?? {},
+    completed_units: material.completed_units ?? 0,
+    total_units: material.total_units ?? 0,
+    unit_label: material.unit_label ?? "枚",
     recent_sessions: (sessions ?? []).map((s) => ({
       id: s.id,
       method: s.learning_methods as JoinedMethodSlugName,
