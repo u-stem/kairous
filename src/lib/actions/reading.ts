@@ -38,7 +38,7 @@ export async function updatePageProgress(
 
   const { data: material, error: fetchError } = await supabase
     .from("materials")
-    .select("type, total_units, meta")
+    .select("type, meta")
     .eq("id", materialId)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -80,5 +80,6 @@ export async function updatePageProgress(
   }
 
   revalidatePath(`/materials/${materialId}`);
+  revalidatePath("/materials");
   return { success: true, data: undefined };
 }

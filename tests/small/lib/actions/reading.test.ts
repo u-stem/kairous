@@ -115,7 +115,7 @@ describe("updatePageProgress", () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
       fetchResult: {
-        data: { type: "flashcard", total_units: 10, meta: {} },
+        data: { type: "flashcard", meta: {} },
         error: null,
       },
     });
@@ -133,7 +133,7 @@ describe("updatePageProgress", () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
       fetchResult: {
-        data: { type: "reading", total_units: 0, meta: { total_pages: 300 } },
+        data: { type: "reading", meta: { total_pages: 300 } },
         error: null,
       },
     });
@@ -151,7 +151,7 @@ describe("updatePageProgress", () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
       fetchResult: {
-        data: { type: "reading", total_units: 0, meta: { total_pages: 300 } },
+        data: { type: "reading", meta: { total_pages: 300 } },
         error: null,
       },
       updateResult: { data: null, error: null },
@@ -167,7 +167,7 @@ describe("updatePageProgress", () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
       fetchResult: {
-        data: { type: "reading", total_units: 0, meta: {} },
+        data: { type: "reading", meta: {} },
         error: null,
       },
       updateResult: { data: null, error: null },
@@ -183,7 +183,7 @@ describe("updatePageProgress", () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
       fetchResult: {
-        data: { type: "reading", total_units: 0, meta: { total_pages: 300 } },
+        data: { type: "reading", meta: { total_pages: 300 } },
         error: null,
       },
       updateResult: { data: null, error: { message: "db error" } },
