@@ -46,8 +46,8 @@ test.describe("サインアップ", () => {
     await page.locator("#password").fill("7chars!");
     await page.getByRole("button", { name: "サインアップ" }).click();
 
-    // エラーメッセージが表示されることを確認 (text-sm text-red-600)
-    await expect(page.locator("p.text-red-600")).toBeVisible();
+    // エラーメッセージの可視性は data-testid で特定する (CSS クラス変更耐性)
+    await expect(page.getByTestId("auth-error")).toBeVisible();
   });
 
   test("ログインページへのリンクが機能する", async ({ page }) => {
@@ -84,7 +84,7 @@ test.describe("ログイン", () => {
     await page.locator("#password").fill("wrong-password-99999");
     await page.getByRole("button", { name: "ログイン" }).click();
 
-    await expect(page.locator("p.text-red-600")).toBeVisible();
+    await expect(page.getByTestId("auth-error")).toBeVisible();
   });
 
   test("サインアップページへのリンクが機能する", async ({ page }) => {
