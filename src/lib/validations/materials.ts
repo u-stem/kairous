@@ -78,11 +78,12 @@ export const projectMetaSchema = z
   })
   .strict();
 
-// freeform value は自由記述テキスト。空文字を意味のあるデータとしては扱わないため
-// min(1) を設定。max(500) は UI での表示とペイロードサイズを現実的な範囲に抑えるため
+// freeform value の文字列は自由記述テキスト。空文字を意味のあるデータとしては扱わないため
+// min(1)。max(500) は UI での表示とペイロードサイズを現実的な範囲に抑えるため
+// 数値の value は reps / duration (秒) を想定。max(999999) で JSONB 肥大化や UI 崩れを防ぐ
 export const practiceLogEntrySchema = z.object({
   date: z.iso.date(),
-  value: z.union([z.number(), z.string().min(1).max(500)]),
+  value: z.union([z.number().max(999999), z.string().min(1).max(500)]),
   note: z.string().max(500).optional(),
 });
 

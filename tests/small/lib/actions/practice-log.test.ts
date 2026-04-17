@@ -89,6 +89,18 @@ describe("addPracticeLogEntry", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rejects numeric value exceeding 999999", async () => {
+    mockClient = buildMockClient({ user: { id: USER_ID } });
+    const { addPracticeLogEntry } = await import("@/lib/actions/practice-log");
+
+    const result = await addPracticeLogEntry(VALID_MATERIAL_ID, {
+      date: "2026-04-18",
+      value: 1_000_000,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it("rejects when material not found (wrong owner or RLS)", async () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
