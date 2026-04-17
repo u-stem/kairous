@@ -98,7 +98,13 @@ export function MaterialReadingSection({
           )}
         </div>
 
-        <div className="flex items-end gap-2">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+          className="flex items-end gap-2"
+        >
           <div className="flex flex-1 flex-col gap-1.5">
             <Label htmlFor="reading-pages-input" className="text-xs text-muted-foreground">
               現在の{unitLabel}
@@ -115,14 +121,14 @@ export function MaterialReadingSection({
             />
           </div>
           <Button
-            onClick={handleSubmit}
+            type="submit"
             disabled={isPending}
             data-testid="reading-update-button"
           >
             {isPending && <Loader2 aria-hidden="true" className="animate-spin" />}
             更新
           </Button>
-        </div>
+        </form>
 
         {error && (
           <p className="text-xs text-destructive" data-testid="reading-error">
