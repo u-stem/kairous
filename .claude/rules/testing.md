@@ -1,6 +1,6 @@
 # Test Strategy (Kairous)
 
-汎用テストルールはユーザーレベル rules で定義済み。ここではプロジェクト固有のルールを記載。
+このドキュメントは Kairous のテスト戦略と品質保証階層の single source of truth。汎用テストルールはユーザーレベル rules で定義済み。
 
 ## 分類
 
@@ -9,6 +9,31 @@
 | Small | tests/small/ | なし (全モック) | `bun test:small` (pre-commit) |
 | Medium | tests/medium/ | Supabase ローカル | `bun test:medium` (CI) |
 | Large | tests/large/ | Playwright + Supabase ローカル | `bun test:large` (CI パイプライン内) |
+
+## 品質保証の階層
+
+| タイミング | 手段 | 内容 |
+|-----------|------|------|
+| 毎コミット | pre-commit hooks (自動) | lint, typecheck, test:small |
+| 毎 push | pre-push hooks (自動) | full-check (lint + typecheck + test:small + test:medium) |
+| PR 作成前 | UI 動作確認 | `bun dev` + ブラウザで変更画面を実操作 |
+| PR 作成前 | E2E ローカル事前実行 | test:large に影響する場合 `bun test:large` |
+| PR 作成前 | ドキュメント整合性チェック | CLAUDE.md, .claude/rules/, docs/, README.md が実態と一致しているか |
+| PR 作成前 | ローカル code-review ループ | 指摘を全て解消するまで反復 |
+| PR push 時 | GitHub Actions CI | lint + typecheck + test:small + test:medium + test:large + lighthouse |
+| CI 成功後 | Claude PR Review (自動) | CI 全 green を確認後に起動 |
+
+hooks はローカルの即時フィードバック、CI はリモートの権威ある品質ゲート。
+
+## CI infra flake 時の対処
+
+test-large / lighthouse は Supabase ローカル起動やネットワーク依存で稀に transient fail する。
+
+1. 個別再実行: `gh run rerun <run-id> --failed --repo u-stem/kairous`
+2. stuck (10 分以上進展なし): `gh run cancel <run-id>` → rebase + force-push で fresh run
+3. flake 頻度が高い場合は follow-up Issue で根本原因調査
+
+コード由来との見分け方: 「Supabase ローカル起動」「wait-on」等のセットアップ段階での hang/timeout は flake 疑い。テスト本体の assertion error はコード由来。
 
 ## ルール
 
