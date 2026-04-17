@@ -1,4 +1,5 @@
 import type { Database } from "./database";
+import type { MaterialType } from "@/lib/constants";
 
 type Tables<T extends keyof Database["public"]["Tables"]> =
   Database["public"]["Tables"][T]["Row"];
@@ -38,6 +39,12 @@ export type MaterialWithMethods = {
   }>;
   last_studied_at: string | null;
   created_at: string;
+  // type 別の進捗表示に使う。既存 flashcard は total_cards と同期される
+  type: MaterialType;
+  meta: Record<string, unknown>;
+  completed_units: number;
+  total_units: number;
+  unit_label: string;
 };
 
 // 詳細ページで追加表示するデータ（直近セッション・正答率はクエリコストが高いため別型）

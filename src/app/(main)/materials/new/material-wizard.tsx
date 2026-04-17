@@ -74,6 +74,10 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [step1Errors, setStep1Errors] = useState<{ title?: string; category_id?: string }>({});
 
+  // reading タイプのとき Step 1 に表示する固有フィールド。type が変わったら空文字にリセット。
+  const [readingTotalPages, setReadingTotalPages] = useState("");
+  const [readingUnitLabel, setReadingUnitLabel] = useState("ページ");
+
   // ステップ1.5: タグ選択
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [allTags] = useState<Tag[]>(initialAllTags);
@@ -172,7 +176,18 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
       if (categoryId) formData.set("category_id", categoryId);
       formData.set("method_ids", JSON.stringify(selectedMethodIds));
       formData.set("type", materialType);
-      formData.set("meta", JSON.stringify({}));
+      // reading タイプは total_pages を meta に格納。整数化できなければ空 meta
+      const meta: Record<string, unknown> = {};
+      if (materialType === "reading" && readingTotalPages.trim()) {
+        const n = Number(readingTotalPages);
+        if (Number.isInteger(n) && n > 0 && n <= 99999) {
+          meta.total_pages = n;
+        }
+      }
+      formData.set("meta", JSON.stringify(meta));
+      if (materialType === "reading" && readingUnitLabel.trim()) {
+        formData.set("unit_label", readingUnitLabel.trim());
+      }
 
       const result = await createMaterial(formData);
       if (!result.success) {
@@ -289,6 +304,35 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
               <p className="text-xs text-destructive">{step1Errors.category_id}</p>
             )}
           </div>
+
+          {/* reading 固有フィールド: 総ページ数と単位ラベル (章/ページ 等) */}
+          {materialType === "reading" && (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="reading-total-pages">総ページ数（任意）</Label>
+                <Input
+                  id="reading-total-pages"
+                  type="number"
+                  min={1}
+                  max={99999}
+                  value={readingTotalPages}
+                  onChange={(e) => setReadingTotalPages(e.target.value)}
+                  placeholder="例: 320"
+                  data-testid="reading-total-pages-input"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="reading-unit-label">単位</Label>
+                <Input
+                  id="reading-unit-label"
+                  value={readingUnitLabel}
+                  onChange={(e) => setReadingUnitLabel(e.target.value)}
+                  placeholder="例: ページ / 章"
+                  data-testid="reading-unit-label-input"
+                />
+              </div>
+            </>
+          )}
 
           <div className="flex justify-between">
             <Button variant="outline" onClick={() => setCurrentStep(0)}>

@@ -19,6 +19,7 @@ import { CardList } from "./card-list";
 import { CardElaborationHistory } from "./card-elaboration-history";
 import { MaterialMethodSheet } from "./material-method-sheet";
 import { MethodSelectList } from "@/components/method-select-list";
+import { MaterialReadingSection } from "@/components/material-reading-section";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -105,6 +106,22 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
           {/* 説明文: 存在する場合のみ表示 */}
           {material.description && (
             <p className="mb-4 text-sm text-muted-foreground">{material.description}</p>
+          )}
+
+          {/* reading タイプ: 読書進捗セクション (手動進捗更新) */}
+          {material.type === "reading" && (
+            <div className="mb-4">
+              <MaterialReadingSection
+                materialId={material.id}
+                completedUnits={material.completed_units}
+                totalPages={
+                  typeof material.meta?.total_pages === "number"
+                    ? material.meta.total_pages
+                    : undefined
+                }
+                unitLabel={material.unit_label}
+              />
+            </div>
           )}
 
           {isCardBased ? (
