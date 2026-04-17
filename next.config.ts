@@ -21,6 +21,12 @@ export const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=()",
   },
+  // HTTPS ダウングレード攻撃を防ぐ。2 年間ブラウザに記憶させ、サブドメインも含め preload リスト対応。
+  // Vercel ではデフォルトで付与されるが、他環境 (self-host 等) へのデプロイ時にも確実に有効にする
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains; preload",
+  },
 ];
 
 const nextConfig: NextConfig = {

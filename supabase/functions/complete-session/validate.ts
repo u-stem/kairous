@@ -7,10 +7,18 @@ export function isUUID(value: unknown): value is string {
   );
 }
 
-// Date コンストラクタに丸投げするため "2026" 等の短縮形も通過する。
-// Edge Function は内部 API 用途で呼び出し元が ISO 文字列を送る前提のため許容する。
+// ISO 8601 完全形式 (YYYY-MM-DDTHH:MM:SS[.sss](Z|±HH:MM)) のみ許容する。
+// コロン区切りオフセット (+09:00) のみ受理し、コロンなし (+0900) は拒否する。
+// 呼び出し元 (Web / 内部サービス) は常に Date.toISOString() 由来の文字列を送る前提。
+// 時/分の範囲 (例: 99:99) は別途 Date コンストラクタ側の isNaN チェックで弾かれる。
+// Date コンストラクタは "2026" のような短縮形も受理するため、FSRS 計算で
+// elapsed_days が意図しない値にパースされる余地を防ぐ目的。
+const ISO_DATETIME_REGEX =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+
 export function isISODatetime(value: unknown): value is string {
   if (typeof value !== "string") return false;
+  if (!ISO_DATETIME_REGEX.test(value)) return false;
   const d = new Date(value);
   return !isNaN(d.getTime());
 }
@@ -30,6 +38,11 @@ export type ElaborationInput = {
 // 精緻化テキストの DB 負荷を避けるため上限を設ける
 // src/lib/constants.ts の VALIDATION_LIMITS.ELABORATION_TEXT_MAX と同値。Deno 環境のため import 不可
 const ELABORATION_TEXT_MAX = 10000;
+
+// 単一リクエストで扱える review の上限。無制限だと FSRS 計算とバッチ upsert の
+// 処理時間が膨張し DoS として悪用可能になる。
+// src/lib/constants.ts の VALIDATION_LIMITS.REVIEWS_MAX と同値。Deno 環境のため import 不可
+const REVIEWS_MAX = 500;
 
 type ValidationSuccess = {
   ok: true;
@@ -58,6 +71,10 @@ export function validateRequest(body: unknown): ValidationResult {
 
   if (!Array.isArray(reviews) || reviews.length === 0) {
     return { ok: false, message: "reviews must be a non-empty array" };
+  }
+
+  if (reviews.length > REVIEWS_MAX) {
+    return { ok: false, message: `reviews must contain at most ${REVIEWS_MAX} items` };
   }
 
   for (let i = 0; i < reviews.length; i++) {

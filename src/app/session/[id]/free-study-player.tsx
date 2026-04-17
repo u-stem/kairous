@@ -17,13 +17,14 @@ export function FreeStudyPlayer({ sessionId, methodName, materialTitle }: Props)
   const router = useRouter();
   // targetDurationSec = null でカウントアップモード
   const timer = useCustomTimer(null);
+  const { start } = timer;
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // start は useCustomTimer が reference-stable で返すためマウント時の 1 回のみ発火する
   useEffect(() => {
-    timer.start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- timer オブジェクトは再レンダーで新規生成されるため mount 時の1回のみ実行
-  }, []);
+    start();
+  }, [start]);
 
   async function handleComplete() {
     timer.pause();

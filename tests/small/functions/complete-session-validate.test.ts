@@ -53,12 +53,28 @@ describe("isUUID", () => {
 });
 
 describe("isISODatetime", () => {
-  it("accepts valid ISO 8601 datetime", () => {
+  it("accepts valid ISO 8601 datetime with UTC Z", () => {
     expect(isISODatetime("2026-04-05T10:00:00.000Z")).toBe(true);
   });
 
-  it("accepts date-only string", () => {
-    expect(isISODatetime("2026-04-05")).toBe(true);
+  it("accepts valid ISO 8601 datetime with timezone offset", () => {
+    expect(isISODatetime("2026-04-05T10:00:00+09:00")).toBe(true);
+  });
+
+  it("accepts valid ISO 8601 datetime without fractional seconds", () => {
+    expect(isISODatetime("2026-04-05T10:00:00Z")).toBe(true);
+  });
+
+  it("rejects date-only string so FSRS elapsed_days calculation is not skewed", () => {
+    expect(isISODatetime("2026-04-05")).toBe(false);
+  });
+
+  it("rejects year-only short form so Date constructor fallback is closed", () => {
+    expect(isISODatetime("2026")).toBe(false);
+  });
+
+  it("rejects datetime without timezone designator", () => {
+    expect(isISODatetime("2026-04-05T10:00:00")).toBe(false);
   });
 
   it("rejects number", () => {
@@ -113,6 +129,30 @@ describe("validateRequest", () => {
     expect(result).toEqual({
       ok: false,
       message: "reviews must be a non-empty array",
+    });
+  });
+
+  it("accepts exactly 500 reviews (boundary, allowed)", () => {
+    const reviews = Array.from({ length: 500 }, (_, i) =>
+      validReview({
+        card_id: `a0000000-0000-4000-a000-${String(i).padStart(12, "0")}`,
+      }),
+    );
+    const result = validateRequest({ session_id: VALID_UUID, reviews });
+    assert(result.ok);
+    expect(result.reviews).toHaveLength(500);
+  });
+
+  it("rejects 501 reviews (boundary, over REVIEWS_MAX=500)", () => {
+    const reviews = Array.from({ length: 501 }, (_, i) =>
+      validReview({
+        card_id: `a0000000-0000-4000-a000-${String(i).padStart(12, "0")}`,
+      }),
+    );
+    const result = validateRequest({ session_id: VALID_UUID, reviews });
+    expect(result).toEqual({
+      ok: false,
+      message: "reviews must contain at most 500 items",
     });
   });
 

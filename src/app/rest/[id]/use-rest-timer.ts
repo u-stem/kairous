@@ -11,12 +11,13 @@ export interface RestTimerState {
 
 export function useRestTimer(totalSeconds: number): RestTimerState {
   const timer = useCountdownTimer(totalSeconds);
+  const { start } = timer;
 
-  // マウント時に自動スタート (timer は毎レンダー新しいオブジェクトのため依存配列に入れると無限ループする)
+  // マウント時に自動スタート。useCountdownTimer.start は reference-stable なため
+  // 依存配列に入れても実質マウント時の1回だけ発火する
   useEffect(() => {
-    timer.start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    start();
+  }, [start]);
 
   return {
     remainingSeconds: timer.remainingSeconds,

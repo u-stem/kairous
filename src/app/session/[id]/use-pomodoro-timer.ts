@@ -29,18 +29,18 @@ export function usePomodoroTimer(
   const [currentDuration, setCurrentDuration] = useState(focusSec);
 
   const timer = useCountdownTimer(currentDuration);
+  const { start, restartWith } = timer;
 
   const isTimerActive = phase === "focus" || phase === "break";
   const remainingRatio = isTimerActive ? timer.progress : 0;
 
-  // 初回マウント時に自動スタート (timer は毎レンダー新しいオブジェクトのため依存配列に入れると無限ループする)
+  // 初回マウント時に自動スタート。start は useCountdownTimer 内で reference-stable
   useEffect(() => {
-    timer.start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    start();
+  }, [start]);
 
-  // currentDuration が変わったとき（フェーズ切り替え後）にリセットして即スタートする
-  // reset() 後に start() を呼ぶと isComplete が古い値のため、restartWith で一括処理する
+  // currentDuration が変わったとき（フェーズ切り替え後）にリセットして即スタートする。
+  // reset() 後に start() を呼ぶと isComplete が古い値のため、restartWith で一括処理する。
   // 初回マウントは除外する（初回は上の effect で start するため）
   const isFirstDurationChangeRef = useRef(true);
   useEffect(() => {
@@ -48,9 +48,8 @@ export function usePomodoroTimer(
       isFirstDurationChangeRef.current = false;
       return;
     }
-    timer.restartWith(currentDuration);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDuration]);
+    restartWith(currentDuration);
+  }, [currentDuration, restartWith]);
 
   // タイマー完了時にフェーズ遷移
   // isComplete が false→true に変化したタイミングのみ発火するよう prev 値で判定する
