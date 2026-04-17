@@ -336,4 +336,102 @@ describe("complete-session Edge Function (DB integration)", () => {
       expect(elabs ?? []).toHaveLength(0);
     },
   );
+
+  // Epic #288 PBI-1 (S1): 認証が DB アクセスより先に行われることを検証する。
+  // 認証失敗時にセッション存在確認を許すと、未認証ユーザーがセッション ID を列挙できる。
+  describe("S1: authorization precedes session lookup", () => {
+    const FUNCTION_URL = "http://localhost:54321/functions/v1/complete-session";
+
+    it.skipIf(!functionsAvailable)(
+      "returns 401 without Authorization header even for existing session",
+      async () => {
+        const subject = await createTestSubject(userId, "S1-noauth");
+        const material = await createTestMaterial(subject.id, userId, "S1-noauth-material");
+        const session = await createTestSession(userId, material.id, srsMethodId);
+
+        const res = await fetch(FUNCTION_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: session.id,
+            reviews: [
+              {
+                card_id: "00000000-0000-0000-0000-000000000001",
+                rating: 3,
+                started_at: "2026-04-05T10:00:00.000Z",
+                answered_at: "2026-04-05T10:00:05.000Z",
+              },
+            ],
+          }),
+        });
+
+        expect(res.status).toBe(401);
+      },
+    );
+
+    it.skipIf(!functionsAvailable)(
+      "returns 401 for non-existent session without Authorization (no existence leak)",
+      async () => {
+        // 存在しない UUID を指定しても 401 (Authorization 必須) で止まる。
+        // 認証と DB アクセスの順序が逆だと、存在する場合と存在しない場合で 401 vs 404 のレスポンス差が出る。
+        const res = await fetch(FUNCTION_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: "00000000-0000-0000-0000-000000000000",
+            reviews: [
+              {
+                card_id: "00000000-0000-0000-0000-000000000001",
+                rating: 3,
+                started_at: "2026-04-05T10:00:00.000Z",
+                answered_at: "2026-04-05T10:00:05.000Z",
+              },
+            ],
+          }),
+        });
+
+        expect(res.status).toBe(401);
+      },
+    );
+
+    it.skipIf(!functionsAvailable)(
+      "returns 404 (not 403) for other user's session to avoid existence leak",
+      async () => {
+        // 認証済みだが他ユーザーのセッションを指定した場合、404 "Session not found" で統一する。
+        // 403 で返すと「存在するが自分のものではない」ことが分かり、セッション ID の所有推定を許す。
+        const otherEmail = `s1-other-${Date.now()}@kairous.local`;
+        const otherId = await createTestUser(otherEmail, TEST_PASSWORD);
+        try {
+          const otherSubject = await createTestSubject(otherId, "S1-other-owner");
+          const otherMaterial = await createTestMaterial(otherSubject.id, otherId, "S1-other-material");
+          const otherSession = await createTestSession(otherId, otherMaterial.id, srsMethodId);
+
+          const result = await userClient.functions.invoke<{ success: boolean }>(
+            "complete-session",
+            {
+              body: {
+                session_id: otherSession.id,
+                reviews: [
+                  {
+                    card_id: "00000000-0000-0000-0000-000000000001",
+                    rating: 3,
+                    started_at: "2026-04-05T10:00:00.000Z",
+                    answered_at: "2026-04-05T10:00:05.000Z",
+                  },
+                ],
+              },
+            },
+          );
+
+          // supabase-js v2 は non-2xx を error に packing する
+          expect(result.error).not.toBeNull();
+          const status = (result.error as { context?: { status?: number } })?.context?.status;
+          expect(status).toBe(404);
+        } finally {
+          await cleanupTestData(otherId);
+          await deleteTestUser(otherId);
+        }
+      },
+    );
+  });
 });

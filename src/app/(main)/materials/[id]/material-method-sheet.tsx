@@ -35,8 +35,12 @@ export function MaterialMethodSheet({ materialId, currentMethodIds }: MaterialMe
     if (open) {
       setSelected(currentMethodIds);
       setError(null);
-      const allMethods = await getMethods();
-      setMethods(allMethods);
+      try {
+        const allMethods = await getMethods();
+        setMethods(allMethods);
+      } catch {
+        setError("手法一覧の取得に失敗しました");
+      }
     }
   }
 
@@ -57,8 +61,13 @@ export function MaterialMethodSheet({ materialId, currentMethodIds }: MaterialMe
         const result = await op();
         if (!result.success) {
           setError(result.error ?? "手法の更新に失敗しました");
-          const refreshed = await getMethods();
-          setMethods(refreshed);
+          // 失敗時の再取得が二次失敗しても元のエラーメッセージを優先表示する
+          try {
+            const refreshed = await getMethods();
+            setMethods(refreshed);
+          } catch {
+            // 再取得の失敗は握りつぶす。既に一次エラーを setError 済みでそちらを優先表示する
+          }
           return;
         }
       }
@@ -91,7 +100,9 @@ export function MaterialMethodSheet({ materialId, currentMethodIds }: MaterialMe
               selected={selected}
               onChange={setSelected}
               onMethodsChange={() => {
-                void getMethods().then(setMethods);
+                getMethods()
+                  .then(setMethods)
+                  .catch(() => setError("手法一覧の再取得に失敗しました"));
               }}
             />
           ) : (

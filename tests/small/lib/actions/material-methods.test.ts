@@ -16,17 +16,26 @@ const authMock = {
   getUser: vi.fn(),
 };
 
+// learning_methods クエリ用のチェーンモック。order() を 2 回呼べるように then 付きの object を返す
+const learningMethodsQuery = {
+  select: vi.fn(),
+  order: vi.fn(),
+  then: vi.fn(),
+};
+const fromMock = vi.fn();
+
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(() =>
     Promise.resolve({
       auth: authMock,
       rpc: rpcMock,
+      from: fromMock,
     }),
   ),
 }));
 
 // dynamic import to ensure mocks are registered
-const { removeMaterialMethod } = await import(
+const { removeMaterialMethod, getMethods } = await import(
   "@/lib/actions/material-methods"
 );
 
@@ -112,5 +121,39 @@ describe("removeMaterialMethod", () => {
 
     assert(!result.success);
     expect(result.error).toBe("学習手法の削除に失敗しました");
+  });
+});
+
+describe("getMethods", () => {
+  // getMethods の実装は from().select().order(is_system).order(category) の 2 段 order chain。
+  // 2 段目の戻り値を thenable にして Promise として resolve させる擬似 query builder。
+  function setupQuery(result: { data: unknown; error: unknown }) {
+    const orderSecond = { then: (cb: (v: typeof result) => unknown) => Promise.resolve(cb(result)) };
+    const orderFirst = { order: vi.fn().mockReturnValue(orderSecond) };
+    const select = { select: vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue(orderFirst) }) };
+    fromMock.mockReturnValue(select);
+  }
+
+  it("returns the method list when the query succeeds", async () => {
+    const methods = [{ id: "m1", slug: "srs", name: "SRS" }];
+    setupQuery({ data: methods, error: null });
+
+    const result = await getMethods();
+
+    expect(result).toEqual(methods);
+  });
+
+  it("throws when the query returns an error so the caller can surface it", async () => {
+    setupQuery({ data: null, error: { message: "connection refused" } });
+
+    await expect(getMethods()).rejects.toThrow(/学習手法の取得に失敗しました/);
+  });
+
+  it("returns empty array when no methods exist", async () => {
+    setupQuery({ data: [], error: null });
+
+    const result = await getMethods();
+
+    expect(result).toEqual([]);
   });
 });

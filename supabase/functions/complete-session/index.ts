@@ -146,10 +146,27 @@ Deno.serve(async (req) => {
 
   const { session_id, reviews, elaborations } = validation;
 
+  // 未認証リクエストに対して DB アクセスより前に 401 を返す。
+  // 認証より先に sessions を取得すると、存在する session_id と存在しない session_id で
+  // レスポンス差が発生し、未認証ユーザーがセッション ID を列挙できてしまう (S1)。
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return jsonError("Authorization header is required", 401);
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
+
+  const { data: authData, error: authError } = await supabase.auth.getUser(
+    authHeader.slice(7),
+  );
+  // 将来 SDK が throw しない失敗系 (無効トークン等) を error で返すケースも拒否する
+  if (authError || !authData.user) {
+    return jsonError("Invalid or expired token", 401);
+  }
+  const callerId = authData.user.id;
 
   const { data: session, error: sessionError } = await supabase
     .from("sessions")
@@ -157,22 +174,10 @@ Deno.serve(async (req) => {
     .eq("id", session_id)
     .single();
 
-  if (sessionError || !session) {
+  // 所有者不一致と未存在を同一レスポンスに統一する。
+  // 認証済みであっても「他人のセッション ID の存在確認」を許さない。
+  if (sessionError || !session || callerId !== session.user_id) {
     return jsonError("Session not found", 404);
-  }
-
-  // JWT を Supabase Auth で検証し、user_id を取得する
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return jsonError("Authorization header is required", 401);
-  }
-  const { data: authData } = await supabase.auth.getUser(authHeader.slice(7));
-  const callerId = authData.user?.id;
-  if (!callerId) {
-    return jsonError("Invalid or expired token", 401);
-  }
-  if (callerId !== session.user_id) {
-    return jsonError("Not authorized to complete this session", 403);
   }
 
   const reviewRows = reviews.map((r) => ({
