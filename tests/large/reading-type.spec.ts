@@ -23,8 +23,8 @@ test.describe.serial("reading 教材タイプ", () => {
   test("reading 教材を作成して詳細ページで読書進捗を更新する", async ({ page }) => {
     await page.goto("/materials/new");
 
-    // Step 0: reading タイプを選択
-    await page.getByRole("button", { name: "読書" }).click();
+    // Step 0: reading タイプを選択 (radiogroup)
+    await page.getByTestId("material-type-option-reading").click();
     await page.getByRole("button", { name: "次へ" }).click();
 
     // Step 1: 基本情報 + reading 固有フィールド
