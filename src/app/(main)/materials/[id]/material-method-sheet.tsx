@@ -61,12 +61,15 @@ export function MaterialMethodSheet({ materialId, currentMethodIds }: MaterialMe
         const result = await op();
         if (!result.success) {
           setError(result.error ?? "手法の更新に失敗しました");
-          // 失敗時の再取得が二次失敗しても元のエラーメッセージを優先表示する
+          // UI 上は一次エラーを優先表示するが、再取得失敗は observability のため必ずログへ残す
           try {
             const refreshed = await getMethods();
             setMethods(refreshed);
-          } catch {
-            // 再取得の失敗は握りつぶす。既に一次エラーを setError 済みでそちらを優先表示する
+          } catch (refreshError) {
+            console.error(
+              "MaterialMethodSheet: methods refresh failed after primary error:",
+              refreshError,
+            );
           }
           return;
         }
