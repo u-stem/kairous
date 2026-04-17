@@ -98,13 +98,7 @@ export function MaterialReadingSection({
           )}
         </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSubmit();
-          }}
-          className="flex items-end gap-2"
-        >
+        <div className="flex items-end gap-2">
           <div className="flex flex-1 flex-col gap-1.5">
             <Label htmlFor="reading-pages-input" className="text-xs text-muted-foreground">
               現在の{unitLabel}
@@ -116,19 +110,26 @@ export function MaterialReadingSection({
               max={totalPages}
               value={pagesInput}
               onChange={(e) => setPagesInput(e.target.value)}
+              onKeyDown={(e) => {
+                // 単一入力フィールドの UX として Enter で更新を実行
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
               disabled={isPending}
               data-testid="reading-pages-input"
             />
           </div>
           <Button
-            type="submit"
+            onClick={handleSubmit}
             disabled={isPending}
             data-testid="reading-update-button"
           >
             {isPending && <Loader2 aria-hidden="true" className="animate-spin" />}
             更新
           </Button>
-        </form>
+        </div>
 
         {error && (
           <p className="text-xs text-destructive" data-testid="reading-error">

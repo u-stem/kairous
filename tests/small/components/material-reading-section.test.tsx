@@ -61,7 +61,7 @@ describe("MaterialReadingSection", () => {
     fireEvent.change(screen.getByTestId("reading-pages-input"), {
       target: { value: "-5" },
     });
-    fireEvent.submit(screen.getByTestId("reading-pages-input").closest("form")!);
+    fireEvent.click(screen.getByTestId("reading-update-button"));
 
     expect(screen.getByTestId("reading-error")).toHaveTextContent("0 以上");
   });
@@ -79,7 +79,7 @@ describe("MaterialReadingSection", () => {
     fireEvent.change(screen.getByTestId("reading-pages-input"), {
       target: { value: "500" },
     });
-    fireEvent.submit(screen.getByTestId("reading-pages-input").closest("form")!);
+    fireEvent.click(screen.getByTestId("reading-update-button"));
 
     expect(screen.getByTestId("reading-error")).toHaveTextContent("300");
   });
