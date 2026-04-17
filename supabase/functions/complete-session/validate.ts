@@ -8,8 +8,11 @@ export function isUUID(value: unknown): value is string {
 }
 
 // ISO 8601 完全形式 (YYYY-MM-DDTHH:MM:SS[.sss](Z|±HH:MM)) のみ許容する。
+// コロン区切りオフセット (+09:00) のみ受理し、コロンなし (+0900) は拒否する。
+// 呼び出し元 (Web / 内部サービス) は常に Date.toISOString() 由来の文字列を送る前提。
+// 時/分の範囲 (例: 99:99) は別途 Date コンストラクタ側の isNaN チェックで弾かれる。
 // Date コンストラクタは "2026" のような短縮形も受理するため、FSRS 計算で
-// elapsed_days が意図しない値にパースされる余地を防ぐ。
+// elapsed_days が意図しない値にパースされる余地を防ぐ目的。
 const ISO_DATETIME_REGEX =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 

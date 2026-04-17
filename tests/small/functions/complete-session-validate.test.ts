@@ -132,6 +132,30 @@ describe("validateRequest", () => {
     });
   });
 
+  it("accepts exactly 500 reviews (boundary, allowed)", () => {
+    const reviews = Array.from({ length: 500 }, (_, i) =>
+      validReview({
+        card_id: `a0000000-0000-4000-a000-${String(i).padStart(12, "0")}`,
+      }),
+    );
+    const result = validateRequest({ session_id: VALID_UUID, reviews });
+    assert(result.ok);
+    expect(result.reviews).toHaveLength(500);
+  });
+
+  it("rejects 501 reviews (boundary, over REVIEWS_MAX=500)", () => {
+    const reviews = Array.from({ length: 501 }, (_, i) =>
+      validReview({
+        card_id: `a0000000-0000-4000-a000-${String(i).padStart(12, "0")}`,
+      }),
+    );
+    const result = validateRequest({ session_id: VALID_UUID, reviews });
+    expect(result).toEqual({
+      ok: false,
+      message: "reviews must contain at most 500 items",
+    });
+  });
+
   it("rejects non-array reviews", () => {
     const result = validateRequest({
       session_id: VALID_UUID,
