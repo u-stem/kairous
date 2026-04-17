@@ -1,19 +1,16 @@
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/actions/auth-utils";
 import { signOut } from "./actions";
 import Link from "next/link";
 
 export default async function ProfilePage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // プロフィール画面は認証必須。(main)/layout.tsx が未認証を許容する意図とは異なる
+  const { user } = await requireAuth();
 
   return (
     <div className="p-4">
       <h2 className="text-lg font-bold">設定</h2>
       <div className="mt-4 space-y-4">
-        <p className="text-sm text-gray-500">{user?.email}</p>
+        <p className="text-sm text-gray-500">{user.email}</p>
         <Link
           href="/profile/notifications"
           className="flex items-center justify-between rounded-md border px-4 py-3 text-sm hover:bg-muted"

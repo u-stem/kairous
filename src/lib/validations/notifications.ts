@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { NOTIFICATION_MESSAGE_TYPES } from "@/lib/constants";
 
-export { type ActionResult, extractFieldErrors } from "@/lib/validations/materials";
-
 const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export const createNotificationScheduleSchema = z.object({

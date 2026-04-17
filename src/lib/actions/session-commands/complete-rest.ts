@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { completeRestSessionSchema } from "@/lib/validations/sessions";
-import type { ActionResult } from "@/lib/validations/materials";
+import type { ActionResult } from "@/lib/types/action-result";
 import { REST_DURATION_SEC, ACTION_ERRORS } from "@/lib/constants";
 import { requireAuth } from "@/lib/actions/auth-utils";
 import type { JoinedMethod } from "./_shared";

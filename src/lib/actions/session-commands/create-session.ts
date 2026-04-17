@@ -3,10 +3,9 @@
 import {
   createSessionSchema,
   createRestSessionSchema,
-  extractFieldErrors,
 } from "@/lib/validations/sessions";
 import { createInterleavingSessionSchema } from "@/lib/validations/interleaving";
-import type { ActionResult } from "@/lib/validations/materials";
+import { extractFieldErrors, type ActionResult } from "@/lib/types/action-result";
 import { ACTION_ERRORS } from "@/lib/constants";
 import { requireAuth } from "@/lib/actions/auth-utils";
 

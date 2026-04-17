@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cardSchema, extractFieldErrors } from "@/lib/validations/materials";
-import type { ActionResult } from "@/lib/validations/materials";
+import { cardSchema } from "@/lib/validations/materials";
+import { extractFieldErrors, type ActionResult } from "@/lib/types/action-result";
 import type { Card } from "@/lib/types/materials";
 import { SRS_DEFAULTS, CARD_BASED_SLUGS, ACTION_ERRORS } from "@/lib/constants";
 import { requireAuth } from "@/lib/actions/auth-utils";

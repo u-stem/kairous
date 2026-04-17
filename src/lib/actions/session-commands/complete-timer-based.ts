@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { ActionResult } from "@/lib/validations/materials";
+import type { ActionResult } from "@/lib/types/action-result";
 import { ACTION_ERRORS } from "@/lib/constants";
 import { completePomodoroSchema } from "@/lib/validations/pomodoro";
 import { completeCustomSessionSchema } from "@/lib/validations/custom-session";

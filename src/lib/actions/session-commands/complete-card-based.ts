@@ -6,7 +6,7 @@ import {
   completeElaborationSchema,
   type ElaborationInput,
 } from "@/lib/validations/elaboration";
-import type { ActionResult } from "@/lib/validations/materials";
+import type { ActionResult } from "@/lib/types/action-result";
 import type { CardReview } from "@/lib/types/sessions";
 import { ACTION_ERRORS } from "@/lib/constants";
 import { requireAuth } from "@/lib/actions/auth-utils";
