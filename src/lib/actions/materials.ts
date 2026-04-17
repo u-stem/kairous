@@ -207,6 +207,8 @@ export async function getMaterials(
     meta: (m.meta as Record<string, unknown>) ?? {},
     completed_units: m.completed_units ?? 0,
     total_units: m.total_units ?? 0,
+    // DB 側は NOT NULL DEFAULT '枚' のため NULL にならないが、型システム側で nullable のため fallback。
+    // reading 教材は createMaterial で 'ページ' を明示的に設定する
     unit_label: m.unit_label ?? "枚",
   }));
 }

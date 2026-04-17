@@ -74,7 +74,9 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [step1Errors, setStep1Errors] = useState<{ title?: string; category_id?: string }>({});
 
-  // reading タイプのとき Step 1 に表示する固有フィールド。type が変わったら空文字にリセット。
+  // reading タイプ選択時に Step 1 で表示する固有フィールド。
+  // type を切り替えても値自体は保持するが、submitForm で materialType === "reading" ガードされるため
+  // 非 reading で保存されることはない (再リセットは不要)。
   const [readingTotalPages, setReadingTotalPages] = useState("");
   const [readingUnitLabel, setReadingUnitLabel] = useState("ページ");
 
