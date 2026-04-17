@@ -95,11 +95,19 @@ export async function removeMaterialMethod(
 export async function getMethods(): Promise<LearningMethod[]> {
   // RLS がシステム手法 + 自分のカスタム手法のみ返すため、認証コンテキストが必要
   const { supabase } = await requireAuth();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("learning_methods")
     .select("*")
     .order("is_system", { ascending: false })
     .order("category", { ascending: true });
 
+  // DB 障害時に空配列を返すと、呼び出し側で「手法が 0 件」と区別できず
+  // ユーザーは原因不明の選択不能状態に陥る。error は throw して errorBoundary に伝播させる。
+  // DB の内部メッセージ (テーブル名・カラム名) がクライアントへ漏れないよう、throw する
+  // 文言は汎用化し、詳細は server ログにのみ残す
+  if (error) {
+    console.error("getMethods failed:", error.message);
+    throw new Error("学習手法の取得に失敗しました");
+  }
   return data ?? [];
 }

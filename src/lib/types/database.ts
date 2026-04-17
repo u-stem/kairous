@@ -695,7 +695,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      batch_upsert_srs_states: { Args: { p_states: Json }; Returns: undefined }
       complete_session_reviews: {
         Args: {
           p_elaborations?: Json

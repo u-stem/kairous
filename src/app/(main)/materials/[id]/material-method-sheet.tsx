@@ -35,8 +35,12 @@ export function MaterialMethodSheet({ materialId, currentMethodIds }: MaterialMe
     if (open) {
       setSelected(currentMethodIds);
       setError(null);
-      const allMethods = await getMethods();
-      setMethods(allMethods);
+      try {
+        const allMethods = await getMethods();
+        setMethods(allMethods);
+      } catch {
+        setError("手法一覧の取得に失敗しました");
+      }
     }
   }
 
@@ -57,8 +61,16 @@ export function MaterialMethodSheet({ materialId, currentMethodIds }: MaterialMe
         const result = await op();
         if (!result.success) {
           setError(result.error ?? "手法の更新に失敗しました");
-          const refreshed = await getMethods();
-          setMethods(refreshed);
+          // UI 上は一次エラーを優先表示するが、再取得失敗は observability のため必ずログへ残す
+          try {
+            const refreshed = await getMethods();
+            setMethods(refreshed);
+          } catch (refreshError) {
+            console.error(
+              "MaterialMethodSheet: methods refresh failed after primary error:",
+              refreshError,
+            );
+          }
           return;
         }
       }
@@ -91,7 +103,9 @@ export function MaterialMethodSheet({ materialId, currentMethodIds }: MaterialMe
               selected={selected}
               onChange={setSelected}
               onMethodsChange={() => {
-                void getMethods().then(setMethods);
+                getMethods()
+                  .then(setMethods)
+                  .catch(() => setError("手法一覧の再取得に失敗しました"));
               }}
             />
           ) : (
