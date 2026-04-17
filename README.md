@@ -81,19 +81,13 @@ docs/
     plans/          # 実装計画
 ```
 
-## テスト戦略
-
-| 分類 | 配置 | 外部依存 | 実行タイミング |
-|------|------|----------|---------------|
-| Small | tests/small/ | なし (全モック) | pre-commit |
-| Medium | tests/medium/ | Supabase ローカル | CI |
-| Large | tests/large/ | Playwright + Supabase ローカル | CI パイプライン内 |
-
 ## 開発ガイド
 
-- [PR レビューガイド](docs/review-guide.md) -- レビューコメントのプレフィックスルールと LGTM 要件
+- [CLAUDE.md](CLAUDE.md) -- AI 協働開発のルール、Design Decisions、Guides リンク集
+- [Development Workflow](.claude/rules/workflow.md) -- PR 運用、エージェント委譲、並列開発
+- [Test Strategy](.claude/rules/testing.md) -- テスト分類、品質保証階層、E2E 固有ルール
+- [PR レビューガイド](docs/review-guide.md) -- レビューコメントのプレフィックスと LGTM 要件
 - [Issue 管理ガイド](docs/issue-guide.md) -- ラベル付与ルールとトリアージ方針
-- CLAUDE.md -- AI 協働開発のルールと制約
 
 ## ライセンス
 
