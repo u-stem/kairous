@@ -20,15 +20,15 @@ type Phase = "timer" | "rating";
 export function CustomMethodPlayer({ sessionId, methodName, materialTitle, targetDurationSec }: Props) {
   const router = useRouter();
   const timer = useCustomTimer(targetDurationSec);
+  const { start } = timer;
   const [phase, setPhase] = useState<Phase>("timer");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // マウント時に自動開始
+  // start は useCustomTimer が reference-stable で返すためマウント時の 1 回のみ発火する
   useEffect(() => {
-    timer.start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
-  }, []);
+    start();
+  }, [start]);
 
   const radius = 80;
   const circumference = 2 * Math.PI * radius;
@@ -83,6 +83,9 @@ export function CustomMethodPlayer({ sessionId, methodName, materialTitle, targe
           <p className="mt-4 text-3xl font-bold tabular-nums">{displayTime}</p>
 
           {timer.isTargetReached && (
+            // 達成状態の緑色。デザイントークンに success 色が未定義のため、
+            // 当面は Tailwind の意味論的プリセット (green-600/400) を使用する。
+            // 専用トークンを追加する場合は globals.css に --success を定義し、ここも text-success に統一する
             <p className="mt-2 text-sm font-medium text-green-600 dark:text-green-400">
               目標時間に達しました
             </p>

@@ -30,6 +30,9 @@ type Props = {
 };
 
 type CardDraft = {
+  // 追加・削除で並び変わる一覧のキーに index を使うと React が DOM を再マッチできず
+  // 入力フォーカスが外れるなどの UX 劣化が起きるため、クライアント生成 UUID を保持する
+  id: string;
   front: string;
   back: string;
 };
@@ -150,7 +153,7 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
   }
 
   function handleAddCard(data: { front: string; back: string }) {
-    setCards((prev) => [...prev, data]);
+    setCards((prev) => [...prev, { id: crypto.randomUUID(), ...data }]);
   }
 
   function handleRemoveCard(index: number) {
@@ -214,7 +217,7 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
 
   return (
     <div className="flex flex-col gap-6">
-      {/* プログレスバー */}
+      {/* プログレスバー。項目順が固定かつコンテンツが index に依存するため key={i} で妥当 */}
       <div className="flex gap-1.5">
         {Array.from({ length: visibleStepCount }).map((_, i) => (
           <div
@@ -372,7 +375,7 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
               <ul className="flex flex-col gap-2">
                 {cards.map((card, i) => (
                   <li
-                    key={i}
+                    key={card.id}
                     className="flex items-start justify-between gap-2 rounded-lg border border-border p-3"
                   >
                     <div className="flex flex-col gap-0.5 overflow-hidden">

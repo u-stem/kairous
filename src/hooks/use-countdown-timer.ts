@@ -30,6 +30,14 @@ export function useCountdownTimer(totalSeconds: number): CountdownState {
   const isComplete = remainingSeconds <= 0;
   const progress = durationForProgress > 0 ? remainingSeconds / durationForProgress : 0;
 
+  // start() で isComplete を参照するが、state を deps に含めると start の参照が
+  // 変わり、呼び出し側 useEffect の依存解決が難しくなる。ref 経由にして start 自体を
+  // reference-stable に保つ。
+  const isCompleteRef = useRef(isComplete);
+  useEffect(() => {
+    isCompleteRef.current = isComplete;
+  }, [isComplete]);
+
   useEffect(() => {
     if (!isRunning || isComplete) return;
 
@@ -51,8 +59,8 @@ export function useCountdownTimer(totalSeconds: number): CountdownState {
   }, [isRunning, isComplete]);
 
   const start = useCallback(() => {
-    if (!isComplete) setIsRunning(true);
-  }, [isComplete]);
+    if (!isCompleteRef.current) setIsRunning(true);
+  }, []);
 
   const pause = useCallback(() => {
     setIsRunning(false);

@@ -42,7 +42,7 @@ export default function LoginPage() {
             className="mt-1 block w-full rounded-md border px-3 py-2"
           />
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
         <button
           type="submit"
           className="w-full rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
