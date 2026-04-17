@@ -16,12 +16,6 @@ const authMock = {
   getUser: vi.fn(),
 };
 
-// learning_methods クエリ用のチェーンモック。order() を 2 回呼べるように then 付きの object を返す
-const learningMethodsQuery = {
-  select: vi.fn(),
-  order: vi.fn(),
-  then: vi.fn(),
-};
 const fromMock = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
