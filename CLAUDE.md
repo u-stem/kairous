@@ -39,6 +39,8 @@ Follow learning science evidence from `docs/kairous-design.md`. Specifically:
 
 ## Guides
 
+- [Development Workflow](.claude/rules/workflow.md) -- PR 運用、エージェント委譲、並列開発、マルチセッション協調
+- [Test Strategy](.claude/rules/testing.md) -- 分類、E2E 固有ルール (品質保証階層の single source of truth)
 - [Definition of Done](.claude/rules/definition-of-done.md)
 - [PR Review Guide](docs/review-guide.md)
 - [Issue Guide](docs/issue-guide.md)
