@@ -11,9 +11,13 @@ type RpcResult = { data: unknown; error: { message: string } | null };
 // 仕様変更時はモックも合わせて更新すること。
 function buildSupabase(options: {
   materialRow: { category_id: string } | null;
+  materialError?: { message: string } | null;
   rpcResult: RpcResult;
 }) {
-  const singleMaterial = vi.fn().mockResolvedValue({ data: options.materialRow, error: null });
+  const singleMaterial = vi.fn().mockResolvedValue({
+    data: options.materialRow,
+    error: options.materialError ?? null,
+  });
   const eqMaterial = vi.fn().mockReturnValue({ single: singleMaterial });
   const selectMaterial = vi.fn().mockReturnValue({ eq: eqMaterial });
 
@@ -29,9 +33,13 @@ function buildSupabase(options: {
 
 describe("upsertDailyLog", () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    // テストごとに spy を restore してから張り直さないと calls がテスト間で蓄積する
+    vi.restoreAllMocks();
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
   });
 
   it("invokes upsert_daily_log RPC with the material's category_id", async () => {
@@ -62,7 +70,7 @@ describe("upsertDailyLog", () => {
     );
   });
 
-  it("skips the RPC call when the material is not found so orphaned sessions do not write stats", async () => {
+  it("skips the RPC call and logs a warn when the material is not found so orphaned sessions do not write stats", async () => {
     const { supabase, rpc } = buildSupabase({
       materialRow: null,
       rpcResult: { data: null, error: null },
@@ -78,6 +86,38 @@ describe("upsertDailyLog", () => {
     });
 
     expect(rpc).not.toHaveBeenCalled();
+    // material 不在 (delete 後の race) は接続断と区別できる warn メッセージで記録される
+    expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("material not found for session sess-test"),
+    );
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it("skips the RPC call and logs an error when the material fetch fails so contact loss is visible in observability", async () => {
+    const { supabase, rpc } = buildSupabase({
+      materialRow: null,
+      materialError: { message: "connection lost" },
+      rpcResult: { data: null, error: null },
+    });
+
+    await upsertDailyLog(supabase as unknown as Parameters<typeof upsertDailyLog>[0], {
+      userId: "user-1",
+      materialId: "mat-1",
+      methodId: "method-1",
+      durationSec: 1500,
+      actionName: "completePomodoroSession",
+      sessionId: "sess-err",
+    });
+
+    expect(rpc).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("material fetch failed for session sess-err"),
+      expect.objectContaining({ message: "connection lost" }),
+    );
+    // fetch error 時は not-found の warn は発火しない
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
   it("logs but does not throw when the RPC returns an error so the session completion succeeds", async () => {
