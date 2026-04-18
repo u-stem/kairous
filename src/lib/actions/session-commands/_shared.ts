@@ -23,13 +23,30 @@ export async function upsertDailyLog(
   supabase: SupabaseClient,
   { userId, materialId, methodId, durationSec, actionName, sessionId }: UpsertDailyLogParams,
 ): Promise<void> {
-  const { data: material } = await supabase
+  const { data: material, error: fetchError } = await supabase
     .from("materials")
     .select("category_id")
     .eq("id", materialId)
     .single();
 
-  if (!material) return;
+  // 接続断 / RLS 違反 / PostgREST エラーで error が返るケース。
+  // daily_log 書き込みはセッション完了の補助処理なので throw せず log のみ出す
+  if (fetchError) {
+    console.error(
+      `${actionName} daily_log material fetch failed for session ${sessionId}:`,
+      fetchError,
+    );
+    return;
+  }
+
+  // error なしで material が null のケースは、教材が削除されたタイミングでの race や
+  // RLS ポリシー変更で 0 件となる。接続断 (fetchError) との区別のため warn を分ける
+  if (!material) {
+    console.warn(
+      `${actionName} daily_log material not found for session ${sessionId}: materialId=${materialId}`,
+    );
+    return;
+  }
 
   const { error } = await supabase.rpc("upsert_daily_log", {
     p_user_id: userId,
