@@ -214,4 +214,22 @@ describe("formatWorktreeTable", () => {
     expect(output).toMatch(/\bmodified\b/);
     expect(output).toMatch(/\bclean\b/);
   });
+
+  it("displays 'unknown' when status check failed (worktree removed etc.)", () => {
+    // status コマンド失敗ケースは hasUncommittedChanges=false でも "clean" と表示せず
+    // "unknown" にして誤解を避ける (c2ab9ab)
+    const rows: WorktreeRow[] = [
+      {
+        path: "../kairous-orphan",
+        branch: "feat/orphan",
+        reservedMigrations: [],
+        hasUncommittedChanges: false,
+        statusUnavailable: true,
+        isMain: false,
+      },
+    ];
+    const output = formatWorktreeTable(rows);
+    expect(output).toMatch(/\bunknown\b/);
+    expect(output).not.toMatch(/\bclean\b/);
+  });
 });
