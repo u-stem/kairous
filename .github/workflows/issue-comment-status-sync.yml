@@ -1,0 +1,143 @@
+name: Issue Comment Status Sync
+
+# Issue コメントの特定見出しを検知して linked Project Status を自動遷移させる。
+# PR 作成前の着手段階や、個別 PR を持たないサブタスクの可視化を目的とする (#240)。
+# PR コメントは issue-status-sync.yml (pull_request イベント) に任せるため、
+# `issue.pull_request` が存在するコメントはスキップする。
+on:
+  issue_comment:
+    types: [created, edited]
+
+permissions:
+  issues: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    # PR コメントは対象外。権限フィルタで信頼済みユーザーのコメントのみ発火させる
+    if: >
+      github.event.issue.pull_request == null &&
+      (
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR'
+      )
+    steps:
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          github-token: ${{ secrets.PROJECT_PAT }}
+          script: |
+            const PROJECT_ID = 'PVT_kwHOBPhgnc4BTvhy';
+            const STATUS_FIELD = 'PVTSSF_lAHOBPhgnc4BTvhyzhA8Y7Q';
+            const OPT = {
+              TODO: '5c515834',
+              IN_PROGRESS: '20a38274',
+              DONE: '609c7279',
+            };
+
+            // 着手 / 再開 / 着手取消 の 3 パターン。
+            // `\s*` は半角スペース / タブ等の ASCII 空白揺れを許容する
+            // (JS の \s は \u3000 全角スペースを含まないが、Markdown の ### 直後に
+            // 全角スペースを入れるケースはほぼないため実運用で問題にならない)。
+            // 行頭 `###` で始まる見出しに限定し、本文中の引用による誤発火を避ける
+            const MARKERS = [
+              {
+                regex: /^###\s*着手\s*\(in-progress\)/m,
+                target: OPT.IN_PROGRESS,
+                name: 'In Progress',
+              },
+              {
+                regex: /^###\s*再開\s*\(resumed\)/m,
+                target: OPT.IN_PROGRESS,
+                name: 'In Progress',
+              },
+              {
+                regex: /^###\s*着手取消\s*\(paused\)/m,
+                target: OPT.TODO,
+                name: 'Todo',
+              },
+            ];
+
+            const body = context.payload.comment.body ?? '';
+            const marker = MARKERS.find((m) => m.regex.test(body));
+            if (!marker) {
+              core.info('No matching marker; skip');
+              return;
+            }
+
+            const issueNumber = context.payload.issue.number;
+            const itemQuery = `
+              query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  issue(number: $number) {
+                    projectItems(first: 10) {
+                      nodes {
+                        id
+                        project { id }
+                        fieldValues(first: 20) {
+                          nodes {
+                            ... on ProjectV2ItemFieldSingleSelectValue {
+                              field {
+                                ... on ProjectV2SingleSelectField { id }
+                              }
+                              optionId
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+            const res = await github.graphql(itemQuery, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              number: issueNumber,
+            });
+            const item = res.repository.issue.projectItems.nodes.find(
+              (n) => n.project.id === PROJECT_ID,
+            );
+            if (!item) {
+              core.info(`#${issueNumber} not in Project; skip`);
+              return;
+            }
+
+            const currentStatus = item.fieldValues.nodes.find(
+              (v) => v.field && v.field.id === STATUS_FIELD,
+            );
+            const currentOpt = currentStatus?.optionId ?? null;
+
+            // Done からの巻き戻しはしない: 既に完了した PBI を着手コメント検知で
+            // 動かすと誤操作の履歴が消える。
+            if (currentOpt === OPT.DONE) {
+              core.info(`#${issueNumber} Done; skip`);
+              return;
+            }
+            // 冪等性: 既に目的の Status なら mutation を発行しない
+            if (currentOpt === marker.target) {
+              core.info(`#${issueNumber} already ${marker.name}; skip`);
+              return;
+            }
+
+            const mutation = `
+              mutation($project: ID!, $item: ID!, $field: ID!, $opt: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $project, itemId: $item, fieldId: $field,
+                  value: { singleSelectOptionId: $opt }
+                }) { projectV2Item { id } }
+              }
+            `;
+            try {
+              await github.graphql(mutation, {
+                project: PROJECT_ID,
+                item: item.id,
+                field: STATUS_FIELD,
+                opt: marker.target,
+              });
+              core.info(`#${issueNumber} → ${marker.name}`);
+            } catch (err) {
+              core.warning(
+                `#${issueNumber}: failed to update status — ${err.message}`,
+              );
+            }
