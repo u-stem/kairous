@@ -78,6 +78,39 @@ git worktree prune
 - `.env.local` はシンボリックリンクで共有 (`ln -sf /path/to/.env.local worktree/.env.local`)
 - 完了後は速やかに削除 (長期放置しない)
 
+### 複数同時起動時のポート割当
+
+複数の worktree で `bun dev` / `supabase start` を同時に走らせる場合、デフォルトポートが衝突する。以下のルールで回避する。
+
+**Supabase**: **単一 worktree (通常は main) でのみ `supabase start` を走らせる**のを推奨。他の worktree は `.env.local` のシンボリックリンク経由で main の Supabase に接続するため、追加起動は不要。マイグレーション検証で別 DB が必要な場合に限り `supabase/config.toml` を書き換えて固有ポートに変更する。
+
+`supabase/config.toml` のデフォルトポート (同時起動する場合は各 worktree で +10 オフセット等に変更):
+
+| サービス | デフォルト port |
+|---------|---------------:|
+| api | 54321 |
+| db | 54322 (shadow: 54320) |
+| studio | 54323 |
+| inbucket | 54324 |
+| analytics | 54327 |
+| db.pooler | 54329 |
+
+**Next.js dev サーバー**: `bun dev` のデフォルトポートは 3000。worktree B では `PORT=3001 bun dev` のように環境変数で逃す。
+
+実例 (main + worktree A の 2 並列):
+
+```bash
+# main: supabase + Next.js dev
+(cd /Users/mikiya/ws/kairous && supabase start && bun dev)
+
+# worktree A: main の Supabase を共有、Next.js dev は PORT=3001 に逃す
+cd /Users/mikiya/ws/kairous-feat-316
+ln -sf /Users/mikiya/ws/kairous/.env.local .env.local   # 既に WorktreeCreate hook で作成済み
+PORT=3001 bun dev
+```
+
+E2E テスト (`bun test:large`) の Playwright は `webServer` 設定のポートに依存するため、別 worktree で並列実行する場合は `playwright.config.ts` の `baseURL` / `webServer.port` を合わせて上書きする必要がある。
+
 ### リカバリ
 
 - worktree/並列開発が失敗しても **PR 経由必須**。cherry-pick で main 直接取り込み禁止
