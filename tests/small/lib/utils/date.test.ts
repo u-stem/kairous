@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toJstDateString } from "@/lib/utils/date";
+import { toJstDateString, formatDateString } from "@/lib/utils/date";
 
 describe("toJstDateString", () => {
   it("returns JST date when UTC is 14:00 (JST 23:00 same day)", () => {
@@ -30,5 +30,20 @@ describe("toJstDateString", () => {
     // 2026-04-06T23:00:00Z = 2026-04-07T08:00:00+09:00
     const date = new Date("2026-04-06T23:00:00Z");
     expect(toJstDateString(date)).toBe("2026-04-07");
+  });
+});
+
+describe("formatDateString", () => {
+  it("YYYY-MM-DD を local TZ として解釈し pattern で format する", () => {
+    // `new Date("2026-05-01")` が UTC 扱いで JST 4/30 になる問題を parseISO で回避 (#330)
+    expect(formatDateString("2026-05-01")).toBe("2026/5/1");
+  });
+
+  it("pattern 未指定時は yyyy/M/d デフォルトを使う", () => {
+    expect(formatDateString("2026-12-09")).toBe("2026/12/9");
+  });
+
+  it("pattern 指定で任意書式に整形できる", () => {
+    expect(formatDateString("2026-05-01", "yyyy-MM-dd")).toBe("2026-05-01");
   });
 });
