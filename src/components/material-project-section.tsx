@@ -3,13 +3,13 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Loader2, Trash2 } from "lucide-react";
-import { format, parseISO } from "date-fns";
 import {
   addMilestone,
   toggleMilestone,
   deleteMilestone,
   type ProjectMilestone,
 } from "@/lib/actions/project";
+import { formatDateString } from "@/lib/utils/date";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -102,9 +102,7 @@ export function MaterialProjectSection({
       <CardContent className="flex flex-col gap-3">
         {deadline && (
           <p className="text-xs text-muted-foreground" data-testid="project-deadline">
-            {/* parseISO で YYYY-MM-DD を local TZ として解釈する。
-                new Date("YYYY-MM-DD") は UTC 午前 0 時扱いとなり、JST では 1 日前倒しで表示される */}
-            締切: {format(parseISO(deadline), "yyyy/M/d")}
+            締切: {formatDateString(deadline)}
           </p>
         )}
 
@@ -156,7 +154,7 @@ export function MaterialProjectSection({
                   </span>
                   {milestone.date && (
                     <span className="text-xs text-muted-foreground">
-                      {format(parseISO(milestone.date), "yyyy/M/d")}
+                      {formatDateString(milestone.date)}
                     </span>
                   )}
                 </div>

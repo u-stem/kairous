@@ -1,3 +1,4 @@
+import { format, parseISO } from "date-fns";
 import { JST_OFFSET_MS } from "@/lib/constants";
 
 // UTC の Date を JST に変換して YYYY-MM-DD 文字列を返す。
@@ -5,4 +6,13 @@ import { JST_OFFSET_MS } from "@/lib/constants";
 export function toJstDateString(date: Date): string {
   const jst = new Date(date.getTime() + JST_OFFSET_MS);
   return jst.toISOString().split("T")[0];
+}
+
+// YYYY-MM-DD 形式の日付文字列を local TZ として解釈して指定パターンで format する。
+// `new Date("YYYY-MM-DD")` は ES spec で UTC 午前 0 時扱いとなり、JST では 1 日前倒しで
+// 表示されるバグ (#330 / #318 code-review で発覚) の再発防止のため集約する。
+// ISO 8601 timestamp (`2026-04-18T10:00:00Z` 等) にはこの関数を使わず `new Date()` を使うこと
+// (timestamp には既に TZ 情報が含まれているため、parseISO による local 解釈は二重変換になる)。
+export function formatDateString(iso: string, pattern = "yyyy/M/d"): string {
+  return format(parseISO(iso), pattern);
 }
