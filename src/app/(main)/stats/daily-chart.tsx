@@ -9,10 +9,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { format, parseISO } from "date-fns";
 import { ja } from "date-fns/locale";
 import type { DailyData } from "@/lib/types/stats";
 import { formatStudyTime } from "@/lib/utils/stats";
+import { formatDateString } from "@/lib/utils/date";
 
 type ChartItem = {
   date: string;
@@ -43,7 +43,7 @@ function CustomTooltip({
 export function DailyChart({ daily }: { daily: DailyData[] }) {
   const chartData: ChartItem[] = daily.map((d) => ({
     date: d.date,
-    label: format(parseISO(d.date), "M/d (E)", { locale: ja }),
+    label: formatDateString(d.date, "M/d (E)", { locale: ja }),
     minutes: Math.round(d.totalSec / 60),
     totalSec: d.totalSec,
     sessionCount: d.sessionCount,

@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { ja } from "date-fns/locale";
 import { toJstDateString, formatDateString } from "@/lib/utils/date";
 
 describe("toJstDateString", () => {
@@ -45,5 +46,16 @@ describe("formatDateString", () => {
 
   it("pattern 指定で任意書式に整形できる", () => {
     expect(formatDateString("2026-05-01", "yyyy-MM-dd")).toBe("2026-05-01");
+  });
+
+  it("locale 未指定時は英語 locale で曜日が出力される", () => {
+    // locale ありとの対比を self-documenting にするためのベースライン
+    expect(formatDateString("2026-05-01", "M/d (E)")).toBe("5/1 (Fri)");
+  });
+
+  it("locale 指定で曜日を日本語に整形できる (daily-chart 等の集約先)", () => {
+    expect(formatDateString("2026-05-01", "M/d (E)", { locale: ja })).toBe(
+      "5/1 (金)",
+    );
   });
 });
