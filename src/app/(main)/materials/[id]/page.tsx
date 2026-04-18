@@ -22,6 +22,7 @@ import { MethodSelectList } from "@/components/method-select-list";
 import { MaterialReadingSection } from "@/components/material-reading-section";
 import { MaterialPracticeLogSection } from "@/components/material-practice-log-section";
 import type { PracticeLogEntry } from "@/lib/actions/practice-log";
+import { MaterialNoteSection } from "@/components/material-note-section";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -141,6 +142,26 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
                   material.meta?.entry_schema === "freeform"
                     ? material.meta.entry_schema
                     : "reps"
+                }
+                unitLabel={material.unit_label}
+              />
+            </div>
+          )}
+
+          {/* note タイプ: section_count / word_count 更新セクション */}
+          {material.type === "note" && (
+            <div className="mb-4">
+              <MaterialNoteSection
+                materialId={material.id}
+                sectionCount={
+                  typeof material.meta?.section_count === "number"
+                    ? material.meta.section_count
+                    : 0
+                }
+                wordCount={
+                  typeof material.meta?.word_count === "number"
+                    ? material.meta.word_count
+                    : 0
                 }
                 unitLabel={material.unit_label}
               />

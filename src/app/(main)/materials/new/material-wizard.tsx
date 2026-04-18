@@ -86,6 +86,9 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
     useState<"reps" | "duration" | "freeform">("reps");
   const [practiceLogUnitLabel, setPracticeLogUnitLabel] = useState("回");
 
+  // note タイプの固有フィールド。unit_label は詳細画面の section_count 表示で使う
+  const [noteUnitLabel, setNoteUnitLabel] = useState("セクション");
+
   // ステップ1.5: タグ選択
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [allTags] = useState<Tag[]>(initialAllTags);
@@ -202,6 +205,9 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
       }
       if (materialType === "practice_log" && practiceLogUnitLabel.trim()) {
         formData.set("unit_label", practiceLogUnitLabel.trim());
+      }
+      if (materialType === "note" && noteUnitLabel.trim()) {
+        formData.set("unit_label", noteUnitLabel.trim());
       }
 
       const result = await createMaterial(formData);
@@ -395,6 +401,20 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
                 />
               </div>
             </>
+          )}
+
+          {/* note 固有フィールド: 単位ラベル (セクション/章/ノート 等) */}
+          {materialType === "note" && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="note-unit-label">単位</Label>
+              <Input
+                id="note-unit-label"
+                value={noteUnitLabel}
+                onChange={(e) => setNoteUnitLabel(e.target.value)}
+                placeholder="例: セクション / 章"
+                data-testid="note-unit-label-input"
+              />
+            </div>
           )}
 
           <div className="flex justify-between">
