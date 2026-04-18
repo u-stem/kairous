@@ -1,4 +1,5 @@
 import { format, parseISO } from "date-fns";
+import type { Locale } from "date-fns";
 import { JST_OFFSET_MS } from "@/lib/constants";
 
 // UTC の Date を JST に変換して YYYY-MM-DD 文字列を返す。
@@ -19,6 +20,7 @@ export function toJstDateString(date: Date): string {
 export function formatDateString(
   dateStr: string,
   pattern = "yyyy/M/d",
+  options?: { locale?: Locale },
 ): string {
-  return format(parseISO(dateStr), pattern);
+  return format(parseISO(dateStr), pattern, options);
 }
