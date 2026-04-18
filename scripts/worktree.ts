@@ -150,6 +150,8 @@ export type WorktreeRow = {
   branch: string;
   reservedMigrations: number[];
   hasUncommittedChanges: boolean;
+  // status コマンドが失敗したケース (worktree 不在 / 権限なし等)。"clean" 誤表示を防ぐ
+  statusUnavailable?: boolean;
   isMain: boolean;
 };
 
@@ -194,7 +196,11 @@ export function formatWorktreeTable(rows: readonly WorktreeRow[]): string {
           .map((n) => String(n).padStart(5, "0"))
           .join(",")
       : "-",
-    r.hasUncommittedChanges ? "modified" : "clean",
+    r.statusUnavailable
+      ? "unknown"
+      : r.hasUncommittedChanges
+        ? "modified"
+        : "clean",
   ]);
   const widths = headers.map((h, i) =>
     Math.max(h.length, ...body.map((row) => row[i].length)),
@@ -302,6 +308,13 @@ function list(): void {
   const gitOut = spawnSync("git", ["worktree", "list", "--porcelain"], {
     encoding: "utf8",
   });
+  // git リポジトリ外での実行等で失敗した場合、空出力 → "(no worktrees)" と
+  // 表示されて原因が分かりにくいため、非ゼロ exit は明示的に throw する
+  if (gitOut.status !== 0) {
+    throw new Error(
+      `git worktree list failed (exit ${gitOut.status}). git リポジトリ内で実行されているか確認してください。`,
+    );
+  }
   const parsed = parseGitWorktreeList(gitOut.stdout ?? "");
   const manifest = loadManifest(root);
 
@@ -319,11 +332,17 @@ function list(): void {
       ["-C", entry.path, "status", "--porcelain"],
       { encoding: "utf8" },
     );
+    // status が失敗する (worktree 削除済み / 権限なし等) と stdout が空で false → "clean" に
+    // 誤表示されるため、status が非ゼロ exit なら unknown 扱いにする
+    const statusOk = statusOut.status === 0;
     return {
       path: entry.path,
       branch: entry.branch,
       reservedMigrations: reservations.get(abs) ?? [],
-      hasUncommittedChanges: (statusOut.stdout ?? "").trim().length > 0,
+      hasUncommittedChanges: statusOk
+        ? (statusOut.stdout ?? "").trim().length > 0
+        : false,
+      statusUnavailable: !statusOk,
       isMain: abs === resolve(root),
     };
   });
