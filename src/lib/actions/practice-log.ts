@@ -139,14 +139,15 @@ export async function deletePracticeLogEntry(
 
   const meta = (material.meta as PracticeLogMeta | null) ?? {};
   const currentEntries = meta.entries ?? [];
-  if (entryIndex >= currentEntries.length) {
+  const index = parsed.data.entryIndex;
+  if (index >= currentEntries.length) {
     return {
       success: false,
-      error: `インデックス ${entryIndex} のエントリは存在しません`,
+      error: `インデックス ${index} のエントリは存在しません`,
     };
   }
 
-  const nextEntries = currentEntries.filter((_, i) => i !== entryIndex);
+  const nextEntries = currentEntries.filter((_, i) => i !== index);
   const nextMeta: PracticeLogMeta = { ...meta, entries: nextEntries };
 
   const { error: updateError } = await supabase
