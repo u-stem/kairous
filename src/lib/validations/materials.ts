@@ -72,7 +72,7 @@ export const projectMetaSchema = z
           date: z.iso.date().optional(),
         }),
       )
-      .max(50)
+      .max(VALIDATION_LIMITS.PROJECT_MILESTONES_MAX)
       .optional(),
     deadline: z.iso.date().optional(),
   })

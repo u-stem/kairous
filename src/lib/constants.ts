@@ -197,6 +197,8 @@ export const VALIDATION_LIMITS = {
   METHOD_DURATION_MIN: 60,
   // 3時間を超えるセッションは認知負荷が高くなりすぎるため上限を設定
   METHOD_DURATION_MAX: 10800,
+  // project タイプのマイルストーン最大件数。projectMetaSchema と project.ts で共有
+  PROJECT_MILESTONES_MAX: 50,
 } as const;
 
 // --- PostgreSQL エラーコード ---
