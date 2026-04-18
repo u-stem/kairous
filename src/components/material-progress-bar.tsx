@@ -27,13 +27,15 @@ export function MaterialProgressBar({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between text-xs">
-        {label ? (
+      <div className="flex items-center text-xs">
+        {label && (
           <span className="text-muted-foreground">{label}</span>
-        ) : (
-          <span aria-hidden="true" />
         )}
-        <span className="text-muted-foreground" data-testid={percentTestId}>
+        {/* label 省略時は空要素を DOM に残さず、ml-auto で percent を右寄せする */}
+        <span
+          className="ml-auto text-muted-foreground"
+          data-testid={percentTestId}
+        >
           {percent}%
         </span>
       </div>
