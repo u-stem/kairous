@@ -85,4 +85,19 @@ describe("MaterialPracticeLogSection", () => {
     // value が文字列のときは単位を付けずにそのまま表示する
     expect(screen.getByText("速弾き練習")).toBeDefined();
   });
+
+  it("YYYY-MM-DD の日付は local TZ として解釈され前倒しされない", () => {
+    // new Date("2026-05-01") は UTC 午前 0 時扱いで JST では 4/30 と表示されるバグを回避するため
+    // parseISO で local TZ 解釈を行う (#330)
+    render(
+      <MaterialPracticeLogSection
+        materialId={MATERIAL_ID}
+        entries={[{ date: "2026-05-01", value: 3 }]}
+        entrySchema="reps"
+        unitLabel="回"
+      />,
+    );
+
+    expect(screen.getByText("2026/5/1")).toBeDefined();
+  });
 });
