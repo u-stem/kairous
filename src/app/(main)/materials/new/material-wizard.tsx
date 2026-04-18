@@ -80,6 +80,12 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
   const [readingTotalPages, setReadingTotalPages] = useState("");
   const [readingUnitLabel, setReadingUnitLabel] = useState("ページ");
 
+  // practice_log タイプの固有フィールド。entry_schema は教材作成後に固定される想定
+  // (reps/duration/freeform で UI が切り替わるため)。
+  const [practiceLogEntrySchema, setPracticeLogEntrySchema] =
+    useState<"reps" | "duration" | "freeform">("reps");
+  const [practiceLogUnitLabel, setPracticeLogUnitLabel] = useState("回");
+
   // ステップ1.5: タグ選択
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [allTags] = useState<Tag[]>(initialAllTags);
@@ -186,9 +192,16 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
           meta.total_pages = n;
         }
       }
+      // practice_log は entry_schema のみ meta に格納 (entries は空配列スタート)
+      if (materialType === "practice_log") {
+        meta.entry_schema = practiceLogEntrySchema;
+      }
       formData.set("meta", JSON.stringify(meta));
       if (materialType === "reading" && readingUnitLabel.trim()) {
         formData.set("unit_label", readingUnitLabel.trim());
+      }
+      if (materialType === "practice_log" && practiceLogUnitLabel.trim()) {
+        formData.set("unit_label", practiceLogUnitLabel.trim());
       }
 
       const result = await createMaterial(formData);
@@ -331,6 +344,54 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
                   onChange={(e) => setReadingUnitLabel(e.target.value)}
                   placeholder="例: ページ / 章"
                   data-testid="reading-unit-label-input"
+                />
+              </div>
+            </>
+          )}
+
+          {/* practice_log 固有フィールド: 記録形式 (reps/duration/freeform) と単位 */}
+          {materialType === "practice_log" && (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <Label id="practice-log-schema-label">記録形式</Label>
+                <div role="radiogroup" aria-labelledby="practice-log-schema-label" className="flex gap-2">
+                  {(
+                    [
+                      ["reps", "回数"],
+                      ["duration", "時間"],
+                      ["freeform", "自由記述"],
+                    ] as const
+                  ).map(([value, label]) => {
+                    const selected = practiceLogEntrySchema === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => setPracticeLogEntrySchema(value)}
+                        data-testid={`practice-log-schema-${value}`}
+                        className={cn(
+                          "flex-1 rounded-lg border p-2 text-sm transition-colors",
+                          selected
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:bg-muted/50",
+                        )}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="practice-log-unit-label">単位</Label>
+                <Input
+                  id="practice-log-unit-label"
+                  value={practiceLogUnitLabel}
+                  onChange={(e) => setPracticeLogUnitLabel(e.target.value)}
+                  placeholder="例: 回 / 分 / セット"
+                  data-testid="practice-log-unit-label-input"
                 />
               </div>
             </>
