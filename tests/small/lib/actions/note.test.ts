@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { buildMockClient } from "./_mocks";
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
@@ -9,48 +10,6 @@ vi.mock("next/navigation", () => ({
     throw new Error(`NEXT_REDIRECT:${url}`);
   }),
 }));
-
-type ResolvedValue = { data: unknown; error: unknown };
-
-function createChainMock(resolvedValue: ResolvedValue) {
-  const makeChain = (): Record<string, unknown> => {
-    const resolved = Promise.resolve(resolvedValue);
-    const chain: Record<string, unknown> = {
-      update: vi.fn().mockImplementation(() => makeChain()),
-      select: vi.fn().mockImplementation(() => makeChain()),
-      eq: vi.fn().mockImplementation(() => makeChain()),
-      maybeSingle: vi.fn().mockReturnValue(resolved),
-      then: resolved.then.bind(resolved),
-    };
-    return chain;
-  };
-  return makeChain();
-}
-
-function buildMockClient(options: {
-  user: { id: string } | null;
-  fetchResult?: ResolvedValue;
-  updateResult?: ResolvedValue;
-}) {
-  const fetchResolved = options.fetchResult ?? { data: null, error: null };
-  const updateResolved = options.updateResult ?? { data: null, error: null };
-
-  const fromMock = vi.fn();
-  let callCount = 0;
-  fromMock.mockImplementation(() => {
-    // 1 回目: select で material 取得、2 回目以降: update
-    const result = callCount++ === 0 ? fetchResolved : updateResolved;
-    return createChainMock(result);
-  });
-
-  return {
-    auth: {
-      getUser: vi.fn().mockResolvedValue({ data: { user: options.user } }),
-    },
-    from: fromMock,
-    rpc: vi.fn(),
-  };
-}
 
 let mockClient: ReturnType<typeof buildMockClient>;
 
@@ -237,5 +196,28 @@ describe("updateNoteStats", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("keeps completed_units unchanged when only word_count is updated", async () => {
+    const updateSpy = vi.fn();
+    mockClient = buildMockClient({
+      user: { id: USER_ID },
+      fetchResult: {
+        data: { type: "note", meta: { section_count: 3 }, completed_units: 3 },
+        error: null,
+      },
+      onUpdate: updateSpy,
+    });
+    const { updateNoteStats } = await import("@/lib/actions/note");
+
+    const result = await updateNoteStats(VALID_MATERIAL_ID, {
+      word_count: 1500,
+    });
+
+    expect(result.success).toBe(true);
+    // section_count を指定しなかったので既存の completed_units=3 が維持される
+    expect(updateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ completed_units: 3 }),
+    );
   });
 });
