@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Loader2, Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import {
   addPracticeLogEntry,
   deletePracticeLogEntry,
@@ -178,7 +178,7 @@ export function MaterialPracticeLogSection({
               >
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <span className="text-xs text-muted-foreground">
-                    {format(new Date(entry.date), "yyyy/M/d")}
+                    {format(parseISO(entry.date), "yyyy/M/d")}
                   </span>
                   <span className="font-medium">
                     {typeof entry.value === "number"
@@ -197,7 +197,7 @@ export function MaterialPracticeLogSection({
                   size="icon"
                   onClick={() => handleDelete(originalIndex)}
                   disabled={isPending}
-                  aria-label={`${format(new Date(entry.date), "yyyy/M/d")} のエントリを削除`}
+                  aria-label={`${format(parseISO(entry.date), "yyyy/M/d")} のエントリを削除`}
                   data-testid={`practice-log-delete-${originalIndex}`}
                 >
                   {pendingDeleteIndex === originalIndex ? (
