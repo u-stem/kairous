@@ -30,15 +30,21 @@ git fetch origin main --quiet
 
 # 自分宛で open な PR の head branch を列挙。fork PR は同一リポ前提のため除外は不要
 # (headRepositoryOwner.login が自分かどうかで絞ってもよいが、gh auth の user 単位で OK)
-# set -e 下で gh の失敗 (認証切れ、ネットワーク等) が即座に script 終了を引き起こすため、
-# 明示的にラップしてユーザー向けメッセージを出す
-mapfile -t BRANCHES < <(
+# set -e 下で gh の失敗 (認証切れ、ネットワーク等) をユーザー向けメッセージでラップする。
+# process substitution `<(...)` はサブシェルで実行され exit code が mapfile に伝搬しないため、
+# 一時変数 + 明示的な `|| { ... }` で成否を判定する必要がある。
+PR_OUTPUT=$(
   gh pr list --state open --author "@me" --json headRefName,number \
-    --jq '.[] | "\(.number) \(.headRefName)"' 2>&1
+    --jq '.[] | "\(.number) \(.headRefName)"'
 ) || {
   echo "ERROR: gh pr list に失敗しました。gh auth status を確認してください。"
   exit 1
 }
+if [ -z "$PR_OUTPUT" ]; then
+  BRANCHES=()
+else
+  mapfile -t BRANCHES <<< "$PR_OUTPUT"
+fi
 
 if [ ${#BRANCHES[@]} -eq 0 ]; then
   echo "open PR なし。何もしません。"
