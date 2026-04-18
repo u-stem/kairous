@@ -30,10 +30,21 @@ git fetch origin main --quiet
 
 # 自分宛で open な PR の head branch を列挙。fork PR は同一リポ前提のため除外は不要
 # (headRepositoryOwner.login が自分かどうかで絞ってもよいが、gh auth の user 単位で OK)
-mapfile -t BRANCHES < <(
+# set -e 下で gh の失敗 (認証切れ、ネットワーク等) をユーザー向けメッセージでラップする。
+# process substitution `<(...)` はサブシェルで実行され exit code が mapfile に伝搬しないため、
+# 一時変数 + 明示的な `|| { ... }` で成否を判定する必要がある。
+PR_OUTPUT=$(
   gh pr list --state open --author "@me" --json headRefName,number \
     --jq '.[] | "\(.number) \(.headRefName)"'
-)
+) || {
+  echo "ERROR: gh pr list に失敗しました。gh auth status を確認してください。"
+  exit 1
+}
+if [ -z "$PR_OUTPUT" ]; then
+  BRANCHES=()
+else
+  mapfile -t BRANCHES <<< "$PR_OUTPUT"
+fi
 
 if [ ${#BRANCHES[@]} -eq 0 ]; then
   echo "open PR なし。何もしません。"
@@ -52,6 +63,9 @@ for entry in "${BRANCHES[@]}"; do
     continue
   fi
 
+  # checkout 失敗は local に branch 未 fetch のケースが多い。リモートから対象 branch を
+  # fetch してから再試行することで成功率を上げる (失敗しても続行)
+  git fetch origin "$branch" --quiet 2>/dev/null || true
   if ! git checkout "$branch" >/dev/null 2>&1; then
     echo "  SKIP: branch checkout 失敗 ($branch 不在 or local 未 fetch)"
     continue

@@ -22,6 +22,10 @@ import { join, resolve } from "node:path";
 /**
  * ブランチ名から type prefix (feat/, fix/...) と先頭の Issue 番号を剥がして
  * ディレクトリサフィックス用のスラッグを返す。
+ *
+ * 注意: 1 段の type prefix (`feat/`, `fix/`, `refactor/` 等) のみを想定する。
+ * `refactor/core/123-foo` のような多段 prefix は `core/123-foo` → `foo` と
+ * 期待と異なる結果になる。現運用は 1 段で統一されているため問題ない。
  */
 export function slugifyBranch(branch: string): string {
   if (!branch) {
@@ -46,7 +50,8 @@ export function buildWorktreePath(issueNumber: number, branch: string): string {
   return `../kairous-${issueNumber}-${slug}`;
 }
 
-// supabase の migration ファイル命名規約: `NNNNN_name.sql`。5 桁ゼロ埋め + 連番
+// supabase の migration ファイル命名規約: `NNNNN_name.sql`。5 桁以上の連番 (現状 5 桁固定だが
+// 将来 6 桁以上になっても動くよう `{5,}` を許容する)
 const MIGRATION_FILE_REGEX = /^(\d{5,})_.+\.sql$/;
 
 /**
@@ -148,7 +153,11 @@ export function collectReservedMigrations(
 function run(cmd: string, args: string[]): void {
   const result = spawnSync(cmd, args, { stdio: "inherit" });
   if (result.status !== 0) {
-    throw new Error(`${cmd} ${args.join(" ")} failed (exit ${result.status})`);
+    // signal kill 時は result.status が null / result.signal に シグナル名 が入る
+    const reason = result.signal
+      ? `signal ${result.signal}`
+      : `exit ${result.status}`;
+    throw new Error(`${cmd} ${args.join(" ")} failed (${reason})`);
   }
 }
 
@@ -176,6 +185,11 @@ function create(issueArg: string | undefined, branch: string | undefined): void 
     );
   }
   const issueNumber = Number(issueArg);
+  if (Number.isNaN(issueNumber)) {
+    // "abc" 等の非数値は早期に弾いてユーザーに元の値をエラーで見せる
+    // (そのまま buildWorktreePath に渡すと `got: NaN` というわかりにくいメッセージになる)
+    throw new Error(`Issue number must be a number, got: "${issueArg}"`);
+  }
   const path = buildWorktreePath(issueNumber, branch);
   run("git", ["worktree", "add", "-b", branch, path]);
 
@@ -226,10 +240,15 @@ function cleanup(pathArg: string | undefined): void {
   }
   run("git", ["worktree", "prune"]);
 
-  // manifest から該当 path のレコードを削除 (予約番号の占有を解放)
+  // manifest から該当 path のレコードを削除 (予約番号の占有を解放)。
+  // pathArg が末尾 `/` 付きだったり絶対パスだったりすると manifest の保存時と一致しないため、
+  // どちらも resolve() で正規化してから比較する
   const root = process.cwd();
   const manifest = loadManifest(root);
-  const remaining = manifest.worktrees.filter((w) => w.path !== pathArg);
+  const normalizedTarget = resolve(root, pathArg);
+  const remaining = manifest.worktrees.filter(
+    (w) => resolve(root, w.path) !== normalizedTarget,
+  );
   if (remaining.length !== manifest.worktrees.length) {
     saveManifest(root, { version: 1, worktrees: remaining });
   }

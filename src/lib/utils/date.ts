@@ -13,6 +13,12 @@ export function toJstDateString(date: Date): string {
 // 表示されるバグ (#330 / #318 code-review で発覚) の再発防止のため集約する。
 // ISO 8601 timestamp (`2026-04-18T10:00:00Z` 等) にはこの関数を使わず `new Date()` を使うこと
 // (timestamp には既に TZ 情報が含まれているため、parseISO による local 解釈は二重変換になる)。
-export function formatDateString(iso: string, pattern = "yyyy/M/d"): string {
-  return format(parseISO(iso), pattern);
+//
+// 引数名 `dateStr` は「YYYY-MM-DD 限定」という意図を伝えるための命名
+// (ISO 8601 full timestamp を連想させる `iso` は避ける)
+export function formatDateString(
+  dateStr: string,
+  pattern = "yyyy/M/d",
+): string {
+  return format(parseISO(dateStr), pattern);
 }
