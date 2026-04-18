@@ -60,3 +60,6 @@ playwright-report/
 
 # Claude Code ローカル runtime ファイル
 .claude/scheduled_tasks.lock
+
+# worktree 予約番号 manifest (#266) — ローカル環境ごとの状態なので gitignore
+.kairous/
