@@ -51,15 +51,24 @@ jobs:
       # workflow_runs が空で jq の last が null を返し status/conclusion が
       # 空文字列になる。case の `*)` 分岐で sleep 30 して retry するため機能
       # 的には問題ない (not_started 相当として polling を継続する)。
+      #
+      # docs-only PR の早期判定: CI workflow は path filter で .md 変更のみの
+      # PR を skip するため CI run 自体が登録されない。5 分待っても CI run が
+      # 一度も進行状態 (in_progress/queued 等) に遷移しなければ docs-only と
+      # みなし、is_docs_only=true を出力して後続 step を skip する。30 分
+      # timeout を待たず Opus トークンを節約する (#310)。
       - name: Wait for CI to succeed
+        id: wait
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          deadline=$((SECONDS + 1800))
-          while [ $SECONDS -lt $deadline ]; do
+          ci_started=false
+          start_deadline=$((SECONDS + 300))
+          final_deadline=$((SECONDS + 1800))
+          while [ $SECONDS -lt $final_deadline ]; do
             # pull_request イベント由来の最新 CI run を head SHA で検索
             read -r status conclusion <<EOF
           $(gh api "repos/${REPO}/actions/runs?head_sha=${PR_HEAD_SHA}&event=pull_request" \
@@ -75,7 +84,18 @@ jobs:
                 echo "CI concluded as '${conclusion}'; skipping review."
                 exit 1
                 ;;
+              in_progress/*|queued/*|requested/*|waiting/*|pending/*)
+                ci_started=true
+                sleep 30
+                ;;
               *)
+                # not_started / 空: CI run がまだ存在しないか登録待ち。
+                # 5 分経過後も一度も進行状態に遷移していなければ docs-only と判定する。
+                if [ "$ci_started" = "false" ] && [ $SECONDS -ge $start_deadline ]; then
+                  echo "CI did not register within 5 minutes — assuming docs-only PR; skipping review."
+                  echo "is_docs_only=true" >> "$GITHUB_OUTPUT"
+                  exit 0
+                fi
                 sleep 30
                 ;;
             esac
@@ -93,6 +113,7 @@ jobs:
       # "Claude finished" は必ず過去 run のもので、当 run のコメントを誤って
       # minimize する心配はない。
       - name: Minimize prior review comments
+        if: steps.wait.outputs.is_docs_only != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -114,6 +135,7 @@ jobs:
           done
 
       - name: Run Claude Code Review
+        if: steps.wait.outputs.is_docs_only != 'true'
         uses: anthropics/claude-code-action@d3a8d1736a61af74bee88bcac0182c49be969839 # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
