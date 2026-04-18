@@ -150,15 +150,16 @@ export async function toggleMilestone(
   const loaded = await loadProjectMaterial(ctx, materialId);
   if (!loaded.ok) return { success: false, error: loaded.error };
 
-  if (milestoneIndex >= loaded.milestones.length) {
+  const index = parsed.data.milestoneIndex;
+  if (index >= loaded.milestones.length) {
     return {
       success: false,
-      error: `インデックス ${milestoneIndex} のマイルストーンは存在しません`,
+      error: `インデックス ${index} のマイルストーンは存在しません`,
     };
   }
 
   const nextMilestones = loaded.milestones.map((m, i) =>
-    i === milestoneIndex ? { ...m, done: !m.done } : m,
+    i === index ? { ...m, done: !m.done } : m,
   );
   return persistMilestones(ctx, materialId, loaded.meta, nextMilestones);
 }
@@ -181,15 +182,14 @@ export async function deleteMilestone(
   const loaded = await loadProjectMaterial(ctx, materialId);
   if (!loaded.ok) return { success: false, error: loaded.error };
 
-  if (milestoneIndex >= loaded.milestones.length) {
+  const index = parsed.data.milestoneIndex;
+  if (index >= loaded.milestones.length) {
     return {
       success: false,
-      error: `インデックス ${milestoneIndex} のマイルストーンは存在しません`,
+      error: `インデックス ${index} のマイルストーンは存在しません`,
     };
   }
 
-  const nextMilestones = loaded.milestones.filter(
-    (_, i) => i !== milestoneIndex,
-  );
+  const nextMilestones = loaded.milestones.filter((_, i) => i !== index);
   return persistMilestones(ctx, materialId, loaded.meta, nextMilestones);
 }
