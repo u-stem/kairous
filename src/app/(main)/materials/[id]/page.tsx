@@ -20,6 +20,8 @@ import { CardElaborationHistory } from "./card-elaboration-history";
 import { MaterialMethodSheet } from "./material-method-sheet";
 import { MethodSelectList } from "@/components/method-select-list";
 import { MaterialReadingSection } from "@/components/material-reading-section";
+import { MaterialPracticeLogSection } from "@/components/material-practice-log-section";
+import type { PracticeLogEntry } from "@/lib/actions/practice-log";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -118,6 +120,27 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
                   typeof material.meta?.total_pages === "number"
                     ? material.meta.total_pages
                     : undefined
+                }
+                unitLabel={material.unit_label}
+              />
+            </div>
+          )}
+
+          {/* practice_log タイプ: 練習エントリ追加 / 一覧 / 削除セクション */}
+          {material.type === "practice_log" && (
+            <div className="mb-4">
+              <MaterialPracticeLogSection
+                materialId={material.id}
+                entries={
+                  Array.isArray(material.meta?.entries)
+                    ? (material.meta.entries as PracticeLogEntry[])
+                    : []
+                }
+                entrySchema={
+                  material.meta?.entry_schema === "duration" ||
+                  material.meta?.entry_schema === "freeform"
+                    ? material.meta.entry_schema
+                    : "reps"
                 }
                 unitLabel={material.unit_label}
               />
