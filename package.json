@@ -19,6 +19,7 @@
     "check:lighthouse-coverage": "bun run scripts/check-lighthouse-coverage.ts",
     "worktree:create": "bun run scripts/worktree.ts create",
     "worktree:cleanup": "bun run scripts/worktree.ts cleanup",
+    "worktree:list": "bun run scripts/worktree.ts list",
     "prepare": "lefthook install"
   },
   "dependencies": {
