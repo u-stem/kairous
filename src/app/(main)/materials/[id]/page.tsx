@@ -23,6 +23,8 @@ import { MaterialReadingSection } from "@/components/material-reading-section";
 import { MaterialPracticeLogSection } from "@/components/material-practice-log-section";
 import type { PracticeLogEntry } from "@/lib/actions/practice-log";
 import { MaterialNoteSection } from "@/components/material-note-section";
+import { MaterialProjectSection } from "@/components/material-project-section";
+import type { ProjectMilestone } from "@/lib/actions/project";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -162,6 +164,26 @@ export default async function MaterialDetailPage({ params, searchParams }: Props
                   typeof material.meta?.word_count === "number"
                     ? material.meta.word_count
                     : 0
+                }
+                unitLabel={material.unit_label}
+              />
+            </div>
+          )}
+
+          {/* project タイプ: マイルストーン管理セクション */}
+          {material.type === "project" && (
+            <div className="mb-4">
+              <MaterialProjectSection
+                materialId={material.id}
+                milestones={
+                  Array.isArray(material.meta?.milestones)
+                    ? (material.meta.milestones as ProjectMilestone[])
+                    : []
+                }
+                deadline={
+                  typeof material.meta?.deadline === "string"
+                    ? material.meta.deadline
+                    : undefined
                 }
                 unitLabel={material.unit_label}
               />

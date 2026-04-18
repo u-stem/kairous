@@ -89,6 +89,11 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
   // note タイプの固有フィールド。unit_label は詳細画面の section_count 表示で使う
   const [noteUnitLabel, setNoteUnitLabel] = useState("セクション");
 
+  // project タイプの固有フィールド。deadline は任意 (締切ない運用もあり)、
+  // unit_label は詳細画面でマイルストーン一覧の文言に使う
+  const [projectDeadline, setProjectDeadline] = useState("");
+  const [projectUnitLabel, setProjectUnitLabel] = useState("マイルストーン");
+
   // ステップ1.5: タグ選択
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [allTags] = useState<Tag[]>(initialAllTags);
@@ -199,6 +204,10 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
       if (materialType === "practice_log") {
         meta.entry_schema = practiceLogEntrySchema;
       }
+      // project は deadline のみ meta に格納 (milestones は空配列スタート)
+      if (materialType === "project" && projectDeadline) {
+        meta.deadline = projectDeadline;
+      }
       formData.set("meta", JSON.stringify(meta));
       if (materialType === "reading" && readingUnitLabel.trim()) {
         formData.set("unit_label", readingUnitLabel.trim());
@@ -208,6 +217,9 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
       }
       if (materialType === "note" && noteUnitLabel.trim()) {
         formData.set("unit_label", noteUnitLabel.trim());
+      }
+      if (materialType === "project" && projectUnitLabel.trim()) {
+        formData.set("unit_label", projectUnitLabel.trim());
       }
 
       const result = await createMaterial(formData);
@@ -415,6 +427,32 @@ export function MaterialWizard({ categories: initialCategories, methods: allMeth
                 data-testid="note-unit-label-input"
               />
             </div>
+          )}
+
+          {/* project 固有フィールド: 締切 (任意) と単位ラベル (マイルストーン/タスク 等) */}
+          {materialType === "project" && (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="project-deadline">締切（任意）</Label>
+                <Input
+                  id="project-deadline"
+                  type="date"
+                  value={projectDeadline}
+                  onChange={(e) => setProjectDeadline(e.target.value)}
+                  data-testid="project-deadline-input"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="project-unit-label">単位</Label>
+                <Input
+                  id="project-unit-label"
+                  value={projectUnitLabel}
+                  onChange={(e) => setProjectUnitLabel(e.target.value)}
+                  placeholder="例: マイルストーン / タスク"
+                  data-testid="project-unit-label-input"
+                />
+              </div>
+            </>
           )}
 
           <div className="flex justify-between">
