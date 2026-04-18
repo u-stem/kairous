@@ -145,6 +145,66 @@ export function collectReservedMigrations(
   return manifest.worktrees.flatMap((w) => w.reservedMigrations);
 }
 
+export type WorktreeRow = {
+  path: string;
+  branch: string;
+  reservedMigrations: number[];
+  hasUncommittedChanges: boolean;
+  isMain: boolean;
+};
+
+/**
+ * `git worktree list --porcelain` の出力をパースする。
+ * ブロック間は空行で区切られ、各ブロックは `worktree <path>` と `branch refs/heads/<name>` を含む。
+ * detached HEAD の worktree は `branch` 行が欠如する。
+ */
+export function parseGitWorktreeList(
+  porcelain: string,
+): Array<{ path: string; branch: string }> {
+  const result: Array<{ path: string; branch: string }> = [];
+  for (const block of porcelain.split(/\n\s*\n/)) {
+    const lines = block.trim().split("\n");
+    const pathLine = lines.find((l) => l.startsWith("worktree "));
+    if (!pathLine) continue;
+    const path = pathLine.slice("worktree ".length).trim();
+    // `branch refs/heads/<name>` のみをブランチとみなす。tag checkout 等の
+    // `branch refs/tags/xxx` は detached HEAD 相当として扱う (誤ったブランチ名を出さない)
+    const branchLine = lines.find((l) => l.startsWith("branch refs/heads/"));
+    const branch = branchLine
+      ? branchLine.slice("branch refs/heads/".length).trim()
+      : "(detached)";
+    result.push({ path, branch });
+  }
+  return result;
+}
+
+/**
+ * worktree 一覧を人間可読なテーブルに整形する。
+ * main worktree は先頭カラムに `*` が付く。予約番号は 5 桁ゼロ埋めで `,` 区切り。
+ */
+export function formatWorktreeTable(rows: readonly WorktreeRow[]): string {
+  if (rows.length === 0) return "(no worktrees)";
+  const headers = ["", "Branch", "Path", "Reserved", "Changes"];
+  const body = rows.map((r) => [
+    r.isMain ? "*" : " ",
+    r.branch,
+    r.path,
+    r.reservedMigrations.length > 0
+      ? r.reservedMigrations
+          .map((n) => String(n).padStart(5, "0"))
+          .join(",")
+      : "-",
+    r.hasUncommittedChanges ? "modified" : "clean",
+  ]);
+  const widths = headers.map((h, i) =>
+    Math.max(h.length, ...body.map((row) => row[i].length)),
+  );
+  const pad = (row: string[]) =>
+    row.map((c, i) => c.padEnd(widths[i])).join(" | ");
+  const separator = widths.map((w) => "-".repeat(w)).join("-+-");
+  return [pad(headers), separator, ...body.map(pad)].join("\n");
+}
+
 function run(cmd: string, args: string[]): void {
   const result = spawnSync(cmd, args, { stdio: "inherit" });
   if (result.status !== 0) {
@@ -237,6 +297,40 @@ function cleanup(pathArg: string | undefined): void {
   console.log(`\nWorktree removed: ${pathArg}`);
 }
 
+function list(): void {
+  const root = process.cwd();
+  const gitOut = spawnSync("git", ["worktree", "list", "--porcelain"], {
+    encoding: "utf8",
+  });
+  const parsed = parseGitWorktreeList(gitOut.stdout ?? "");
+  const manifest = loadManifest(root);
+
+  // manifest の relative path (`../kairous-xxx`) と git が返す absolute path を突合するため
+  // main worktree の cwd() を起点に resolve して比較する
+  const reservations = new Map<string, number[]>();
+  for (const w of manifest.worktrees) {
+    reservations.set(resolve(root, w.path), w.reservedMigrations);
+  }
+
+  const rows: WorktreeRow[] = parsed.map((entry) => {
+    const abs = resolve(entry.path);
+    const statusOut = spawnSync(
+      "git",
+      ["-C", entry.path, "status", "--porcelain"],
+      { encoding: "utf8" },
+    );
+    return {
+      path: entry.path,
+      branch: entry.branch,
+      reservedMigrations: reservations.get(abs) ?? [],
+      hasUncommittedChanges: (statusOut.stdout ?? "").trim().length > 0,
+      isMain: abs === resolve(root),
+    };
+  });
+
+  console.log(formatWorktreeTable(rows));
+}
+
 function main(argv: string[]): void {
   const [command, ...rest] = argv;
   switch (command) {
@@ -246,9 +340,12 @@ function main(argv: string[]): void {
     case "cleanup":
       cleanup(rest[0]);
       break;
+    case "list":
+      list();
+      break;
     default:
       throw new Error(
-        `Unknown command: ${command ?? "(none)"}. Use "create" or "cleanup".`,
+        `Unknown command: ${command ?? "(none)"}. Use "create", "cleanup", or "list".`,
       );
   }
 }

@@ -3,10 +3,13 @@ import {
   buildWorktreePath,
   collectReservedMigrations,
   findMaxMigrationNumber,
+  formatWorktreeTable,
   nextMigrationNumber,
+  parseGitWorktreeList,
   readManifest,
   slugifyBranch,
   upsertWorktreeRecord,
+  type WorktreeRow,
 } from "../../../scripts/worktree";
 
 describe("slugifyBranch", () => {
@@ -149,5 +152,66 @@ describe("collectReservedMigrations", () => {
       ],
     };
     expect(collectReservedMigrations(manifest)).toEqual([25, 26, 27]);
+  });
+});
+
+describe("parseGitWorktreeList", () => {
+  it("parses porcelain output with branch and detached entries", () => {
+    const porcelain = [
+      "worktree /repo/main",
+      "HEAD abc123",
+      "branch refs/heads/main",
+      "",
+      "worktree /repo/other",
+      "HEAD def456",
+      "branch refs/heads/feat/999-demo",
+      "",
+      "worktree /repo/detached",
+      "HEAD 0000",
+      "detached",
+      "",
+    ].join("\n");
+    expect(parseGitWorktreeList(porcelain)).toEqual([
+      { path: "/repo/main", branch: "main" },
+      { path: "/repo/other", branch: "feat/999-demo" },
+      { path: "/repo/detached", branch: "(detached)" },
+    ]);
+  });
+
+  it("returns empty for empty input", () => {
+    expect(parseGitWorktreeList("")).toEqual([]);
+  });
+});
+
+describe("formatWorktreeTable", () => {
+  it("returns placeholder for empty input", () => {
+    expect(formatWorktreeTable([])).toBe("(no worktrees)");
+  });
+
+  it("renders a table with main marker, reserved numbers and change state", () => {
+    const rows: WorktreeRow[] = [
+      {
+        path: "/repo",
+        branch: "main",
+        reservedMigrations: [],
+        hasUncommittedChanges: false,
+        isMain: true,
+      },
+      {
+        path: "../kairous-999-demo",
+        branch: "feat/999-demo",
+        reservedMigrations: [25, 27],
+        hasUncommittedChanges: true,
+        isMain: false,
+      },
+    ];
+    const output = formatWorktreeTable(rows);
+    // main のみ先頭カラムに `*`
+    expect(output).toMatch(/^\*\s*\|\s*main/m);
+    // reserved は 5 桁ゼロ埋め + カンマ区切り
+    expect(output).toMatch(/00025,00027/);
+    // 未コミット変更は "modified"、clean は "clean"
+    expect(output).toMatch(/\bmodified\b/);
+    expect(output).toMatch(/\bclean\b/);
   });
 });
