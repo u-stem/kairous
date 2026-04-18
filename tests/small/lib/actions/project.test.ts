@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { buildMockClient } from "./_mocks";
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
@@ -9,47 +10,6 @@ vi.mock("next/navigation", () => ({
     throw new Error(`NEXT_REDIRECT:${url}`);
   }),
 }));
-
-type ResolvedValue = { data: unknown; error: unknown };
-
-function createChainMock(resolvedValue: ResolvedValue) {
-  const makeChain = (): Record<string, unknown> => {
-    const resolved = Promise.resolve(resolvedValue);
-    const chain: Record<string, unknown> = {
-      update: vi.fn().mockImplementation(() => makeChain()),
-      select: vi.fn().mockImplementation(() => makeChain()),
-      eq: vi.fn().mockImplementation(() => makeChain()),
-      maybeSingle: vi.fn().mockReturnValue(resolved),
-      then: resolved.then.bind(resolved),
-    };
-    return chain;
-  };
-  return makeChain();
-}
-
-function buildMockClient(options: {
-  user: { id: string } | null;
-  fetchResult?: ResolvedValue;
-  updateResult?: ResolvedValue;
-}) {
-  const fetchResolved = options.fetchResult ?? { data: null, error: null };
-  const updateResolved = options.updateResult ?? { data: null, error: null };
-
-  const fromMock = vi.fn();
-  let callCount = 0;
-  fromMock.mockImplementation(() => {
-    const result = callCount++ === 0 ? fetchResolved : updateResolved;
-    return createChainMock(result);
-  });
-
-  return {
-    auth: {
-      getUser: vi.fn().mockResolvedValue({ data: { user: options.user } }),
-    },
-    from: fromMock,
-    rpc: vi.fn(),
-  };
-}
 
 let mockClient: ReturnType<typeof buildMockClient>;
 
@@ -330,5 +290,35 @@ describe("deleteMilestone", () => {
     const result = await deleteMilestone(VALID_MATERIAL_ID, 0);
 
     expect(result.success).toBe(false);
+  });
+
+  it("sets completed_units to done milestone count after toggle", async () => {
+    const updateSpy = vi.fn();
+    mockClient = buildMockClient({
+      user: { id: USER_ID },
+      fetchResult: {
+        data: {
+          type: "project",
+          meta: {
+            milestones: [
+              { name: "a", done: true },
+              { name: "b", done: false },
+              { name: "c", done: false },
+            ],
+          },
+        },
+        error: null,
+      },
+      onUpdate: updateSpy,
+    });
+    const { toggleMilestone } = await import("@/lib/actions/project");
+
+    // index 1 を false → true に反転、done=2 件になる
+    const result = await toggleMilestone(VALID_MATERIAL_ID, 1);
+
+    expect(result.success).toBe(true);
+    expect(updateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ completed_units: 2 }),
+    );
   });
 });

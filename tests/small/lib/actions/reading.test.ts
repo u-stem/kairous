@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { buildMockClient } from "./_mocks";
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
@@ -9,48 +10,6 @@ vi.mock("next/navigation", () => ({
     throw new Error(`NEXT_REDIRECT:${url}`);
   }),
 }));
-
-type ResolvedValue = { data: unknown; error: unknown };
-
-function createChainMock(resolvedValue: ResolvedValue) {
-  const makeChain = (): Record<string, unknown> => {
-    const resolved = Promise.resolve(resolvedValue);
-    const chain: Record<string, unknown> = {
-      update: vi.fn().mockImplementation(() => makeChain()),
-      select: vi.fn().mockImplementation(() => makeChain()),
-      eq: vi.fn().mockImplementation(() => makeChain()),
-      maybeSingle: vi.fn().mockReturnValue(resolved),
-      then: resolved.then.bind(resolved),
-    };
-    return chain;
-  };
-  return makeChain();
-}
-
-function buildMockClient(options: {
-  user: { id: string } | null;
-  fetchResult?: ResolvedValue;
-  updateResult?: ResolvedValue;
-}) {
-  const fetchResolved = options.fetchResult ?? { data: null, error: null };
-  const updateResolved = options.updateResult ?? { data: null, error: null };
-
-  const fromMock = vi.fn();
-  let callCount = 0;
-  fromMock.mockImplementation(() => {
-    // 1 回目: select で material 取得、2 回目以降: update
-    const result = callCount++ === 0 ? fetchResolved : updateResolved;
-    return createChainMock(result);
-  });
-
-  return {
-    auth: {
-      getUser: vi.fn().mockResolvedValue({ data: { user: options.user } }),
-    },
-    from: fromMock,
-    rpc: vi.fn(),
-  };
-}
 
 let mockClient: ReturnType<typeof buildMockClient>;
 
@@ -193,5 +152,23 @@ describe("updatePageProgress", () => {
     const result = await updatePageProgress(VALID_MATERIAL_ID, 50);
 
     expect(result.success).toBe(false);
+  });
+
+  it("passes pagesRead verbatim as completed_units to update", async () => {
+    const updateSpy = vi.fn();
+    mockClient = buildMockClient({
+      user: { id: USER_ID },
+      fetchResult: {
+        data: { type: "reading", meta: { total_pages: 300 } },
+        error: null,
+      },
+      onUpdate: updateSpy,
+    });
+    const { updatePageProgress } = await import("@/lib/actions/reading");
+
+    const result = await updatePageProgress(VALID_MATERIAL_ID, 42);
+
+    expect(result.success).toBe(true);
+    expect(updateSpy).toHaveBeenCalledWith({ completed_units: 42 });
   });
 });
