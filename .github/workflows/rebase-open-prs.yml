@@ -90,13 +90,18 @@ jobs:
               continue
             fi
 
-            # feat branch を fetch してから checkout
+            # feat branch を fetch してから checkout。--force は前イテレーションの
+            # merge --abort 後に残留した working tree (本来残らないが defense in depth) を
+            # 確実にクリーンにして checkout 失敗を避ける
             git fetch origin "$branch" --quiet 2>/dev/null || true
-            if ! git checkout "$branch" >/dev/null 2>&1; then
+            if ! git checkout --force "$branch" >/dev/null 2>&1; then
               echo "  SKIP: checkout 失敗 (branch 不在か local 未 fetch)"
               SKIPPED=$((SKIPPED + 1))
               continue
             fi
+
+            # merge 実行前後の HEAD を比較し、実質変更があった場合のみ push/SYNCED
+            HEAD_BEFORE=$(git rev-parse HEAD)
 
             # conflict 発生時は merge --abort して PR に通知コメント
             if ! git merge --no-edit origin/main >/dev/null 2>&1; then
@@ -122,6 +127,13 @@ jobs:
                 || echo "  WARN: comment 失敗 (gh pr comment)"
               rm -f "$tmpbody"
               CONFLICTS=$((CONFLICTS + 1))
+              continue
+            fi
+
+            # HEAD 不変 = already up-to-date。push 不要で SKIPPED 扱い
+            if [ "$(git rev-parse HEAD)" = "$HEAD_BEFORE" ]; then
+              echo "  SKIP: $branch は既に main と同期済み (変更なし)"
+              SKIPPED=$((SKIPPED + 1))
               continue
             fi
 
