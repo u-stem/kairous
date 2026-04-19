@@ -72,6 +72,12 @@ async function globalSetup() {
     { ended_at: new Date().toISOString(), duration_sec: 300 },
   );
 
+  // auth-tests 専用ユーザーを作成する (#242)。chromium tests の shared storageState を
+  // 破壊しないようログイン/ログアウトテストは独立ユーザーで実行する。
+  // 同 ms 発行時の email 衝突を避けるため auth.spec.ts の signupEmail 同様 UUID を使う
+  const authTestEmail = `e2e-auth-${crypto.randomUUID()}@kairous.local`;
+  const authTestUserId = await createTestUser(authTestEmail, E2E_PASSWORD);
+
   // auth.setup.ts と global-teardown.ts で使うためファイルに保存
   // パスワードはファイルに書き出さず、定数として共有する
   const authDir = resolve(__dirname, ".auth");
@@ -79,6 +85,10 @@ async function globalSetup() {
   writeFileSync(
     resolve(authDir, "test-user.json"),
     JSON.stringify({ id: userId, email }),
+  );
+  writeFileSync(
+    resolve(authDir, "auth-test-user.json"),
+    JSON.stringify({ id: authTestUserId, email: authTestEmail }),
   );
 }
 
