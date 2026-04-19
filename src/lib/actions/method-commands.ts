@@ -9,9 +9,10 @@ import {
 import { ACTION_ERRORS, PG_ERROR_CODES } from "@/lib/constants";
 import { requireAuth } from "@/lib/actions/auth-utils";
 import { generateMethodSlug } from "@/lib/utils/slug";
-import type { Tables } from "@/lib/types/database";
+import type { Tables, TablesUpdate } from "@/lib/types/database";
 
 type MethodRow = Tables<"learning_methods">;
+type MethodUpdate = TablesUpdate<"learning_methods">;
 
 export async function createMethod(
   input: unknown,
@@ -69,7 +70,9 @@ export async function updateMethod(
 
   const { user, supabase } = await requireAuth();
 
-  const updateData: Record<string, unknown> = {};
+  // 新 @supabase/postgrest-js は update() への excess property を型エラーに
+  // するため、DB schema から生成した Update 型で明示的にバインドする
+  const updateData: MethodUpdate = {};
   if (parsed.data.name !== undefined) {
     updateData.name = parsed.data.name;
     updateData.slug = generateMethodSlug(user.id, parsed.data.name);
