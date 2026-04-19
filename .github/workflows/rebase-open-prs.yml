@@ -9,14 +9,12 @@ name: Rebase open PRs on main update
 # - workflow_dispatch: 手動トリガ (dry-run 可)
 #
 # 権限モデル:
-# - GITHUB_TOKEN の contents:write で feat branch に merge commit を push できる
-# - ただし GITHUB_TOKEN 由来の push は他 workflow (CI / claude-review) を発火しない
-#   GitHub の制約 (workflow-infinite-loop 防止) があるため、CI 再走は期待できない。
-#   → branch が main と up-to-date になる事実 (Required branches to be up to date チェック
-#     通過に必要) は即時確保されるが、新しい CI 実行を走らせたい場合は、PR author が
-#     feat branch に commit を push するか、PR を close/reopen して synchronize を
-#     発火する必要がある。REBASE_PAT (fine-grained PAT) による CI 自動再走化は #352 で
-#     追跡する
+# - REBASE_PAT (fine-grained PAT、scope: Contents R/W + Pull requests R/W) で push する (#352)。
+#   GITHUB_TOKEN 由来 push は GitHub の仕様 (workflow-infinite-loop 防止) で他 workflow を
+#   発火しないため、PAT 経由に切り替えることで rebase 後の CI / claude-review が自動再走する
+# - PAT は u-stem/kairous のみにスコープ限定。90 日期限で更新運用
+# - 使用 API: gh pr comment (conflict 通知) は GH_TOKEN に REBASE_PAT を渡す。checkout も
+#   persist-credentials 経由で同 PAT を使い、git push 時の認証情報として利用される
 on:
   push:
     branches: [main]
@@ -35,6 +33,8 @@ concurrency:
 jobs:
   rebase:
     runs-on: ubuntu-latest
+    # PAT 経由で push するため workflow-level の permissions は不要だが、
+    # 万一 PAT が有効でないケースでも最低限動作するよう保持する
     permissions:
       contents: write
       pull-requests: write
@@ -44,17 +44,23 @@ jobs:
         with:
           # 複数 feat branch を checkout するため全履歴を取得
           fetch-depth: 0
-          # 後続 git push で GITHUB_TOKEN を認証情報として使う
+          # 後続 git push で REBASE_PAT を認証情報として使う。GITHUB_TOKEN ではなく
+          # PAT にすることで push が他 workflow (CI / claude-review) を発火する (#352)
           persist-credentials: true
+          token: ${{ secrets.REBASE_PAT }}
 
       - name: Configure git identity
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # PAT の owner (u-stem) として commit する。GITHUB_TOKEN 時の
+          # github-actions[bot] と区別される
+          git config user.name "u-stem"
+          git config user.email "83386525+u-stem@users.noreply.github.com"
 
       - name: Rebase open PRs
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # gh pr comment も PAT で呼び出す (pull-requests:write)。GITHUB_TOKEN ではなく
+          # PAT を使うことで comment author が bot ではなく u-stem になる
+          GH_TOKEN: ${{ secrets.REBASE_PAT }}
           DRY_RUN: ${{ inputs.dry_run || 'false' }}
           REPO_OWNER: ${{ github.repository_owner }}
         run: |
