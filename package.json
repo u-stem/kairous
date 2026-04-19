@@ -60,7 +60,7 @@
     "puppeteer": "24.40.0",
     "supabase": "^2.92.1",
     "tailwindcss": "^4.2.2",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.4",
     "wait-on": "9.0.5"
   },
