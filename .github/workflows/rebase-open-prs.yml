@@ -1,0 +1,145 @@
+name: Rebase open PRs on main update
+
+# main が更新された直後、既存 feat branch の workflow 定義が default と不一致になり
+# Claude PR Review が 401 Workflow validation failed になる問題 (#242 前提、#351) を
+# 自動化で解消する。自分 (u-stem) 所有の open PR を順次 main と同期する。
+#
+# トリガ:
+# - push to main: 自動実行
+# - workflow_dispatch: 手動トリガ (dry-run 可)
+#
+# 権限モデル:
+# - GITHUB_TOKEN の contents:write で feat branch に merge commit を push できる
+# - ただし GITHUB_TOKEN 由来の push は他 workflow (CI / claude-review) を発火しない
+#   GitHub の制約 (workflow-infinite-loop 防止) があるため、CI 再走は期待できない。
+#   → branch が main と up-to-date になる事実 (Required branches to be up to date チェック
+#     通過に必要) は即時確保されるが、新しい CI 実行を走らせたい場合は、PR author が
+#     feat branch に commit を push するか、PR を close/reopen して synchronize を
+#     発火する必要がある。REBASE_PAT (fine-grained PAT) による CI 自動再走化は #352 で
+#     追跡する
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (rebase せず対象 PR 一覧のみ表示)"
+        type: boolean
+        default: false
+
+# 同 workflow の重複実行を直列化する (main への連続 push で race condition を避ける)
+concurrency:
+  group: rebase-open-prs
+  cancel-in-progress: false
+
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout with full history
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # 複数 feat branch を checkout するため全履歴を取得
+          fetch-depth: 0
+          # 後続 git push で GITHUB_TOKEN を認証情報として使う
+          persist-credentials: true
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Rebase open PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+
+          # 自分 (repo owner) が author の open PR のみ対象。fork からの PR は
+          # head repository owner が異なるため select で除外する
+          PRS=$(gh pr list --state open \
+            --json number,headRefName,author,headRepositoryOwner \
+            --jq '.[] | select(.headRepositoryOwner.login == env.REPO_OWNER) | select(.author.login == env.REPO_OWNER) | "\(.number) \(.headRefName)"') \
+            || { echo "ERROR: gh pr list 失敗"; exit 1; }
+
+          if [ -z "$PRS" ]; then
+            echo "open PR なし"
+            exit 0
+          fi
+
+          TOTAL=$(echo "$PRS" | wc -l | tr -d ' ')
+          echo "対象 open PR: $TOTAL 件"
+
+          # 集計用カウンタ
+          SYNCED=0
+          SKIPPED=0
+          CONFLICTS=0
+
+          while IFS=' ' read -r pr_number branch; do
+            [ -z "$pr_number" ] && continue
+            echo ""
+            echo "--- PR #$pr_number ($branch) ---"
+
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "  [dryrun] checkout + merge origin/main + push をスキップ"
+              continue
+            fi
+
+            # feat branch を fetch してから checkout
+            git fetch origin "$branch" --quiet 2>/dev/null || true
+            if ! git checkout "$branch" >/dev/null 2>&1; then
+              echo "  SKIP: checkout 失敗 (branch 不在か local 未 fetch)"
+              SKIPPED=$((SKIPPED + 1))
+              continue
+            fi
+
+            # conflict 発生時は merge --abort して PR に通知コメント
+            if ! git merge --no-edit origin/main >/dev/null 2>&1; then
+              git merge --abort >/dev/null 2>&1 || true
+              echo "  CONFLICT: PR に通知"
+              # 複数行 body は heredoc 経由の tempfile + --body-file で渡す
+              # (YAML 内に heredoc を直書きすると parser が indent を誤認するため)
+              tmpbody=$(mktemp)
+              {
+                echo "main との自動 rebase で conflict が発生しました。手動で解決してください:"
+                echo ""
+                echo '```bash'
+                echo "git fetch origin main"
+                echo "git checkout $branch"
+                echo "git merge origin/main"
+                echo "# conflict 解決後"
+                echo "git push"
+                echo '```'
+                echo ""
+                echo "([rebase-open-prs.yml](https://github.com/${GITHUB_REPOSITORY:-}/actions/workflows/rebase-open-prs.yml))"
+              } > "$tmpbody"
+              gh pr comment "$pr_number" --body-file "$tmpbody" \
+                || echo "  WARN: comment 失敗 (gh pr comment)"
+              rm -f "$tmpbody"
+              CONFLICTS=$((CONFLICTS + 1))
+              continue
+            fi
+
+            # upstream tracking 未設定な状況を想定し branch を明示して push する
+            if ! git push origin "$branch" >/dev/null 2>&1; then
+              echo "  WARN: push 失敗 (branch protection / upstream)"
+              SKIPPED=$((SKIPPED + 1))
+              continue
+            fi
+            echo "  OK: $branch を main と同期"
+            SYNCED=$((SYNCED + 1))
+          done <<< "$PRS"
+
+          # 最後に main に戻す (subsequent step で意図しない branch 残留を避ける)
+          git checkout main >/dev/null 2>&1 || true
+
+          echo ""
+          echo "===== 完了 ====="
+          echo "  同期成功: $SYNCED"
+          echo "  conflict: $CONFLICTS"
+          echo "  skip:     $SKIPPED"
