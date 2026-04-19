@@ -756,6 +756,26 @@ export type Database = {
             Args: { p_delta: number; p_material_id: string; p_user_id?: string }
             Returns: undefined
           }
+      practice_log_append_entry: {
+        Args: { p_entry: Json; p_material_id: string }
+        Returns: undefined
+      }
+      practice_log_delete_entry: {
+        Args: { p_entry_index: number; p_material_id: string }
+        Returns: undefined
+      }
+      project_add_milestone: {
+        Args: { p_material_id: string; p_milestone: Json }
+        Returns: undefined
+      }
+      project_delete_milestone: {
+        Args: { p_material_id: string; p_milestone_index: number }
+        Returns: undefined
+      }
+      project_toggle_milestone: {
+        Args: { p_material_id: string; p_milestone_index: number }
+        Returns: undefined
+      }
       remove_material_method: {
         Args: { p_material_id: string; p_method_id: string; p_user_id: string }
         Returns: undefined
