@@ -33,8 +33,8 @@ concurrency:
 jobs:
   rebase:
     runs-on: ubuntu-latest
-    # PAT 経由で push するため workflow-level の permissions は不要だが、
-    # 万一 PAT が有効でないケースでも最低限動作するよう保持する
+    # REBASE_PAT 経由で push / comment するため workflow-level の permissions は不要だが、
+    # PAT 失効時にエラー箇所を特定しやすいよう明示的に保持する (現状 checkout で落ちる)
     permissions:
       contents: write
       pull-requests: write
