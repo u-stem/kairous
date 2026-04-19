@@ -38,9 +38,10 @@ describe("addMilestone", () => {
     const result = await addMilestone("not-a-uuid", VALID_MILESTONE);
 
     expect(result.success).toBe(false);
+    expect(mockClient.rpc).not.toHaveBeenCalled();
   });
 
-  it("rejects empty milestone name", async () => {
+  it("rejects empty milestone name at zod boundary", async () => {
     mockClient = buildMockClient({ user: { id: USER_ID } });
     const { addMilestone } = await import("@/lib/actions/project");
 
@@ -50,9 +51,10 @@ describe("addMilestone", () => {
     });
 
     expect(result.success).toBe(false);
+    expect(mockClient.rpc).not.toHaveBeenCalled();
   });
 
-  it("rejects milestone name exceeding 200 chars", async () => {
+  it("rejects milestone name exceeding 200 chars at zod boundary", async () => {
     mockClient = buildMockClient({ user: { id: USER_ID } });
     const { addMilestone } = await import("@/lib/actions/project");
 
@@ -62,29 +64,28 @@ describe("addMilestone", () => {
     });
 
     expect(result.success).toBe(false);
+    expect(mockClient.rpc).not.toHaveBeenCalled();
   });
 
-  it("rejects when material not found (wrong owner or RLS)", async () => {
+  it("maps RPC 'material not found' to NOT_FOUND error", async () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: { data: null, error: null },
+      rpcResult: { data: null, error: { message: "material not found" } },
     });
     const { addMilestone } = await import("@/lib/actions/project");
 
     const result = await addMilestone(VALID_MATERIAL_ID, VALID_MILESTONE);
 
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("見つかりません");
-    }
+    if (!result.success) expect(result.error).toContain("見つかりません");
   });
 
-  it("rejects when material type is not project", async () => {
+  it("maps RPC 'not project' to type error", async () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: {
-        data: { type: "flashcard", meta: {} },
-        error: null,
+      rpcResult: {
+        data: null,
+        error: { message: "material type is not project (got flashcard)" },
       },
     });
     const { addMilestone } = await import("@/lib/actions/project");
@@ -92,21 +93,15 @@ describe("addMilestone", () => {
     const result = await addMilestone(VALID_MATERIAL_ID, VALID_MILESTONE);
 
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("project");
-    }
+    if (!result.success) expect(result.error).toContain("project");
   });
 
-  it("rejects when milestones already reached upper limit (50)", async () => {
-    const full = Array.from({ length: 50 }, (_, i) => ({
-      name: `MS-${i}`,
-      done: false,
-    }));
+  it("maps RPC 'exceeded max' error with extracted limit (50)", async () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: {
-        data: { type: "project", meta: { milestones: full } },
-        error: null,
+      rpcResult: {
+        data: null,
+        error: { message: "project milestones exceeded max (50)" },
       },
     });
     const { addMilestone } = await import("@/lib/actions/project");
@@ -114,41 +109,40 @@ describe("addMilestone", () => {
     const result = await addMilestone(VALID_MATERIAL_ID, VALID_MILESTONE);
 
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("50");
-    }
+    if (!result.success) expect(result.error).toContain("50");
   });
 
-  it("succeeds when milestone is valid and under limit", async () => {
+  it("calls rpc with p_material_id and validated p_milestone when input is valid", async () => {
+    const rpcSpy = vi.fn();
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: {
-        data: { type: "project", meta: { milestones: [] } },
-        error: null,
-      },
-      updateResult: { data: null, error: null },
+      onRpc: rpcSpy,
     });
     const { addMilestone } = await import("@/lib/actions/project");
 
     const result = await addMilestone(VALID_MATERIAL_ID, VALID_MILESTONE);
 
     expect(result.success).toBe(true);
+    expect(rpcSpy).toHaveBeenCalledWith("project_add_milestone", {
+      p_material_id: VALID_MATERIAL_ID,
+      p_milestone: VALID_MILESTONE,
+    });
   });
 
-  it("returns update failure when DB update errors", async () => {
+  it("returns UPDATE_FAILED for unexpected RPC errors", async () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: {
-        data: { type: "project", meta: { milestones: [] } },
-        error: null,
+      rpcResult: {
+        data: null,
+        error: { message: "connection reset" },
       },
-      updateResult: { data: null, error: { message: "db error" } },
     });
     const { addMilestone } = await import("@/lib/actions/project");
 
     const result = await addMilestone(VALID_MATERIAL_ID, VALID_MILESTONE);
 
     expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("更新");
   });
 });
 
@@ -157,39 +151,22 @@ describe("toggleMilestone", () => {
     vi.resetModules();
   });
 
-  it("rejects negative milestoneIndex", async () => {
+  it("rejects negative milestoneIndex at zod boundary", async () => {
     mockClient = buildMockClient({ user: { id: USER_ID } });
     const { toggleMilestone } = await import("@/lib/actions/project");
 
     const result = await toggleMilestone(VALID_MATERIAL_ID, -1);
 
     expect(result.success).toBe(false);
+    expect(mockClient.rpc).not.toHaveBeenCalled();
   });
 
-  it("rejects when material type is not project", async () => {
+  it("maps RPC 'out of range' with extracted index", async () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: {
-        data: { type: "reading", meta: {} },
-        error: null,
-      },
-    });
-    const { toggleMilestone } = await import("@/lib/actions/project");
-
-    const result = await toggleMilestone(VALID_MATERIAL_ID, 0);
-
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects milestoneIndex out of range", async () => {
-    mockClient = buildMockClient({
-      user: { id: USER_ID },
-      fetchResult: {
-        data: {
-          type: "project",
-          meta: { milestones: [VALID_MILESTONE] },
-        },
-        error: null,
+      rpcResult: {
+        data: null,
+        error: { message: "milestone index 5 out of range (length=1)" },
       },
     });
     const { toggleMilestone } = await import("@/lib/actions/project");
@@ -197,28 +174,40 @@ describe("toggleMilestone", () => {
     const result = await toggleMilestone(VALID_MATERIAL_ID, 5);
 
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("5");
-    }
+    if (!result.success) expect(result.error).toContain("5");
   });
 
-  it("succeeds when milestoneIndex is within range", async () => {
+  it("maps RPC 'is not project' to type error (shared mapRpcError)", async () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: {
-        data: {
-          type: "project",
-          meta: { milestones: [VALID_MILESTONE, { ...VALID_MILESTONE, done: true }] },
-        },
-        error: null,
+      rpcResult: {
+        data: null,
+        error: { message: "material type is not project (got practice_log)" },
       },
-      updateResult: { data: null, error: null },
     });
     const { toggleMilestone } = await import("@/lib/actions/project");
 
     const result = await toggleMilestone(VALID_MATERIAL_ID, 0);
 
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("project");
+  });
+
+  it("calls rpc with p_material_id and p_milestone_index when input is valid", async () => {
+    const rpcSpy = vi.fn();
+    mockClient = buildMockClient({
+      user: { id: USER_ID },
+      onRpc: rpcSpy,
+    });
+    const { toggleMilestone } = await import("@/lib/actions/project");
+
+    const result = await toggleMilestone(VALID_MATERIAL_ID, 3);
+
     expect(result.success).toBe(true);
+    expect(rpcSpy).toHaveBeenCalledWith("project_toggle_milestone", {
+      p_material_id: VALID_MATERIAL_ID,
+      p_milestone_index: 3,
+    });
   });
 });
 
@@ -227,98 +216,46 @@ describe("deleteMilestone", () => {
     vi.resetModules();
   });
 
-  it("rejects non-integer milestoneIndex", async () => {
+  it("rejects non-integer milestoneIndex at zod boundary", async () => {
     mockClient = buildMockClient({ user: { id: USER_ID } });
     const { deleteMilestone } = await import("@/lib/actions/project");
 
     const result = await deleteMilestone(VALID_MATERIAL_ID, 1.5);
 
     expect(result.success).toBe(false);
+    expect(mockClient.rpc).not.toHaveBeenCalled();
   });
 
-  it("rejects milestoneIndex out of range", async () => {
+  it("maps RPC 'is not project' to type error", async () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: {
-        data: {
-          type: "project",
-          meta: { milestones: [VALID_MILESTONE] },
-        },
-        error: null,
+      rpcResult: {
+        data: null,
+        error: { message: "material type is not project (got reading)" },
       },
-    });
-    const { deleteMilestone } = await import("@/lib/actions/project");
-
-    const result = await deleteMilestone(VALID_MATERIAL_ID, 10);
-
-    expect(result.success).toBe(false);
-  });
-
-  it("succeeds when milestoneIndex is within range", async () => {
-    mockClient = buildMockClient({
-      user: { id: USER_ID },
-      fetchResult: {
-        data: {
-          type: "project",
-          meta: { milestones: [VALID_MILESTONE, VALID_MILESTONE] },
-        },
-        error: null,
-      },
-      updateResult: { data: null, error: null },
-    });
-    const { deleteMilestone } = await import("@/lib/actions/project");
-
-    const result = await deleteMilestone(VALID_MATERIAL_ID, 0);
-
-    expect(result.success).toBe(true);
-  });
-
-  it("returns update failure when DB update errors", async () => {
-    mockClient = buildMockClient({
-      user: { id: USER_ID },
-      fetchResult: {
-        data: {
-          type: "project",
-          meta: { milestones: [VALID_MILESTONE] },
-        },
-        error: null,
-      },
-      updateResult: { data: null, error: { message: "db error" } },
     });
     const { deleteMilestone } = await import("@/lib/actions/project");
 
     const result = await deleteMilestone(VALID_MATERIAL_ID, 0);
 
     expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("project");
   });
 
-  it("sets completed_units to done milestone count after toggle", async () => {
-    const updateSpy = vi.fn();
+  it("calls rpc with p_material_id and p_milestone_index when input is valid", async () => {
+    const rpcSpy = vi.fn();
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: {
-        data: {
-          type: "project",
-          meta: {
-            milestones: [
-              { name: "a", done: true },
-              { name: "b", done: false },
-              { name: "c", done: false },
-            ],
-          },
-        },
-        error: null,
-      },
-      onUpdate: updateSpy,
+      onRpc: rpcSpy,
     });
-    const { toggleMilestone } = await import("@/lib/actions/project");
+    const { deleteMilestone } = await import("@/lib/actions/project");
 
-    // index 1 を false → true に反転、done=2 件になる
-    const result = await toggleMilestone(VALID_MATERIAL_ID, 1);
+    const result = await deleteMilestone(VALID_MATERIAL_ID, 0);
 
     expect(result.success).toBe(true);
-    expect(updateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ completed_units: 2 }),
-    );
+    expect(rpcSpy).toHaveBeenCalledWith("project_delete_milestone", {
+      p_material_id: VALID_MATERIAL_ID,
+      p_milestone_index: 0,
+    });
   });
 });

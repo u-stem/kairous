@@ -11,12 +11,16 @@ import {
 } from "../../shared/helpers";
 
 // Issue #321: meta JSONB の read-modify-write を原子化する RPC の DB 層契約を検証する。
-// 本ファイルは practice_log_*系 の 2 関数のみ。project_*系は別 PR で同じ方針で追加予定。
+// practice_log (2 関数) + project (3 関数) の計 5 関数を同一ファイルで検証する
+// (同じ migration に属するため)。
 
 type PracticeLogMeta = {
   entry_schema?: string;
   entries?: Array<{ date: string; value: number | string; note?: string }>;
 };
+
+type ProjectMilestone = { name: string; done: boolean; date?: string };
+type ProjectMeta = { milestones?: ProjectMilestone[]; deadline?: string };
 
 async function setupPracticeLogMaterial(userId: string) {
   const category = await createTestSubject(userId, `RPC-PL-${Date.now()}`);
@@ -28,6 +32,17 @@ async function setupPracticeLogMaterial(userId: string) {
       meta: { entry_schema: "reps", entries: [] },
       unit_label: "回",
     })
+    .eq("id", material.id);
+  expect(error).toBeNull();
+  return material;
+}
+
+async function setupProjectMaterial(userId: string) {
+  const category = await createTestSubject(userId, `RPC-PR-${Date.now()}`);
+  const material = await createTestMaterial(category.id, userId, "project-rpc");
+  const { error } = await getAdminClient()
+    .from("materials")
+    .update({ type: "project", meta: { milestones: [] } })
     .eq("id", material.id);
   expect(error).toBeNull();
   return material;
@@ -46,7 +61,7 @@ async function readMeta(materialId: string) {
   };
 }
 
-describe("migration 00025: practice_log atomic RPCs", () => {
+describe("migration 00025: meta JSONB atomic RPCs", () => {
   let userId: string;
 
   beforeAll(async () => {
@@ -144,6 +159,100 @@ describe("migration 00025: practice_log atomic RPCs", () => {
         p_entry_index: 99,
       });
       expect(error?.message).toMatch(/out of range/);
+    });
+  });
+
+  describe("project_add_milestone", () => {
+    it("milestones に 1 件追加し done 件数で completed_units を再計算する", async () => {
+      const material = await setupProjectMaterial(userId);
+      const { error } = await getAdminClient().rpc("project_add_milestone", {
+        p_material_id: material.id,
+        p_milestone: { name: "設計", done: true },
+      });
+      expect(error).toBeNull();
+
+      const row = await readMeta(material.id);
+      const milestones = (row.meta as ProjectMeta).milestones ?? [];
+      expect(milestones.length).toBe(1);
+      expect(row.completed_units).toBe(1);
+    });
+
+    it("concurrent add でも milestones が失われない (原子性)", async () => {
+      const material = await setupProjectMaterial(userId);
+      const tasks = Array.from({ length: 10 }, (_, i) =>
+        getAdminClient().rpc("project_add_milestone", {
+          p_material_id: material.id,
+          p_milestone: { name: `M${i}`, done: false },
+        }),
+      );
+      const results = await Promise.all(tasks);
+      for (const r of results) expect(r.error).toBeNull();
+
+      const row = await readMeta(material.id);
+      expect((row.meta as ProjectMeta).milestones?.length).toBe(10);
+      expect(row.completed_units).toBe(0);
+    });
+
+    it("p_milestone が JSON 配列の場合は型チェックで拒否する", async () => {
+      const material = await setupProjectMaterial(userId);
+      const { error } = await getAdminClient().rpc("project_add_milestone", {
+        p_material_id: material.id,
+        p_milestone: [{ name: "bad", done: false }],
+      });
+      expect(error?.message).toMatch(/must be a JSON object/);
+    });
+  });
+
+  describe("project_toggle_milestone", () => {
+    it("指定 index の done を反転し completed_units を再計算する", async () => {
+      const material = await setupProjectMaterial(userId);
+      for (const name of ["A", "B", "C"]) {
+        await getAdminClient().rpc("project_add_milestone", {
+          p_material_id: material.id,
+          p_milestone: { name, done: false },
+        });
+      }
+
+      const { error } = await getAdminClient().rpc("project_toggle_milestone", {
+        p_material_id: material.id,
+        p_milestone_index: 1,
+      });
+      expect(error).toBeNull();
+
+      const row = await readMeta(material.id);
+      const milestones = (row.meta as ProjectMeta).milestones ?? [];
+      expect(milestones[0]?.done).toBe(false);
+      expect(milestones[1]?.done).toBe(true);
+      expect(milestones[2]?.done).toBe(false);
+      expect(row.completed_units).toBe(1);
+    });
+  });
+
+  describe("project_delete_milestone", () => {
+    it("指定 index の milestone を削除し completed_units を再計算する", async () => {
+      const material = await setupProjectMaterial(userId);
+      for (const m of [
+        { name: "A", done: true },
+        { name: "B", done: false },
+        { name: "C", done: true },
+      ]) {
+        await getAdminClient().rpc("project_add_milestone", {
+          p_material_id: material.id,
+          p_milestone: m,
+        });
+      }
+
+      // 先頭 done=true を削除すると completed_units は 1 に減る
+      const { error } = await getAdminClient().rpc("project_delete_milestone", {
+        p_material_id: material.id,
+        p_milestone_index: 0,
+      });
+      expect(error).toBeNull();
+
+      const row = await readMeta(material.id);
+      const milestones = (row.meta as ProjectMeta).milestones ?? [];
+      expect(milestones.map((m) => m.name)).toEqual(["B", "C"]);
+      expect(row.completed_units).toBe(1);
     });
   });
 });

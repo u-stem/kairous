@@ -3,15 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ACTION_ERRORS, VALIDATION_LIMITS } from "@/lib/constants";
-import { requireAuth, type AuthenticatedContext } from "@/lib/actions/auth-utils";
-import { projectMetaSchema } from "@/lib/validations/materials";
+import { requireAuth } from "@/lib/actions/auth-utils";
 import {
   extractFieldErrors,
   type ActionResult,
 } from "@/lib/types/action-result";
 
-// projectMetaSchema.milestones 内の単一要素に合わせて制約値を揃える。
-// zod の派生は型推論が複雑になるため手書きで揃え、コメントで対応関係を示す
+// projectMetaSchema.milestones 内の単一要素に合わせた zod スキーマ。
+// 直接 projectMetaSchema から派生させると nested の型推論が複雑化するため手書きで揃える
 const milestoneSchema = z.object({
   name: z.string().min(1, "マイルストーン名を入力してください").max(200),
   done: z.boolean(),
@@ -19,7 +18,6 @@ const milestoneSchema = z.object({
 });
 
 export type ProjectMilestone = z.infer<typeof milestoneSchema>;
-type ProjectMeta = z.infer<typeof projectMetaSchema>;
 
 const addMilestoneSchema = z.object({
   materialId: z.uuid("有効な教材IDを指定してください"),
@@ -34,76 +32,37 @@ const milestoneIndexSchema = z.object({
     .nonnegative("インデックスは 0 以上で指定してください"),
 });
 
-// projectMetaSchema.milestones.max と同じ値を参照し、single source of truth にする
-const MAX_MILESTONES = VALIDATION_LIMITS.PROJECT_MILESTONES_MAX;
-
-// done=true のマイルストーン件数。進捗表示で completed_units として採用する
-function countDone(milestones: ProjectMilestone[]): number {
-  return milestones.filter((m) => m.done).length;
+// 00025 migration の plpgsql 関数が `RAISE EXCEPTION` で投げるメッセージから
+// user-facing エラーに map する。practice-log.ts の mapRpcError と同方針。
+function mapRpcError(message: string): string {
+  if (message.includes("material not found")) {
+    return ACTION_ERRORS.NOT_FOUND("教材");
+  }
+  // "is not project" まで含めた方が誤 match リスクを下げられる
+  // (migration の RAISE メッセージは `material type is not project (got ...)`)
+  if (message.includes("is not project")) {
+    return "project タイプ以外の教材ではマイルストーンを操作できません";
+  }
+  if (message.includes("exceeded max")) {
+    const m = message.match(/max \((\d+)\)/);
+    return `マイルストーン数が上限 (${m?.[1] ?? VALIDATION_LIMITS.PROJECT_MILESTONES_MAX}) に達しています`;
+  }
+  if (message.includes("out of range")) {
+    const m = message.match(/index (-?\d+)/);
+    return m
+      ? `インデックス ${m[1]} のマイルストーンは存在しません`
+      : "指定されたマイルストーンは存在しません";
+  }
+  if (message.includes("must be a JSON object")) {
+    return ACTION_ERRORS.INVALID_INPUT;
+  }
+  return ACTION_ERRORS.UPDATE_FAILED("教材");
 }
 
-// project 教材の取得と型チェックを共通化。
-// 3 Action (add / toggle / delete) の冒頭で走る所有権 + type ガードを 1 箇所にまとめる
-type LoadOk = {
-  ok: true;
-  meta: ProjectMeta;
-  milestones: ProjectMilestone[];
-};
-type LoadErr = { ok: false; error: string };
-
-async function loadProjectMaterial(
-  ctx: AuthenticatedContext,
-  materialId: string,
-): Promise<LoadOk | LoadErr> {
-  const { data: material, error: fetchError } = await ctx.supabase
-    .from("materials")
-    .select("type, meta")
-    .eq("id", materialId)
-    .eq("user_id", ctx.user.id)
-    .maybeSingle();
-
-  if (fetchError) {
-    return { ok: false, error: ACTION_ERRORS.UPDATE_FAILED("教材") };
-  }
-  if (!material) {
-    return { ok: false, error: ACTION_ERRORS.NOT_FOUND("教材") };
-  }
-  if (material.type !== "project") {
-    return {
-      ok: false,
-      error: "project タイプ以外の教材ではマイルストーンを操作できません",
-    };
-  }
-
-  const meta = (material.meta as ProjectMeta | null) ?? {};
-  return { ok: true, meta, milestones: meta.milestones ?? [] };
-}
-
-// add / toggle / delete で共通の atomic 更新処理
-async function persistMilestones(
-  ctx: AuthenticatedContext,
-  materialId: string,
-  currentMeta: ProjectMeta,
-  nextMilestones: ProjectMilestone[],
-): Promise<ActionResult<undefined>> {
-  // deadline 等 currentMeta の他フィールドを保持して milestones のみ差し替える
-  const nextMeta: ProjectMeta = { ...currentMeta, milestones: nextMilestones };
-  const { error: updateError } = await ctx.supabase
-    .from("materials")
-    .update({ meta: nextMeta, completed_units: countDone(nextMilestones) })
-    .eq("id", materialId)
-    .eq("user_id", ctx.user.id);
-
-  if (updateError) {
-    return { success: false, error: ACTION_ERRORS.UPDATE_FAILED("教材") };
-  }
-
-  revalidatePath(`/materials/${materialId}`);
-  revalidatePath("/materials");
-  return { success: true, data: undefined };
-}
-
-// project 教材にマイルストーンを追加する
+// project 教材にマイルストーンを追加する。milestones 追加と completed_units
+// (= done 件数) 更新は `project_add_milestone` RPC 内で SELECT FOR UPDATE +
+// UPDATE により atomic に実行される (#321)。RLS (FOR ALL USING = auth.uid())
+// が所有権を守るため Server Action 側での user_id フィルタは不要。
 export async function addMilestone(
   materialId: string,
   milestone: ProjectMilestone,
@@ -117,22 +76,24 @@ export async function addMilestone(
     };
   }
 
-  const ctx = await requireAuth();
-  const loaded = await loadProjectMaterial(ctx, materialId);
-  if (!loaded.ok) return { success: false, error: loaded.error };
+  const { supabase } = await requireAuth();
 
-  if (loaded.milestones.length >= MAX_MILESTONES) {
-    return {
-      success: false,
-      error: `マイルストーン数が上限 (${MAX_MILESTONES}) に達しています`,
-    };
+  const { error } = await supabase.rpc("project_add_milestone", {
+    p_material_id: parsed.data.materialId,
+    p_milestone: parsed.data.milestone,
+  });
+
+  if (error) {
+    return { success: false, error: mapRpcError(error.message) };
   }
 
-  const nextMilestones = [...loaded.milestones, parsed.data.milestone];
-  return persistMilestones(ctx, materialId, loaded.meta, nextMilestones);
+  revalidatePath(`/materials/${materialId}`);
+  revalidatePath("/materials");
+  return { success: true, data: undefined };
 }
 
-// 指定 index のマイルストーンの done を反転する
+// 指定 index のマイルストーンの done を反転する。completed_units の再計算は
+// RPC 側で jsonb_array_elements を用いて集計するため client 側は関知しない。
 export async function toggleMilestone(
   materialId: string,
   milestoneIndex: number,
@@ -146,25 +107,23 @@ export async function toggleMilestone(
     };
   }
 
-  const ctx = await requireAuth();
-  const loaded = await loadProjectMaterial(ctx, materialId);
-  if (!loaded.ok) return { success: false, error: loaded.error };
+  const { supabase } = await requireAuth();
 
-  const index = parsed.data.milestoneIndex;
-  if (index >= loaded.milestones.length) {
-    return {
-      success: false,
-      error: `インデックス ${index} のマイルストーンは存在しません`,
-    };
+  const { error } = await supabase.rpc("project_toggle_milestone", {
+    p_material_id: parsed.data.materialId,
+    p_milestone_index: parsed.data.milestoneIndex,
+  });
+
+  if (error) {
+    return { success: false, error: mapRpcError(error.message) };
   }
 
-  const nextMilestones = loaded.milestones.map((m, i) =>
-    i === index ? { ...m, done: !m.done } : m,
-  );
-  return persistMilestones(ctx, materialId, loaded.meta, nextMilestones);
+  revalidatePath(`/materials/${materialId}`);
+  revalidatePath("/materials");
+  return { success: true, data: undefined };
 }
 
-// 指定 index のマイルストーンを削除する
+// 指定 index のマイルストーンを削除する。
 export async function deleteMilestone(
   materialId: string,
   milestoneIndex: number,
@@ -178,18 +137,18 @@ export async function deleteMilestone(
     };
   }
 
-  const ctx = await requireAuth();
-  const loaded = await loadProjectMaterial(ctx, materialId);
-  if (!loaded.ok) return { success: false, error: loaded.error };
+  const { supabase } = await requireAuth();
 
-  const index = parsed.data.milestoneIndex;
-  if (index >= loaded.milestones.length) {
-    return {
-      success: false,
-      error: `インデックス ${index} のマイルストーンは存在しません`,
-    };
+  const { error } = await supabase.rpc("project_delete_milestone", {
+    p_material_id: parsed.data.materialId,
+    p_milestone_index: parsed.data.milestoneIndex,
+  });
+
+  if (error) {
+    return { success: false, error: mapRpcError(error.message) };
   }
 
-  const nextMilestones = loaded.milestones.filter((_, i) => i !== index);
-  return persistMilestones(ctx, materialId, loaded.meta, nextMilestones);
+  revalidatePath(`/materials/${materialId}`);
+  revalidatePath("/materials");
+  return { success: true, data: undefined };
 }
