@@ -36,7 +36,7 @@ describe("addPracticeLogEntry", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects invalid entry date", async () => {
+  it("rejects invalid entry date at zod boundary (before RPC)", async () => {
     mockClient = buildMockClient({ user: { id: USER_ID } });
     const { addPracticeLogEntry } = await import("@/lib/actions/practice-log");
 
@@ -46,9 +46,11 @@ describe("addPracticeLogEntry", () => {
     });
 
     expect(result.success).toBe(false);
+    // zod で弾かれるため rpc() は呼ばれない
+    expect(mockClient.rpc).not.toHaveBeenCalled();
   });
 
-  it("rejects numeric value exceeding 999999", async () => {
+  it("rejects numeric value exceeding 999999 at zod boundary", async () => {
     mockClient = buildMockClient({ user: { id: USER_ID } });
     const { addPracticeLogEntry } = await import("@/lib/actions/practice-log");
 
@@ -58,9 +60,10 @@ describe("addPracticeLogEntry", () => {
     });
 
     expect(result.success).toBe(false);
+    expect(mockClient.rpc).not.toHaveBeenCalled();
   });
 
-  it("rejects negative numeric value", async () => {
+  it("rejects negative numeric value at zod boundary", async () => {
     mockClient = buildMockClient({ user: { id: USER_ID } });
     const { addPracticeLogEntry } = await import("@/lib/actions/practice-log");
 
@@ -70,29 +73,28 @@ describe("addPracticeLogEntry", () => {
     });
 
     expect(result.success).toBe(false);
+    expect(mockClient.rpc).not.toHaveBeenCalled();
   });
 
-  it("rejects when material not found (wrong owner or RLS)", async () => {
+  it("maps RPC 'material not found' to NOT_FOUND error", async () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: { data: null, error: null },
+      rpcResult: { data: null, error: { message: "material not found" } },
     });
     const { addPracticeLogEntry } = await import("@/lib/actions/practice-log");
 
     const result = await addPracticeLogEntry(VALID_MATERIAL_ID, VALID_ENTRY);
 
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("見つかりません");
-    }
+    if (!result.success) expect(result.error).toContain("見つかりません");
   });
 
-  it("rejects when material type is not practice_log", async () => {
+  it("maps RPC 'not practice_log' to type error", async () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: {
-        data: { type: "flashcard", meta: {} },
-        error: null,
+      rpcResult: {
+        data: null,
+        error: { message: "material type is not practice_log (got flashcard)" },
       },
     });
     const { addPracticeLogEntry } = await import("@/lib/actions/practice-log");
@@ -100,21 +102,15 @@ describe("addPracticeLogEntry", () => {
     const result = await addPracticeLogEntry(VALID_MATERIAL_ID, VALID_ENTRY);
 
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("practice_log");
-    }
+    if (!result.success) expect(result.error).toContain("practice_log");
   });
 
-  it("rejects when entries already reached upper limit (10000)", async () => {
-    const full = Array.from({ length: 10000 }, (_, i) => ({
-      date: "2026-04-18",
-      value: i,
-    }));
+  it("maps RPC 'exceeded max' error with extracted limit", async () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: {
-        data: { type: "practice_log", meta: { entries: full } },
-        error: null,
+      rpcResult: {
+        data: null,
+        error: { message: "practice_log entries exceeded max (10000)" },
       },
     });
     const { addPracticeLogEntry } = await import("@/lib/actions/practice-log");
@@ -122,41 +118,40 @@ describe("addPracticeLogEntry", () => {
     const result = await addPracticeLogEntry(VALID_MATERIAL_ID, VALID_ENTRY);
 
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("10000");
-    }
+    if (!result.success) expect(result.error).toContain("10000");
   });
 
-  it("succeeds when entry is valid and entries under limit", async () => {
+  it("calls rpc with p_material_id and validated p_entry when input is valid", async () => {
+    const rpcSpy = vi.fn();
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: {
-        data: { type: "practice_log", meta: { entries: [] } },
-        error: null,
-      },
-      updateResult: { data: null, error: null },
+      onRpc: rpcSpy,
     });
     const { addPracticeLogEntry } = await import("@/lib/actions/practice-log");
 
     const result = await addPracticeLogEntry(VALID_MATERIAL_ID, VALID_ENTRY);
 
     expect(result.success).toBe(true);
+    expect(rpcSpy).toHaveBeenCalledWith("practice_log_append_entry", {
+      p_material_id: VALID_MATERIAL_ID,
+      p_entry: VALID_ENTRY,
+    });
   });
 
-  it("returns update failure when DB update errors", async () => {
+  it("returns UPDATE_FAILED for unexpected RPC errors", async () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: {
-        data: { type: "practice_log", meta: { entries: [] } },
-        error: null,
+      rpcResult: {
+        data: null,
+        error: { message: "connection reset" },
       },
-      updateResult: { data: null, error: { message: "db error" } },
     });
     const { addPracticeLogEntry } = await import("@/lib/actions/practice-log");
 
     const result = await addPracticeLogEntry(VALID_MATERIAL_ID, VALID_ENTRY);
 
     expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("更新");
   });
 });
 
@@ -165,7 +160,7 @@ describe("deletePracticeLogEntry", () => {
     vi.resetModules();
   });
 
-  it("rejects negative entryIndex", async () => {
+  it("rejects negative entryIndex at zod boundary", async () => {
     mockClient = buildMockClient({ user: { id: USER_ID } });
     const { deletePracticeLogEntry } = await import(
       "@/lib/actions/practice-log"
@@ -174,37 +169,15 @@ describe("deletePracticeLogEntry", () => {
     const result = await deletePracticeLogEntry(VALID_MATERIAL_ID, -1);
 
     expect(result.success).toBe(false);
+    expect(mockClient.rpc).not.toHaveBeenCalled();
   });
 
-  it("rejects when material type is not practice_log", async () => {
+  it("maps RPC 'out of range' with extracted index to not-found message", async () => {
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: {
-        data: { type: "reading", meta: {} },
-        error: null,
-      },
-    });
-    const { deletePracticeLogEntry } = await import(
-      "@/lib/actions/practice-log"
-    );
-
-    const result = await deletePracticeLogEntry(VALID_MATERIAL_ID, 0);
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("practice_log");
-    }
-  });
-
-  it("rejects entryIndex out of range", async () => {
-    mockClient = buildMockClient({
-      user: { id: USER_ID },
-      fetchResult: {
-        data: {
-          type: "practice_log",
-          meta: { entries: [VALID_ENTRY] },
-        },
-        error: null,
+      rpcResult: {
+        data: null,
+        error: { message: "entry index 5 out of range (length=1)" },
       },
     });
     const { deletePracticeLogEntry } = await import(
@@ -214,76 +187,25 @@ describe("deletePracticeLogEntry", () => {
     const result = await deletePracticeLogEntry(VALID_MATERIAL_ID, 5);
 
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("5");
-    }
+    if (!result.success) expect(result.error).toContain("5");
   });
 
-  it("succeeds when entryIndex is within range", async () => {
+  it("calls rpc with p_material_id and p_entry_index when input is valid", async () => {
+    const rpcSpy = vi.fn();
     mockClient = buildMockClient({
       user: { id: USER_ID },
-      fetchResult: {
-        data: {
-          type: "practice_log",
-          meta: { entries: [VALID_ENTRY, { ...VALID_ENTRY, value: 20 }] },
-        },
-        error: null,
-      },
-      updateResult: { data: null, error: null },
+      onRpc: rpcSpy,
     });
     const { deletePracticeLogEntry } = await import(
       "@/lib/actions/practice-log"
     );
 
-    const result = await deletePracticeLogEntry(VALID_MATERIAL_ID, 0);
+    const result = await deletePracticeLogEntry(VALID_MATERIAL_ID, 2);
 
     expect(result.success).toBe(true);
-  });
-
-  it("returns update failure when DB update errors", async () => {
-    mockClient = buildMockClient({
-      user: { id: USER_ID },
-      fetchResult: {
-        data: {
-          type: "practice_log",
-          meta: { entries: [VALID_ENTRY] },
-        },
-        error: null,
-      },
-      updateResult: { data: null, error: { message: "db error" } },
+    expect(rpcSpy).toHaveBeenCalledWith("practice_log_delete_entry", {
+      p_material_id: VALID_MATERIAL_ID,
+      p_entry_index: 2,
     });
-    const { deletePracticeLogEntry } = await import(
-      "@/lib/actions/practice-log"
-    );
-
-    const result = await deletePracticeLogEntry(VALID_MATERIAL_ID, 0);
-
-    expect(result.success).toBe(false);
-  });
-
-  it("sets completed_units to entries.length after deletion", async () => {
-    const updateSpy = vi.fn();
-    mockClient = buildMockClient({
-      user: { id: USER_ID },
-      fetchResult: {
-        data: {
-          type: "practice_log",
-          meta: { entries: [VALID_ENTRY, VALID_ENTRY, VALID_ENTRY] },
-          completed_units: 3,
-        },
-        error: null,
-      },
-      onUpdate: updateSpy,
-    });
-    const { deletePracticeLogEntry } = await import(
-      "@/lib/actions/practice-log"
-    );
-
-    const result = await deletePracticeLogEntry(VALID_MATERIAL_ID, 1);
-
-    expect(result.success).toBe(true);
-    expect(updateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ completed_units: 2 }),
-    );
   });
 });

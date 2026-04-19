@@ -32,14 +32,19 @@ function createChainMock(options: ChainOptions): Record<string, unknown> {
 // fetchResult: 1 回目の from() に返す値 (select → maybeSingle チェーン)
 // updateResult: 2 回目以降の from() に返す値 (update チェーンの await 解決値)
 // onUpdate: update() の引数をキャプチャする spy。completed_units / meta の検証に使う
+// rpcResult: `supabase.rpc(name, args)` の await 解決値 (RPC ベース Action 用)
+// onRpc: rpc(name, args) の引数をキャプチャする spy
 export function buildMockClient(options: {
   user: { id: string } | null;
   fetchResult?: ResolvedValue;
   updateResult?: ResolvedValue;
   onUpdate?: (args: unknown) => void;
+  rpcResult?: ResolvedValue;
+  onRpc?: (name: string, args: unknown) => void;
 }) {
   const fetchResolved = options.fetchResult ?? { data: null, error: null };
   const updateResolved = options.updateResult ?? { data: null, error: null };
+  const rpcResolved = options.rpcResult ?? { data: null, error: null };
 
   const fromMock = vi.fn();
   let callCount = 0;
@@ -51,11 +56,16 @@ export function buildMockClient(options: {
     });
   });
 
+  const rpcMock = vi.fn((name: string, args: unknown) => {
+    options.onRpc?.(name, args);
+    return Promise.resolve(rpcResolved);
+  });
+
   return {
     auth: {
       getUser: vi.fn().mockResolvedValue({ data: { user: options.user } }),
     },
     from: fromMock,
-    rpc: vi.fn(),
+    rpc: rpcMock,
   };
 }
