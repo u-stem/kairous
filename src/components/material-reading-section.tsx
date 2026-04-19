@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { updatePageProgress } from "@/lib/actions/reading";
@@ -26,16 +26,18 @@ export function MaterialReadingSection({
   unitLabel,
 }: Props) {
   const [pagesInput, setPagesInput] = useState(String(completedUnits));
+  const [lastSynced, setLastSynced] = useState(completedUnits);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   // 別タブでの更新や server action 後の revalidatePath で completedUnits が変わった場合に
   // 入力欄を同期する。ユーザーが編集中 (isPending) の間はフォーカスを奪わないよう skip。
-  useEffect(() => {
-    if (!isPending) {
-      setPagesInput(String(completedUnits));
-    }
-  }, [completedUnits, isPending]);
+  // useEffect + setState の代わりに React 公式の "reset during render" パターンを採用
+  // (#369)。前回 sync した値と比較して差分がある時だけ render 中に setState する
+  if (!isPending && completedUnits !== lastSynced) {
+    setLastSynced(completedUnits);
+    setPagesInput(String(completedUnits));
+  }
 
   function handleSubmit() {
     const pages = Number(pagesInput);

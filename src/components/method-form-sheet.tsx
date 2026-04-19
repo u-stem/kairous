@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import {
   Sheet,
   SheetContent,
@@ -60,18 +60,12 @@ export function MethodFormSheet({
       : "",
   );
 
-  // Sheet は常にマウント済みのため、method prop 変更時に state をリセットする
-  useEffect(() => {
-    setName(method?.name ?? "");
-    setCategory(method?.category ?? "general");
-    setDescription(method?.description ?? "");
-    setDurationMin(
-      method?.default_duration_sec ? String(method.default_duration_sec / 60) : "",
-    );
-    setError(null);
-    setFieldErrors({});
-  }, [method]);
+  // state リセットは親 (method-selector.tsx) が `key={editingMethod?.id ?? 'new'}` を
+  // 渡すことで React が remount し、初期化を自動化する (#369)。以前は method prop 変更時に
+  // useEffect で setState する pattern だったが set-state-in-effect cascading を避けるため削除
 
+  // remount 後は状態が初期化されているため resetForm は不要だが、「同一手法を 2 回連続で開く」
+  // ケース (同じ key のまま Sheet 再表示) で form 編集内容が残ってしまうのを防ぐため保持する
   function resetForm() {
     setName("");
     setCategory("general");

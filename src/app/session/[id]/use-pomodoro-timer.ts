@@ -58,9 +58,13 @@ export function usePomodoroTimer(
     const wasComplete = prevIsCompleteRef.current;
     prevIsCompleteRef.current = timer.isComplete;
 
-    // false→true の遷移（タイマーが完了した瞬間）のみフェーズを進める
+    // false→true の遷移（タイマーが完了した瞬間）のみフェーズを進める。
+    // useCountdownTimer の hook 返り値は timer.isComplete しか観測できないため、
+    // フェーズ遷移は effect 内の setState でしか書けない設計的制約がある。
+    // リファクタ案として onComplete callback を受ける API 刷新もあり得るが影響が広い
     if (!wasComplete && timer.isComplete) {
       if (phase === "focus") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- 上記 comment 参照
         setTotalFocusSec((t) => t + focusSec);
         setPhase("focus_complete");
       } else if (phase === "break") {

@@ -147,7 +147,9 @@ export function MethodSelector({
         </button>
       </div>
 
+      {/* key で method 切替時に remount し、内部 form state を初期化する (#369) */}
       <MethodFormSheet
+        key={editingMethod?.id ?? "new"}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         method={editingMethod}
