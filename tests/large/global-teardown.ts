@@ -31,8 +31,12 @@ async function globalTeardown() {
     }
   };
 
-  await cleanup("test-user.json");
-  await cleanup("auth-test-user.json");
+  // 2 ユーザーの cleanup は互いに独立しているため並列化する。
+  // 片方の失敗 (内部 try/catch) も他方の実行をブロックしない
+  await Promise.all([
+    cleanup("test-user.json"),
+    cleanup("auth-test-user.json"),
+  ]);
 }
 
 export default globalTeardown;
