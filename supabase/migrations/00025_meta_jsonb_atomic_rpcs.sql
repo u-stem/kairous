@@ -33,12 +33,21 @@ SET search_path = public
 AS $$
 DECLARE
   v_type TEXT;
+  v_meta JSONB;
   v_entries JSONB;
   v_max CONSTANT INT := 10000;
 BEGIN
+  -- 配列要素として append するため、JSON 配列が渡されると `||` が配列結合に
+  -- 倒れる (`[a]||[b,c]`→`[a,b,c]`)。RPC は直接呼び出し可能なので境界で型チェック
+  -- (CLAUDE.md security rules: JSONB 書き込み時の型チェック)
+  IF jsonb_typeof(p_entry) <> 'object' THEN
+    RAISE EXCEPTION 'p_entry must be a JSON object, got %', jsonb_typeof(p_entry)
+      USING ERRCODE = 'P0001';
+  END IF;
+
   -- FOR UPDATE で行ロック。RLS により所有者以外からは 0 行返る
-  SELECT type, COALESCE(meta->'entries', '[]'::jsonb)
-    INTO v_type, v_entries
+  SELECT type, COALESCE(meta, '{}'::jsonb)
+    INTO v_type, v_meta
   FROM materials
   WHERE id = p_material_id
   FOR UPDATE;
@@ -50,6 +59,8 @@ BEGIN
     RAISE EXCEPTION 'material type is not practice_log (got %)', v_type
       USING ERRCODE = 'P0001';
   END IF;
+
+  v_entries := COALESCE(v_meta->'entries', '[]'::jsonb);
   IF jsonb_array_length(v_entries) >= v_max THEN
     RAISE EXCEPTION 'practice_log entries exceeded max (%)', v_max
       USING ERRCODE = 'P0001';
@@ -59,7 +70,7 @@ BEGIN
 
   UPDATE materials
   SET
-    meta = jsonb_set(COALESCE(meta, '{}'::jsonb), '{entries}', v_entries),
+    meta = jsonb_set(v_meta, '{entries}', v_entries),
     completed_units = jsonb_array_length(v_entries)
   WHERE id = p_material_id;
 END;
@@ -80,11 +91,12 @@ SET search_path = public
 AS $$
 DECLARE
   v_type TEXT;
+  v_meta JSONB;
   v_entries JSONB;
   v_len INT;
 BEGIN
-  SELECT type, COALESCE(meta->'entries', '[]'::jsonb)
-    INTO v_type, v_entries
+  SELECT type, COALESCE(meta, '{}'::jsonb)
+    INTO v_type, v_meta
   FROM materials
   WHERE id = p_material_id
   FOR UPDATE;
@@ -97,6 +109,7 @@ BEGIN
       USING ERRCODE = 'P0001';
   END IF;
 
+  v_entries := COALESCE(v_meta->'entries', '[]'::jsonb);
   v_len := jsonb_array_length(v_entries);
   IF p_entry_index < 0 OR p_entry_index >= v_len THEN
     RAISE EXCEPTION 'entry index % out of range (length=%)', p_entry_index, v_len
@@ -108,7 +121,7 @@ BEGIN
 
   UPDATE materials
   SET
-    meta = jsonb_set(COALESCE(meta, '{}'::jsonb), '{entries}', v_entries),
+    meta = jsonb_set(v_meta, '{entries}', v_entries),
     completed_units = jsonb_array_length(v_entries)
   WHERE id = p_material_id;
 END;
@@ -134,6 +147,14 @@ DECLARE
   v_max CONSTANT INT := 50;
   v_done_count INT;
 BEGIN
+  -- 配列要素として append するため、JSON 配列が渡されると `||` が配列結合に
+  -- 倒れる (`[a]||[b,c]`→`[a,b,c]`)。practice_log_append_entry と同方針で
+  -- RPC 境界で型チェックする
+  IF jsonb_typeof(p_milestone) <> 'object' THEN
+    RAISE EXCEPTION 'p_milestone must be a JSON object, got %', jsonb_typeof(p_milestone)
+      USING ERRCODE = 'P0001';
+  END IF;
+
   SELECT type, COALESCE(meta, '{}'::jsonb)
     INTO v_type, v_meta
   FROM materials
