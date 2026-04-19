@@ -11,17 +11,28 @@ async function globalTeardown() {
     return;
   }
 
-  const userPath = resolve(__dirname, ".auth", "test-user.json");
-  let user: TestUserData;
-  try {
-    user = JSON.parse(readFileSync(userPath, "utf-8")) as TestUserData;
-  } catch {
-    // test-user.json がない場合: global-setup が失敗したケース
-    return;
-  }
-  // アプリデータを先に削除 (CASCADE でない FK がある場合の安全策)
-  await cleanupTestData(user.id);
-  await deleteTestUser(user.id);
+  // 共有 E2E ユーザー と auth-tests 専用ユーザーの双方を削除する (#242)
+  const cleanup = async (fileName: string) => {
+    const userPath = resolve(__dirname, ".auth", fileName);
+    let user: TestUserData;
+    try {
+      user = JSON.parse(readFileSync(userPath, "utf-8")) as TestUserData;
+    } catch {
+      // ファイル不在: global-setup が途中で失敗したケース → skip
+      return;
+    }
+    // アプリデータを先に削除 (CASCADE でない FK がある場合の安全策)。
+    // 失敗は次回実行のゴミデータに繋がるため console.error で記録する
+    try {
+      await cleanupTestData(user.id);
+      await deleteTestUser(user.id);
+    } catch (e) {
+      console.error(`teardown ${fileName} failed:`, e);
+    }
+  };
+
+  await cleanup("test-user.json");
+  await cleanup("auth-test-user.json");
 }
 
 export default globalTeardown;

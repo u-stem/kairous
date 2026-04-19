@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { getAdminClient } from "./helpers/db";
-import { E2E_PASSWORD, getTestUser } from "./helpers/types";
+import { E2E_PASSWORD, getAuthTestUser } from "./helpers/types";
 import type { TestUserData } from "./helpers/types";
 
 // 認証テストは未ログイン状態で実行する
@@ -63,7 +63,9 @@ test.describe("ログイン", () => {
   let testUser: TestUserData;
 
   test.beforeAll(() => {
-    testUser = getTestUser();
+    // chromium 共有ユーザーを避け、auth-tests 専用ユーザーを使う (#242)。
+    // ログアウト等が shared storageState のセッションを破壊しないようにするため
+    testUser = getAuthTestUser();
   });
 
   test("既存ユーザーがログインしてホームに遷移する", async ({ page }) => {
@@ -100,7 +102,9 @@ test.describe("ログアウト", () => {
   let testUser: TestUserData;
 
   test.beforeAll(() => {
-    testUser = getTestUser();
+    // chromium 共有ユーザーを避け、auth-tests 専用ユーザーを使う (#242)。
+    // ログアウト等が shared storageState のセッションを破壊しないようにするため
+    testUser = getAuthTestUser();
   });
 
   test("ログイン後にログアウトするとログインページに遷移する", async ({

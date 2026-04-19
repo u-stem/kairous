@@ -109,8 +109,18 @@ jobs:
           include-hidden-files: true
 
   test-large:
+    # shard 並列で wall-clock を短縮 (#242)。各 shard は独立した Supabase ローカル
+    # + test user で fresh に実行されるため、shard 間での状態競合はない
     runs-on: ubuntu-latest
+    # lint-and-typecheck 依存を維持: lint/type エラーは E2E より早期に検出可能で、
+    # 落ちた状態で Playwright を実行しても time/cost の浪費にしかならない
     needs: [build, lint-and-typecheck]
+    strategy:
+      # fail-fast: false: 1 shard が flake で落ちても他 shard の artifact / ログを残す。
+      # 運用上のデバッグ利便を優先し、fail 時の 3 shard 分計算コストを許容する
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-kairous
@@ -139,14 +149,15 @@ jobs:
         run: |
           bun run start &
           bunx wait-on http://localhost:3000 --timeout 60000
-      - name: E2E テスト
+      - name: E2E テスト (shard ${{ matrix.shard }}/4)
         env:
           CI_REUSE_SERVER: "1"
-        run: bun test:large
+        run: bun test:large --shard=${{ matrix.shard }}/4
       - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         if: ${{ !cancelled() }}
         with:
-          name: playwright-report
+          # shard 番号を artifact 名に含めて matrix 並列で同名 upload の衝突を避ける
+          name: playwright-report-shard-${{ matrix.shard }}
           path: |
             playwright-report/
             test-results/

@@ -35,11 +35,13 @@ export default defineConfig({
       testIgnore: /auth\.spec\.ts/,
     },
     {
-      // 認証テスト: ログアウトが storageState セッションを無効化するため最後に実行する
+      // 認証テスト: auth.spec.ts は auth-tests 専用ユーザー (#242) でログイン/ログアウト
+      // するため chromium 共有 storageState を破壊しない。setup のみに依存することで
+      // shard 実行時に chromium project を全 shard でフル実行する dependency inflation を回避
       name: "auth-tests",
       use: { ...devices["Desktop Chrome"] },
       testMatch: /auth\.spec\.ts/,
-      dependencies: ["chromium"],
+      dependencies: ["setup"],
     },
   ],
 
